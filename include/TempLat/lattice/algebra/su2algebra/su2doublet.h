@@ -110,6 +110,14 @@ namespace TempLat
     DEVICE_FORCEINLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(fs[0]); }
 
+    inline void updateGhosts()
+    {
+      fs[0].updateGhosts();
+      fs[1].updateGhosts();
+      fs[2].updateGhosts();
+      fs[3].updateGhosts();
+    }
+
     using Getter = SU2DoubletGetter;
     static constexpr size_t size = 4;
 
