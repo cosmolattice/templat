@@ -1,17 +1,36 @@
-# FFTW finder for standalone TempLat test builds
-find_library(FFTW_LIB fftw3 HINTS ${MYFFTW3_PATH}/lib ENV FFTW_ROOT)
-find_library(FFTW_MPI_LIB fftw3_mpi HINTS ${MYFFTW3_PATH}/lib ENV FFTW_ROOT)
-find_path(FFTW_INCLUDES fftw3.h HINTS ${MYFFTW3_PATH}/include ENV FFTW_ROOT)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw/find.cmake)
 
-if(FFTW_LIB AND FFTW_INCLUDES)
-    set(FFTW_LIBRARIES ${FFTW_LIB})
-    if(MPI AND FFTW_MPI_LIB)
-        list(APPEND FFTW_LIBRARIES ${FFTW_MPI_LIB})
-    endif()
-    include_directories(${FFTW_INCLUDES})
-    message(STATUS "Found FFTW: ${FFTW_LIBRARIES}")
+option(AUTOBUILD_FFTW
+       "Automatically build FFTW from source if not found on the system" OFF)
+
+# Tell about the found FFTW configuration
+if(FFTW_LIBRARIES)
+  message(STATUS "Found FFTW libraries: ${FFTW_LIBRARIES}")
 else()
-    set(FFTW_LIBRARIES "")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNOFFT")
-    message(STATUS "FFTW not found — FFT tests will be disabled")
+  if(${AUTOBUILD_FFTW})
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw/get.cmake)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw/find.cmake)
+    if(FFTW_LIBRARIES)
+      message(STATUS "Found FFTW libraries: ${FFTW_LIBRARIES}")
+    else()
+      message(
+        FATAL_ERROR "FFTW libraries not found, even after building from source."
+      )
+    endif()
+  else()
+    message(
+      FATAL_ERROR
+        "FFTW libraries not found. Set AUTOBUILD_FFTW to ON to automatically build from source."
+    )
+  endif()
 endif()
+
+# Ensure the FFTW library directory is in the linker search path. This is needed
+# because KokkosFFT may propagate -lfftw3 as a bare flag (without a full path),
+# so the linker needs to know where to find it.
+if(FFTW_LIB)
+  get_filename_component(FFTW_LIB_DIR "${FFTW_LIB}" DIRECTORY)
+  link_directories(${FFTW_LIB_DIR})
+endif()
+
+include_directories(${FFTW_INCLUDES})

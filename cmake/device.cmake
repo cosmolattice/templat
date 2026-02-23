@@ -1,5 +1,6 @@
-# Device detection + Kokkos fetch for standalone TempLat test builds.
-# NOT loaded when TempLat is consumed via FetchContent (TEMPLAT_BUILD_TESTS=OFF).
+# ##############################################################################
+# Find out which backends are available
+# ##############################################################################
 include(CheckLanguage)
 
 option(CUDA "Enable CUDA support" OFF)
@@ -8,115 +9,161 @@ option(OpenMP "Enable OpenMP support" OFF)
 option(Threads "Enable Threads support" OFF)
 option(Serial "Enable Serial support" OFF)
 
-# Auto-detect if nothing specified
-if(NOT CUDA AND NOT HIP AND NOT OpenMP AND NOT Threads AND NOT Serial)
-    set(CUDA ON)
-    set(HIP ON)
-    set(OpenMP ON)
-    set(Threads ON)
-    set(Serial ON)
+message("")
+
+if(NOT CUDA
+   AND NOT HIP
+   AND NOT OpenMP
+   AND NOT Threads
+   AND NOT Serial)
+  message(
+    STATUS
+      "${Yellow}---------- No device specified, trying to auto-detect ----------${ColorReset}"
+  )
+  set(CUDA ON)
+  set(HIP ON)
+  set(OpenMP ON)
+  set(Threads ON)
+  set(Serial ON)
 endif()
 
 if(CUDA)
-    check_language(CUDA)
-    if(CMAKE_CUDA_COMPILER)
-        set(HIP OFF)
-        set(OpenMP ON)
-        set(Threads OFF)
-        set(Serial OFF)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_CUDA")
-    else()
-        set(CUDA OFF)
-    endif()
+  # Let's see if we have a CUDA compiler
+  check_language(CUDA)
+  if(CMAKE_CUDA_COMPILER)
+    set(CUDA ON)
+    set(HIP OFF)
+    set(OpenMP ON)
+    set(Threads OFF)
+    set(Serial OFF)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_CUDA")
+  else()
+    set(CUDA OFF)
+  endif()
 endif()
 
 if(NOT CUDA AND HIP)
-    # Purge HIP's cmake arch settings to avoid conflict with Kokkos
-    if(HIP)
-        set(GPU_BUILD_TARGETS "" CACHE STRING "" FORCE)
-        set(GPU_TARGETS "" CACHE STRING "" FORCE)
-    endif()
+  # There is a problem with Kokkos + HIP, where HIP's cmake sets offload-arch
+  # and Kokkos does the same, which leads to a conflict. We purge the info set
+  # by HIP's cmake here.
+  if(HIP)
+    set(GPU_BUILD_TARGETS
+        ""
+        CACHE STRING "" FORCE)
+    set(GPU_TARGETS
+        ""
+        CACHE STRING "" FORCE)
+  endif()
 
-    check_language(HIP)
-    if(CMAKE_HIP_COMPILER)
-        set(OpenMP ON)
-        set(Threads OFF)
-        set(Serial OFF)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_HIP")
-        set(HIP_PLATFORM "amd" CACHE STRING "Set the HIP platform (amd or nvidia)")
-    else()
-        set(HIP OFF)
-    endif()
+  # Let's see if we have a HIP compiler
+  check_language(HIP)
+  if(CMAKE_HIP_COMPILER)
+    set(CUDA OFF)
+    set(HIP ON)
+    set(OpenMP ON)
+    set(Threads OFF)
+    set(Serial OFF)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_HIP")
+    # For HIP, we also need to specify the platform (amd or nvidia). Kokkos only
+    # supports amd as an option here, though.
+    set(HIP_PLATFORM
+        "amd"
+        CACHE STRING "Set the HIP platform (amd or nvidia)")
+
+  else()
+    set(HIP OFF)
+  endif()
 endif()
 
-if(NOT CUDA AND NOT HIP AND OpenMP)
-    find_package(OpenMP QUIET)
-    if(OpenMP_CXX_FOUND)
-        set(Threads OFF)
-        set(Serial OFF)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_CPU")
-    else()
-        set(OpenMP OFF)
-    endif()
-endif()
-
-if(NOT CUDA AND NOT HIP AND NOT OpenMP AND Threads)
+if(NOT CUDA
+   AND NOT HIP
+   AND OpenMP)
+  check_language(OpenMP)
+  find_package(OpenMP QUIET)
+  if(OpenMP_CXX_FOUND)
+    set(OpenMP ON)
+    set(Threads OFF)
     set(Serial OFF)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_CPU")
+  else()
+    set(OpenMP OFF)
+  endif()
 endif()
 
-if(NOT CUDA AND NOT HIP AND NOT OpenMP AND NOT Threads AND Serial)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_CPU")
+if(NOT CUDA
+   AND NOT HIP
+   AND NOT OpenMP
+   AND SERIAL)
+  set(Serial ON)
+  set(CUDA OFF)
+  set(HIP OFF)
+  set(OpenMP OFF)
+  set(Threads OFF)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_CPU")
 endif()
 
-if(NOT CUDA AND NOT HIP AND NOT OpenMP AND NOT Threads AND NOT Serial)
-    message(FATAL_ERROR "No valid device configuration found.")
+if(NOT CUDA
+   AND NOT HIP
+   AND NOT OpenMP
+   AND NOT Serial
+   AND Threads)
+  set(CUDA OFF)
+  set(HIP OFF)
+  set(OpenMP OFF)
+  set(Serial OFF)
+  set(Threads ON)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_CPU")
 endif()
 
-message(STATUS "TempLat device: CUDA=${CUDA} HIP=${HIP} OpenMP=${OpenMP} Threads=${Threads} Serial=${Serial}")
-
-# ---------- Fetch Kokkos ----------
-if(NOT TARGET Kokkos::kokkos)
-    message(STATUS "Fetching Kokkos for TempLat tests...")
-    set(Kokkos_ENABLE_CUDA ${CUDA} CACHE BOOL "")
-    set(Kokkos_ENABLE_CUDA_CONSTEXPR ${CUDA} CACHE BOOL "")
-    set(Kokkos_ENABLE_HIP ${HIP} CACHE BOOL "")
-    set(Kokkos_ENABLE_OPENMP ${OpenMP} CACHE BOOL "")
-    set(Kokkos_ENABLE_THREADS ${Threads} CACHE BOOL "")
-    set(Kokkos_ENABLE_SERIAL ${Serial} CACHE BOOL "")
-    set(Kokkos_ENABLE_TESTS OFF CACHE BOOL "")
-    set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION ON CACHE BOOL "")
-
-    include(FetchContent)
-    FetchContent_Declare(Kokkos
-        DOWNLOAD_EXTRACT_TIMESTAMP FALSE
-        URL https://github.com/kokkos/kokkos/releases/download/5.0.2/kokkos-5.0.2.tar.gz
-        URL_HASH SHA256=188817bb452ca805ee8701f1c5adbbb4fb83dc8d1c50624566a18a719ba0fa5e
-        SYSTEM)
-    FetchContent_MakeAvailable(Kokkos)
+if(NOT CUDA
+   AND NOT HIP
+   AND NOT OpenMP
+   AND NOT Threads
+   AND NOT Serial)
+  message(
+    FATAL_ERROR
+      "No valid device configuration found. Please specify at least one of CUDA, HIP, OpenMP, Threads or Serial."
+  )
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_KOKKOS")
+message(
+  STATUS
+    "Device configuration: \n    CUDA: ${CUDA} \n    HIP: ${HIP} \n    OpenMP: ${OpenMP} \n    Threads: ${Threads} \n    Serial: ${Serial}"
+)
 
-# ---------- Optional: KokkosFFT ----------
-option(KOKKOSFFT "Enable KokkosFFT support" ON)
-if(KOKKOSFFT AND NOT TARGET KokkosFFT::fft)
-    message(STATUS "Fetching KokkosFFT for TempLat tests...")
-    include(FetchContent)
-    FetchContent_Declare(KokkosFFT
-        DOWNLOAD_EXTRACT_TIMESTAMP FALSE
-        URL https://github.com/kokkos/kokkos-fft/archive/refs/tags/v1.0.0.zip
-        URL_HASH SHA256=80e9c1abdf71df2342ae713c845ba2aeabf1c1a0c2e116795534a8e67734c177
-        SYSTEM)
-    FetchContent_MakeAvailable(KokkosFFT)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_KOKKOSFFT")
-    set(KOKKOSFFT ON)
+# ##############################################################################
+# Choose a device provider
+# ##############################################################################
+
+if(DEVICE_PROVIDER STREQUAL "Kokkos")
+  set(KOKKOS ON)
+
+  message(
+    STATUS
+      "${Green}---------- Using Kokkos as device provider ----------${ColorReset}\n"
+  )
+
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/device/kokkos.cmake)
+  if(KOKKOSFFT)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/device/kokkos-fft.cmake)
+  endif()
+
+  set(CMAKE_REQUIRED_QUIET ON)
+  set(CMAKE_MESSAGE_LOG_LEVEL WARNING)
+  set(CMAKE_MESSAGE_LOG_LEVEL STATUS)
+else()
+  message(FATAL_ERROR "Unknown DEVICE_PROVIDER option: ${DEVICE_PROVIDER}.
+      Supported options: Kokkos")
 endif()
 
-# ---------- Helper function to link device libraries ----------
 function(target_link_device target)
-    target_link_libraries(${target} PUBLIC Kokkos::kokkos)
-    if(KOKKOSFFT AND TARGET KokkosFFT::fft)
-        target_link_libraries(${target} PUBLIC KokkosFFT::fft)
+  if(NOT TARGET ${target})
+    message(FATAL_ERROR "Target ${target} does not exist.")
+  endif()
+  if(KOKKOS)
+    target_link_libraries(${target} INTERFACE Kokkos::kokkos)
+    if(KOKKOSFFT)
+      target_link_libraries(${target} INTERFACE KokkosFFT::fft)
     endif()
+  endif()
 endfunction()
