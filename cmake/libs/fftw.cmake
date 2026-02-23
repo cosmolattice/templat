@@ -1,0 +1,17 @@
+# FFTW finder for standalone TempLat test builds
+find_library(FFTW_LIB fftw3 HINTS ${MYFFTW3_PATH}/lib ENV FFTW_ROOT)
+find_library(FFTW_MPI_LIB fftw3_mpi HINTS ${MYFFTW3_PATH}/lib ENV FFTW_ROOT)
+find_path(FFTW_INCLUDES fftw3.h HINTS ${MYFFTW3_PATH}/include ENV FFTW_ROOT)
+
+if(FFTW_LIB AND FFTW_INCLUDES)
+    set(FFTW_LIBRARIES ${FFTW_LIB})
+    if(MPI AND FFTW_MPI_LIB)
+        list(APPEND FFTW_LIBRARIES ${FFTW_MPI_LIB})
+    endif()
+    include_directories(${FFTW_INCLUDES})
+    message(STATUS "Found FFTW: ${FFTW_LIBRARIES}")
+else()
+    set(FFTW_LIBRARIES "")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNOFFT")
+    message(STATUS "FFTW not found — FFT tests will be disabled")
+endif()
