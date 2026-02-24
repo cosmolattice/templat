@@ -32,6 +32,10 @@ FetchContent_Declare(
 # make available
 FetchContent_MakeAvailable(HDF5)
 
+set(HDF5_LIBRARIES
+    hdf5-static
+    CACHE STRING "")
+
 message(STATUS "HDF5 available")
 
 message(
