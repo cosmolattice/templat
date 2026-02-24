@@ -81,11 +81,13 @@ target_link_device(TempLat)
 if(HDF5)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/hdf5.cmake)
   target_link_libraries(TempLat INTERFACE ${HDF5_LIBRARIES})
+  target_compile_definitions(TempLat INTERFACE HAVE_HDF5)
 endif()
 
 if(MPI AND PARAFAFT)
   target_link_libraries(TempLat INTERFACE parafaft::parafaft)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/parafaft.cmake)
+  target_compile_definitions(TempLat INTERFACE HAVE_PARFAFT)
 endif()
 
 target_include_directories(
