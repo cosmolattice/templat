@@ -2,9 +2,18 @@
 # Setting compiler flags depending on the system, build type and compiler.
 # ##############################################################################
 
-set(NATIVE
-    (NOT APPLE)
-    CACHE STRING "Set whether to use -march=native.")
+if(APPLE)
+  set(NATIVE
+      OFF
+      CACHE STRING "Set whether to use -march=native.")
+else()
+  set(NATIVE
+      ON
+      CACHE
+        STRING
+        "Set whether to use -march=native. Default is ON, but on Apple systems this is not supported, so it defaults to OFF."
+  )
+endif()
 set(SSE
     OFF
     CACHE
