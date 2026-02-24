@@ -14,7 +14,7 @@ if(NOT CUDA
    AND NOT Serial)
   message(
     STATUS
-      "${BoldCyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━ No device specified, trying to auto-detect ━━━━━━━━━━━━━━━━━━━━━━━━━━━${ColorReset}"
+      "${BoldCyan}━━━━━━━━━━━━━━━━━━━━━━━━━━ No device specified, trying to auto-detect ━━━━━━━━━━━━━━━━━━━━━━━━━━━${ColorReset}"
   )
   set(CUDA ON)
   set(HIP ON)
