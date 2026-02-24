@@ -63,12 +63,20 @@ target_link_libraries(TempLat INTERFACE Threads::Threads)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw.cmake)
 target_link_libraries(TempLat INTERFACE ${FFTW_LIBRARIES})
 
+if(MPI)
+  find_package(
+    MPI
+    COMPONENTS CXX
+    REQUIRED)
+  target_include_directories(TempLat INTERFACE ${MPI_CXX_INCLUDE_DIRS})
+  target_link_libraries(TempLat INTERFACE ${MPI_CXX_LIBRARIES})
+  target_compile_definitions(TempLat INTERFACE HAVE_MPI)
+  message(
+    STATUS "MPI enabled, including MPI headers from ${MPI_CXX_INCLUDE_DIRS}")
+endif()
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/device.cmake)
 target_link_device(TempLat)
-
-if(MPI)
-  target_link_libraries(TempLat INTERFACE ${MPI_CXX_LIBRARIES})
-endif()
 
 if(HDF5)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/hdf5.cmake)
@@ -77,7 +85,7 @@ endif()
 
 if(MPI AND PARAFAFT)
   target_link_libraries(TempLat INTERFACE parafaft::parafaft)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/parafaf.cmake)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/parafaft.cmake)
 endif()
 
 target_include_directories(
