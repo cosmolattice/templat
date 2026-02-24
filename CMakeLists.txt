@@ -89,9 +89,15 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/device_provider.cmake)
 
 # Now that we know which device provider is being used, we can set KOKKOSFFT
 # accordingly
-set(KOKKOSFFT
-    (CUDA OR HIP)
-    CACHE STRING "Enable KokkosFFT")
+if(CUDA OR HIP)
+  set(KOKKOSFFT
+      ON
+      CACHE STRING "Enable KokkosFFT")
+else()
+  set(KOKKOSFFT
+      OFF
+      CACHE STRING "Enable KokkosFFT")
+endif()
 
 # We use threads for FFTW, as well as for detecting hardware concurrency
 set(THREADS_PREFER_PTHREAD ON)

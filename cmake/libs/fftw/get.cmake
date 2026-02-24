@@ -102,46 +102,50 @@ endif()
 # Build FFTW (float)
 # ##############################################################################
 
-message(
-  STATUS
-    "Configuring FFTW (float)... (flags: --enable-float --enable-sse ${FFTW_CONFIGFLAGS})"
-)
-execute_process(
-  COMMAND
-    bash -c
-    "./configure --prefix=${FFTW_DIR} --enable-float --enable-sse ${FFTW_CONFIGFLAGS}"
-  WORKING_DIRECTORY "${FFTW_DIR}/fftw-3.3.10/"
-  OUTPUT_FILE "${FFTW_DIR}/configure.log"
-  ERROR_FILE "${FFTW_DIR}/configure.log"
-  RESULT_VARIABLE fftw_configure_ret)
-if(NOT fftw_configure_ret EQUAL 0)
+if(Float)
   message(
-    FATAL_ERROR
-      "FFTW configure failed. See ${FFTW_DIR}/configure.log for details.")
-endif()
+    STATUS
+      "Configuring FFTW (float)... (flags: --enable-float --enable-sse ${FFTW_CONFIGFLAGS})"
+  )
+  execute_process(
+    COMMAND
+      bash -c
+      "./configure --prefix=${FFTW_DIR} --enable-float --enable-sse ${FFTW_CONFIGFLAGS}"
+    WORKING_DIRECTORY "${FFTW_DIR}/fftw-3.3.10/"
+    OUTPUT_FILE "${FFTW_DIR}/configure.log"
+    ERROR_FILE "${FFTW_DIR}/configure.log"
+    RESULT_VARIABLE fftw_configure_ret)
+  if(NOT fftw_configure_ret EQUAL 0)
+    message(
+      FATAL_ERROR
+        "FFTW configure failed. See ${FFTW_DIR}/configure.log for details.")
+  endif()
 
-message(STATUS "Building FFTW (float) with ${CMAKE_PROCESSOR_COUNT} threads...")
-execute_process(
-  COMMAND make -j ${CMAKE_PROCESSOR_COUNT}
-  WORKING_DIRECTORY "${FFTW_DIR}/fftw-3.3.10/"
-  OUTPUT_FILE "${FFTW_DIR}/build.log"
-  ERROR_FILE "${FFTW_DIR}/build.log"
-  RESULT_VARIABLE fftw_build_ret)
-if(NOT fftw_build_ret EQUAL 0)
   message(
-    FATAL_ERROR "FFTW build failed. See ${FFTW_DIR}/build.log for details.")
-endif()
+    STATUS "Building FFTW (float) with ${CMAKE_PROCESSOR_COUNT} threads...")
+  execute_process(
+    COMMAND make -j ${CMAKE_PROCESSOR_COUNT}
+    WORKING_DIRECTORY "${FFTW_DIR}/fftw-3.3.10/"
+    OUTPUT_FILE "${FFTW_DIR}/build.log"
+    ERROR_FILE "${FFTW_DIR}/build.log"
+    RESULT_VARIABLE fftw_build_ret)
+  if(NOT fftw_build_ret EQUAL 0)
+    message(
+      FATAL_ERROR "FFTW build failed. See ${FFTW_DIR}/build.log for details.")
+  endif()
 
-message(STATUS "Installing FFTW (float)...")
-execute_process(
-  COMMAND make install
-  WORKING_DIRECTORY "${FFTW_DIR}/fftw-3.3.10/"
-  OUTPUT_FILE "${FFTW_DIR}/install.log"
-  ERROR_FILE "${FFTW_DIR}/install.log"
-  RESULT_VARIABLE fftw_install_ret)
-if(NOT fftw_install_ret EQUAL 0)
-  message(
-    FATAL_ERROR "FFTW install failed. See ${FFTW_DIR}/install.log for details.")
+  message(STATUS "Installing FFTW (float)...")
+  execute_process(
+    COMMAND make install
+    WORKING_DIRECTORY "${FFTW_DIR}/fftw-3.3.10/"
+    OUTPUT_FILE "${FFTW_DIR}/install.log"
+    ERROR_FILE "${FFTW_DIR}/install.log"
+    RESULT_VARIABLE fftw_install_ret)
+  if(NOT fftw_install_ret EQUAL 0)
+    message(
+      FATAL_ERROR
+        "FFTW install failed. See ${FFTW_DIR}/install.log for details.")
+  endif()
 endif()
 
 # ##############################################################################
