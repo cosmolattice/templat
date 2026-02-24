@@ -1,4 +1,15 @@
 cmake_minimum_required(VERSION 3.16)
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/common.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/title.cmake)
+
+if(NOT DEFINED CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE
+      Release
+      CACHE STRING "Build type")
+  message(STATUS "No build type specified, defaulting to Release.")
+endif()
+
 project(
   TempLat
   VERSION 1.0
@@ -7,9 +18,6 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/common.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/title.cmake)
 
 # Options and configuration
 
@@ -20,6 +28,11 @@ set(DEVICE_PROVIDER
     CACHE STRING "Device provider to use (e.g. Kokkos)")
 
 # ---------- Get required dependencies ----------
+
+# We always need pthread
+set(THREADS_PREFER_PTHREAD ON)
+find_package(Threads REQUIRED)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/device.cmake)
 
@@ -56,6 +69,7 @@ endif()
 
 # ---------- Tests (off by default, e.g. when consumed via FetchContent)
 # ----------
+
 option(TEMPLAT_BUILD_TESTS "Build TempLat tests" OFF)
 
 if(TEMPLAT_BUILD_TESTS)
