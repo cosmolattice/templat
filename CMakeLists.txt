@@ -67,9 +67,11 @@ if(MPI AND PARAFAFT)
 endif()
 
 target_include_directories(
-  TempLat
-  INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/include>
+  TempLat INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+target_include_directories(
+  TempLat SYSTEM
+  INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/include>
             $<INSTALL_INTERFACE:include>)
 
 # ##############################################################################
