@@ -37,6 +37,9 @@ function(templat_define_options)
       ON
       CACHE STRING "Enable KokkosFFT")
 
+  option(AUTOBUILD_FFTW
+         "Automatically build FFTW from source if not found on the system" OFF)
+
   option(HDF5 "Use HDF5 for I/O" OFF)
   option(MPI "Use MPI for parallelization" OFF)
   option(PARAFAFT "Use ParaFaft for parallel FFTs" OFF)
@@ -62,6 +65,8 @@ target_link_libraries(TempLat INTERFACE Threads::Threads)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw.cmake)
 target_link_libraries(TempLat INTERFACE ${FFTW_LIBRARIES})
+target_link_directories(TempLat INTERFACE ${FFTW_LIB_DIR})
+target_include_directories(TempLat INTERFACE ${FFTW_INCLUDES})
 
 if(MPI)
   find_package(
@@ -81,11 +86,14 @@ target_link_device(TempLat)
 if(HDF5)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/hdf5.cmake)
   target_link_libraries(TempLat INTERFACE ${HDF5_LIBRARIES})
+  target_compile_definitions(TempLat INTERFACE HAVE_HDF5)
+  target_include_directories(TempLat INTERFACE ${HDF5_INCLUDE_DIRS})
 endif()
 
 if(MPI AND PARAFAFT)
   target_link_libraries(TempLat INTERFACE parafaft::parafaft)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/parafaft.cmake)
+  target_compile_definitions(TempLat INTERFACE HAVE_PARFAFT)
 endif()
 
 target_include_directories(

@@ -12,5 +12,3 @@ if(NOT HDF5_FOUND OR NOT CORRECT_HDF_FOUND)
       FATAL_ERROR "HDF5 libraries not found, even after building from source.")
   endif()
 endif()
-
-include_directories(${HDF5_INCLUDE_DIRS})
