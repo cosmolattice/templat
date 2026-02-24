@@ -4,7 +4,10 @@ include(ProcessorCount)
 ProcessorCount(CMAKE_PROCESSOR_COUNT)
 
 message("") # Blank line for better readability
-message(STATUS "${BoldYellow}---------- Getting FFTW ----------${ColorReset}")
+message(
+  STATUS
+    "${BoldYellow}----------------------- Fetching FFTW ------------------------${ColorReset}"
+)
 
 set(FFTW_URL "https://www.fftw.org/fftw-3.3.10.tar.gz")
 set(FFTW_DIR "${CMAKE_CURRENT_BINARY_DIR}/_deps/fftw")
@@ -104,4 +107,6 @@ endif()
 set(CMAKE_PREFIX_PATH "${FFTW_DIR};${CMAKE_PREFIX_PATH}")
 
 message(
-  STATUS "${BoldYellow}---------- Getting FFTW DONE ----------${ColorReset}\n")
+  STATUS
+    "${BoldYellow}--------------------- Fetching FFTW DONE ---------------------${ColorReset}\n"
+)

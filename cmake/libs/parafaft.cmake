@@ -1,6 +1,8 @@
 message("") # Blank line for better readability
 message(
-  STATUS "${BoldYellow}---------- Getting ParaFaFT ----------${ColorReset}")
+  STATUS
+    "${BoldYellow}--------------------- Fetching ParaFaFT ----------------------${ColorReset}"
+)
 
 # enable FetchContent
 include(FetchContent)
@@ -25,4 +27,5 @@ message(
 
 message(
   STATUS
-    "${BoldYellow}---------- Getting ParaFaFT DONE ----------${ColorReset}\n")
+    "${BoldYellow}------------------- Fetching ParaFaFT DONE -------------------${ColorReset}\n"
+)
