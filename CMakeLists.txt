@@ -30,12 +30,16 @@ function(templat_define_options)
   option(Threads "Enable Threads support" OFF)
   option(Serial "Enable Serial support" OFF)
 
-  option(HDF5 "Use HDF5 for I/O" OFF)
-  option(MPI "Use MPI for parallelization" OFF)
-  option(PARAFAFT "Use ParaFaft for parallel FFTs" OFF)
   set(DEVICE_PROVIDER
       "Kokkos"
       CACHE STRING "Device provider to use (e.g. Kokkos)")
+  set(KOKKOSFFT
+      ON
+      CACHE STRING "Enable KokkosFFT")
+
+  option(HDF5 "Use HDF5 for I/O" OFF)
+  option(MPI "Use MPI for parallelization" OFF)
+  option(PARAFAFT "Use ParaFaft for parallel FFTs" OFF)
   option(TEMPLAT_TESTS "Build TempLat tests" OFF)
 endfunction()
 
