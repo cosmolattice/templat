@@ -148,7 +148,7 @@ endif()
 if(MPI AND PARAFAFT)
   target_link_libraries(TempLat INTERFACE parafaft::parafaft)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/parafaft.cmake)
-  target_compile_definitions(TempLat INTERFACE HAVE_PARFAFT)
+  target_compile_definitions(TempLat INTERFACE HAVE_PARAFAFT)
 endif()
 
 target_include_directories(
