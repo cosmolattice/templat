@@ -23,30 +23,32 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Options that can be set by the user
 # ##############################################################################
 
-function(templat_define_options)
-  option(CUDA "Enable CUDA support" OFF)
-  option(HIP "Enable HIP support" OFF)
-  option(OpenMP "Enable OpenMP support" OFF)
-  option(Threads "Enable Threads support" OFF)
-  option(Serial "Enable Serial support" OFF)
+option(CUDA "Enable CUDA support" OFF)
+option(HIP "Enable HIP support" OFF)
+option(OpenMP "Enable OpenMP support" OFF)
+option(Threads "Enable Threads support" OFF)
+option(Serial "Enable Serial support" OFF)
 
-  set(DEVICE_PROVIDER
-      "Kokkos"
-      CACHE STRING "Device provider to use (e.g. Kokkos)")
-  set(KOKKOSFFT
-      ON
-      CACHE STRING "Enable KokkosFFT")
+set(DEVICE_PROVIDER
+    "Kokkos"
+    CACHE STRING "Device provider to use (e.g. Kokkos)")
+set(KOKKOSFFT
+    ON
+    CACHE STRING "Enable KokkosFFT")
 
-  option(AUTOBUILD_FFTW
-         "Automatically build FFTW from source if not found on the system" OFF)
+option(AUTOBUILD_FFTW
+       "Automatically build FFTW from source if not found on the system" OFF)
 
-  option(HDF5 "Use HDF5 for I/O" OFF)
-  option(MPI "Use MPI for parallelization" OFF)
-  option(PARAFAFT "Use ParaFaft for parallel FFTs" OFF)
-  option(TEMPLAT_TESTS "Build TempLat tests" OFF)
-endfunction()
+option(HDF5 "Use HDF5 for I/O" OFF)
+option(MPI "Use MPI for parallelization" OFF)
+option(PARAFAFT "Use ParaFaft for parallel FFTs" OFF)
+option(TEMPLAT_TESTS "Build TempLat tests" OFF)
 
-templat_define_options()
+# ##############################################################################
+# Compatibility with CL1.0
+# ##############################################################################
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compatibility.cmake)
 
 # ##############################################################################
 # Create the TempLat (interface) library
