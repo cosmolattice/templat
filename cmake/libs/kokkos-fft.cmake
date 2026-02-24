@@ -1,10 +1,11 @@
 # ##############################################################################
-# Get Kokkos-FFT
+# Get Kokkos━FFT
 # ##############################################################################
 
+message("")
 message(
   STATUS
-    "${BoldYellow}------------------------------- Fetching KokkosFFT -------------------------------${ColorReset}"
+    "${BoldYellow}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching KokkosFFT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${ColorReset}"
 )
 
 include(FetchContent)
@@ -19,5 +20,5 @@ FetchContent_MakeAvailable(KokkosFFT)
 
 message(
   STATUS
-    "${BoldYellow}---------------------------- Fetching KokkosFFT DONE -----------------------------${ColorReset}\n"
+    "${BoldYellow}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching KokkosFFT DONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${ColorReset}\n"
 )
