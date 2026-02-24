@@ -1,8 +1,5 @@
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw/find.cmake)
 
-option(AUTOBUILD_FFTW
-       "Automatically build FFTW from source if not found on the system" OFF)
-
 # Tell about the found FFTW configuration
 if(FFTW_LIBRARIES)
   message(STATUS "Found FFTW libraries: ${FFTW_LIBRARIES}")
@@ -30,7 +27,4 @@ endif()
 # so the linker needs to know where to find it.
 if(FFTW_LIB)
   get_filename_component(FFTW_LIB_DIR "${FFTW_LIB}" DIRECTORY)
-  link_directories(${FFTW_LIB_DIR})
 endif()
-
-include_directories(${FFTW_INCLUDES})

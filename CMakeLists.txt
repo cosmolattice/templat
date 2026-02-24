@@ -65,6 +65,8 @@ target_link_libraries(TempLat INTERFACE Threads::Threads)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw.cmake)
 target_link_libraries(TempLat INTERFACE ${FFTW_LIBRARIES})
+target_link_directories(TempLat INTERFACE ${FFTW_LIB_DIR})
+target_include_directories(TempLat INTERFACE ${FFTW_INCLUDES})
 
 if(MPI)
   find_package(
@@ -85,6 +87,7 @@ if(HDF5)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/hdf5.cmake)
   target_link_libraries(TempLat INTERFACE ${HDF5_LIBRARIES})
   target_compile_definitions(TempLat INTERFACE HAVE_HDF5)
+  target_include_directories(TempLat INTERFACE ${HDF5_INCLUDE_DIRS})
 endif()
 
 if(MPI AND PARAFAFT)
