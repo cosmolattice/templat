@@ -12,7 +12,7 @@ if(NOT CUDA
    AND NOT Serial)
   message(
     STATUS
-      "${BoldCyan}--------- No device specified, trying to auto-detect ---------${ColorReset}"
+      "${BoldCyan}------------------- No device specified, trying to auto-detect -------------------${ColorReset}"
   )
   set(CUDA ON)
   set(HIP ON)
@@ -129,7 +129,7 @@ if(DEVICE_PROVIDER STREQUAL "Kokkos")
 
   message(
     STATUS
-      "${BoldGreen}-------------- Using Kokkos as device provider ---------------${ColorReset}\n"
+      "${BoldGreen}------------------------ Using Kokkos as device provider -------------------------${ColorReset}\n"
   )
 
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/device/kokkos.cmake)
