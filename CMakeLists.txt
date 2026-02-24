@@ -37,6 +37,9 @@ function(templat_define_options)
       ON
       CACHE STRING "Enable KokkosFFT")
 
+  option(AUTOBUILD_FFTW
+         "Automatically build FFTW from source if not found on the system" OFF)
+
   option(HDF5 "Use HDF5 for I/O" OFF)
   option(MPI "Use MPI for parallelization" OFF)
   option(PARAFAFT "Use ParaFaft for parallel FFTs" OFF)
