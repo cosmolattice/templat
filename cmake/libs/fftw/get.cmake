@@ -32,11 +32,13 @@ else()
 endif()
 
 set(FFTW_CONFIGFLAGS
-    " --enable-threads --disable-shared --enable-static --enable-sse2"
+    " --enable-threads --disable-shared --enable-static"
     CACHE
       STRING
-      "Configuration flags for FFTW. Default is --enable-threads --disable-shared --enable-static --enable-sse2"
+      "Configuration flags for FFTW. Default is --enable-threads --disable-shared --enable-static"
 )
+
+# TODO: Automatic introspection.
 
 if(MPI)
   set(FFTW_CONFIGFLAGS_MPI
@@ -47,6 +49,12 @@ endif()
 if(AVX)
   set(FFTW_CONFIGFLAGS_AVX
       "--enable-avx"
+      CACHE STRING "")
+endif()
+
+if(SSE)
+  set(FFTW_CONFIGFLAGS_AVX
+      "${FFTW_CONFIGFLAGS_AVX} --enable-sse2"
       CACHE STRING "")
 endif()
 

@@ -6,7 +6,7 @@ set(NATIVE
     (NOT APPLE)
     CACHE STRING "Set whether to use -march=native.")
 set(SSE
-    ON
+    OFF
     CACHE
       BOOL
       "Set the sse instruction flag for the compiler. Default is OFF, but most likely you want to set is to ON."
