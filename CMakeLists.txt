@@ -19,34 +19,52 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Options and configuration
+# ##############################################################################
+# Options that can be set by the user
+# ##############################################################################
 
 option(HDF5 "Use HDF5 for I/O" OFF)
+option(MPI "Use MPI for parallelization" OFF)
 option(PARAFAFT "Use ParaFaft for parallel FFTs" OFF)
 set(DEVICE_PROVIDER
     "Kokkos"
     CACHE STRING "Device provider to use (e.g. Kokkos)")
+option(TEMPLAT_TESTS "Build TempLat tests" OFF)
 
-# ---------- Get required dependencies ----------
+# ##############################################################################
+# Create the TempLat (interface) library
+# ##############################################################################
 
-# We always need pthread
+add_library(TempLat INTERFACE)
+add_library(TempLat::TempLat ALIAS TempLat)
+
+# ##############################################################################
+# Get all dependencies
+# ##############################################################################
+
 set(THREADS_PREFER_PTHREAD ON)
 find_package(Threads REQUIRED)
+target_link_libraries(TempLat INTERFACE Threads::Threads)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw.cmake)
+target_link_libraries(TempLat INTERFACE ${FFTW_LIBRARIES})
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/device.cmake)
+target_link_device(TempLat)
+
+if(MPI)
+  target_link_libraries(TempLat INTERFACE ${MPI_CXX_LIBRARIES})
+endif()
 
 if(HDF5)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/hdf5.cmake)
+  target_link_libraries(TempLat INTERFACE ${HDF5_LIBRARIES})
 endif()
 
-if(PARAFAFT)
+if(MPI AND PARAFAFT)
+  target_link_libraries(TempLat INTERFACE parafaft::parafaft)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/parafaf.cmake)
 endif()
-
-# ---------- Header-only interface library ----------
-add_library(TempLat INTERFACE)
-add_library(TempLat::TempLat ALIAS TempLat)
 
 target_include_directories(
   TempLat
@@ -54,25 +72,17 @@ target_include_directories(
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/include>
             $<INSTALL_INTERFACE:include>)
 
-target_link_libraries(TempLat INTERFACE Threads::Threads)
-target_link_libraries(TempLat INTERFACE ${FFTW_LIBRARIES})
-target_link_device(TempLat)
-if(MPI)
-  target_link_libraries(TempLat INTERFACE ${MPI_CXX_LIBRARIES})
-endif()
-if(PARAFAFT AND MPI)
-  target_link_libraries(TempLat INTERFACE parafaft::parafaft)
-endif()
-if(HDF5)
-  target_link_libraries(TempLat INTERFACE ${HDF5_LIBRARIES})
-endif()
+# ##############################################################################
+# System-specific compiler options.
+# ##############################################################################
 
-# ---------- Tests (off by default, e.g. when consumed via FetchContent)
-# ----------
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/system.cmake)
 
-option(TEMPLAT_BUILD_TESTS "Build TempLat tests" OFF)
+# ##############################################################################
+# Tests (Off by default, see above)
+# ##############################################################################
 
-if(TEMPLAT_BUILD_TESTS)
+if(TEMPLAT_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()

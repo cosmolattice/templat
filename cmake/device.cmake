@@ -36,7 +36,6 @@ if(CUDA)
     set(OpenMP ON)
     set(Threads OFF)
     set(Serial OFF)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_CUDA")
   else()
     set(CUDA OFF)
   endif()
@@ -63,7 +62,6 @@ if(NOT CUDA AND HIP)
     set(OpenMP ON)
     set(Threads OFF)
     set(Serial OFF)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_HIP")
     # For HIP, we also need to specify the platform (amd or nvidia). Kokkos only
     # supports amd as an option here, though.
     set(HIP_PLATFORM
@@ -84,7 +82,6 @@ if(NOT CUDA
     set(OpenMP ON)
     set(Threads OFF)
     set(Serial OFF)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_CPU")
   else()
     set(OpenMP OFF)
   endif()
@@ -99,7 +96,6 @@ if(NOT CUDA
   set(HIP OFF)
   set(OpenMP OFF)
   set(Threads OFF)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_CPU")
 endif()
 
 if(NOT CUDA
@@ -112,7 +108,6 @@ if(NOT CUDA
   set(OpenMP OFF)
   set(Serial OFF)
   set(Threads ON)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEVICE_CPU")
 endif()
 
 if(NOT CUDA
@@ -160,10 +155,27 @@ function(target_link_device target)
   if(NOT TARGET ${target})
     message(FATAL_ERROR "Target ${target} does not exist.")
   endif()
+
+  # Link against the device provider's libraries and define a preprocessor macro
+  # to indicate which device provider is being used.
   if(KOKKOS)
     target_link_libraries(${target} INTERFACE Kokkos::kokkos)
-    if(KOKKOSFFT)
-      target_link_libraries(${target} INTERFACE KokkosFFT::fft)
-    endif()
+    target_compile_definitions(${target} INTERFACE DEVICE_KOKKOS)
+  endif()
+
+  # We handle here also KokkosFFT
+  if(KOKKOSFFT)
+    target_link_libraries(${target} INTERFACE KokkosFFT::fft)
+    target_compile_definitions(${target} INTERFACE HAVE_KOKKOSFFT)
+  endif()
+
+  # Define a preprocessor macro to indicate which device is being used. This can
+  # be used in the code to conditionally compile device-specific code.
+  if(CUDA)
+    target_compile_definitions(TempLat INTERFACE DEVICE_CUDA)
+  elseif(HIP)
+    target_compile_definitions(TempLat INTERFACE DEVICE_HIP)
+  else()
+    target_compile_definitions(TempLat INTERFACE DEVICE_CPU)
   endif()
 endfunction()
