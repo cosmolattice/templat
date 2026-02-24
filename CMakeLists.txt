@@ -3,10 +3,10 @@ cmake_minimum_required(VERSION 3.16)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/common.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/title.cmake)
 
-if(NOT DEFINED CMAKE_BUILD_TYPE)
+if((NOT DEFINED CMAKE_BUILD_TYPE) OR (CMAKE_BUILD_TYPE STREQUAL ""))
   set(CMAKE_BUILD_TYPE
       Release
-      CACHE STRING "Build type")
+      CACHE STRING "Build type" FORCE)
   message(STATUS "No build type specified, defaulting to Release.")
 endif()
 
