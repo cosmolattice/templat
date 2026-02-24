@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Franz R. Sattler,  Year: 2025
 
 #include "TempLat/parallel/devices/kokkos/kokkos.h"
+#include "TempLat/lattice/memory/memorylayouts/checkerboardlayout.h"
 
 namespace TempLat::device_kokkos::iteration
 {
@@ -28,6 +29,15 @@ namespace TempLat::device_kokkos::iteration
       {
         Kokkos::parallel_for(name, device_kokkos::getLocalKokkosPolicy(mLayout),
                              device_kokkos::KokkosNDLambdaWrapper<NDim, Functor>(functor));
+      }
+      // 3. foreach: CheckerboardLayout
+      template <size_t NDim, typename Functor>
+        requires requires(Functor functor) { functor(device_kokkos::IdxArray<NDim>{}); }
+      void foreach (const std::string &name, const CheckerboardLayout<NDim> &cb, const Functor &functor)
+      {
+        CheckerboardForEachWrapper<NDim, Functor> wrapped{cb, functor};
+        Kokkos::parallel_for(name, getLocalKokkosPolicy(cb.getStarts(), cb.getStops()),
+                             device_kokkos::KokkosNDLambdaWrapper<NDim, CheckerboardForEachWrapper<NDim, Functor>>(wrapped));
       }
 
       // ===== REDUCE =====
@@ -68,6 +78,26 @@ namespace TempLat::device_kokkos::iteration
       {
         Kokkos::parallel_reduce(name, device_kokkos::getLocalKokkosPolicy(mLayout),
                                 device_kokkos::KokkosNDLambdaWrapperReduction<NDim, Functor>(functor), view);
+      }
+      // 6. reduce: CheckerboardLayout -> value
+      template <size_t NDim, typename Functor, typename T>
+        requires requires(Functor functor, T &update) { functor(device_kokkos::IdxArray<NDim>{}, update); }
+      void reduce(const std::string &name, const CheckerboardLayout<NDim> &cb, const Functor &functor, T &result)
+      {
+        CheckerboardReduceWrapper<NDim, Functor> wrapped{cb, functor};
+        Kokkos::parallel_reduce(name, getLocalKokkosPolicy(cb.getStarts(), cb.getStops()),
+                                device_kokkos::KokkosNDLambdaWrapperReduction<NDim, CheckerboardReduceWrapper<NDim, Functor>>(wrapped), result);
+      }
+      // 7. reduce: CheckerboardLayout -> View or Reduction
+      template <size_t NDim, typename Functor, typename View>
+        requires requires(Functor functor, typename View::value_type &update) {
+          functor(device_kokkos::IdxArray<NDim>{}, update);
+        }
+      void reduce(const std::string &name, const CheckerboardLayout<NDim> &cb, const Functor &functor, View view)
+      {
+        CheckerboardReduceWrapper<NDim, Functor> wrapped{cb, functor};
+        Kokkos::parallel_reduce(name, getLocalKokkosPolicy(cb.getStarts(), cb.getStops()),
+                                device_kokkos::KokkosNDLambdaWrapperReduction<NDim, CheckerboardReduceWrapper<NDim, Functor>>(wrapped), view);
       }
 
       // ===== REDUCERS =====
