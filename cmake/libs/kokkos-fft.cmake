@@ -9,6 +9,7 @@ message(
 )
 
 include(FetchContent)
+set(FETCHCONTENT_QUIET ON)
 FetchContent_Declare(
   KokkosFFT
   DOWNLOAD_EXTRACT_TIMESTAMP FALSE
