@@ -30,7 +30,7 @@ endif()
 
 # Catch an edge case: An enabled OpenMP backend without an OpenMP-enabled FFTW.
 # In this case, we must also find the OpenMP-enabled FFTW libraries.
-if(OpenMP AND KOKKOSFFT)
+if(OpenMP)
   find_library(FFTW_OPENMP_LIB fftw3_omp)
   set(FFTW_LIBRARIES ${FFTW_LIBRARIES} ${FFTW_OPENMP_LIB})
   mark_as_advanced(FFTW_OPENMP_LIB)
