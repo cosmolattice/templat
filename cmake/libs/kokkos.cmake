@@ -4,7 +4,7 @@
 
 message(
   STATUS
-    "${BoldYellow}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching Kokkos ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${ColorReset}"
+    "${BoldYellow}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching Kokkos ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${ColorReset}"
 )
 
 set(Kokkos_ENABLE_CUDA
@@ -44,5 +44,5 @@ FetchContent_MakeAvailable(Kokkos)
 
 message(
   STATUS
-    "${BoldYellow}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching Kokkos DONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${ColorReset}\n"
+    "${BoldYellow}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching Kokkos DONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${ColorReset}\n"
 )

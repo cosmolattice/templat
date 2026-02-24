@@ -7,7 +7,7 @@ if(DEVICE_PROVIDER STREQUAL "Kokkos")
 
   message(
     STATUS
-      "${BoldGreen}━━━━━━━━━━━━━━━━━━━━━━━━ Using Kokkos as device provider ━━━━━━━━━━━━━━━━━━━━━━━━━${ColorReset}\n"
+      "${BoldGreen}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Using Kokkos as device provider ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${ColorReset}\n"
   )
 
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/kokkos.cmake)
