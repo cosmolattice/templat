@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.16)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/common.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/title.cmake)
