@@ -3,12 +3,6 @@
 # ##############################################################################
 include(CheckLanguage)
 
-option(CUDA "Enable CUDA support" OFF)
-option(HIP "Enable HIP support" OFF)
-option(OpenMP "Enable OpenMP support" OFF)
-option(Threads "Enable Threads support" OFF)
-option(Serial "Enable Serial support" OFF)
-
 message("")
 
 if(NOT CUDA

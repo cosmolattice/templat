@@ -23,13 +23,23 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Options that can be set by the user
 # ##############################################################################
 
-option(HDF5 "Use HDF5 for I/O" OFF)
-option(MPI "Use MPI for parallelization" OFF)
-option(PARAFAFT "Use ParaFaft for parallel FFTs" OFF)
-set(DEVICE_PROVIDER
-    "Kokkos"
-    CACHE STRING "Device provider to use (e.g. Kokkos)")
-option(TEMPLAT_TESTS "Build TempLat tests" OFF)
+function(templat_define_options)
+  option(CUDA "Enable CUDA support" OFF)
+  option(HIP "Enable HIP support" OFF)
+  option(OpenMP "Enable OpenMP support" OFF)
+  option(Threads "Enable Threads support" OFF)
+  option(Serial "Enable Serial support" OFF)
+
+  option(HDF5 "Use HDF5 for I/O" OFF)
+  option(MPI "Use MPI for parallelization" OFF)
+  option(PARAFAFT "Use ParaFaft for parallel FFTs" OFF)
+  set(DEVICE_PROVIDER
+      "Kokkos"
+      CACHE STRING "Device provider to use (e.g. Kokkos)")
+  option(TEMPLAT_TESTS "Build TempLat tests" OFF)
+endfunction()
+
+templat_define_options()
 
 # ##############################################################################
 # Create the TempLat (interface) library
