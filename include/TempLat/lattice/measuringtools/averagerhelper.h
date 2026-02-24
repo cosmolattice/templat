@@ -10,9 +10,12 @@
 #include "TempLat/lattice/algebra/spacestateinterface.h"
 #include "TempLat/lattice/algebra/helpers/confirmspace.h"
 #include "TempLat/lattice/algebra/helpers/ghostshunter.h"
+#include "TempLat/lattice/memory/memorytoolbox.h"
+#include "TempLat/util/exception.h"
 
 namespace TempLat
 {
+  MakeException(AveragerWrongSpace);
 
   /** @brief A class which
    * Average Routimes common to single field and list averager.
@@ -20,8 +23,6 @@ namespace TempLat
    *
    * Unit test: ctest -R test-averagerhelper
    **/
-  MakeException(AveragerWrongSpace);
-
   template <typename vType, bool isComplexValued> class AveragerHelper
   {
   public:
@@ -60,21 +61,17 @@ namespace TempLat
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
 
-    template <bool forComplex = isComplexValued, typename std::enable_if<forComplex>::type *dummy = nullptr>
     static vType normalizeTypeSpecific(vType value, HermitianValueAccounting accounting)
     {
-      const double normRe = accounting.getRealValueCount();
-      const double normIm = accounting.getImaginaryValueCount();
+      if constexpr (isComplexValued) {
+        const double normRe = accounting.getRealValueCount();
+        const double normIm = accounting.getImaginaryValueCount();
 
-      return vType(value.real() / normRe, value.imag() / normIm);
-    }
-
-    template <bool forComplex = isComplexValued, typename std::enable_if<!forComplex>::type *dummy = nullptr>
-    static vType normalizeTypeSpecific(vType value, HermitianValueAccounting accounting)
-    {
-      const double normRe = accounting.getRealValueCount();
-
-      return value / normRe;
+        return vType(value.real() / normRe, value.imag() / normIm);
+      } else {
+        const double normRe = accounting.getRealValueCount();
+        return value / normRe;
+      }
     }
   };
 } // namespace TempLat

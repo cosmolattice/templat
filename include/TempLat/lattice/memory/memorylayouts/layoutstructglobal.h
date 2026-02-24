@@ -7,9 +7,10 @@
 
 // File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
 
+#include "TempLat/parallel/device.h"
+
 namespace TempLat
 {
-
   // Forward declaration of LayoutStruct template
   template <size_t NDim> struct LayoutStruct;
 

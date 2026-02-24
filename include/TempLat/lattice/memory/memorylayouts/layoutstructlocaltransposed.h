@@ -10,6 +10,7 @@
 #include "TempLat/util/exception.h"
 #include "TempLat/lattice/memory/memorylayouts/layoutstructlocal.h"
 #include "TempLat/lattice/memory/memorylayouts/transpositionmap.h"
+#include "TempLat/parallel/device.h"
 
 namespace TempLat
 {

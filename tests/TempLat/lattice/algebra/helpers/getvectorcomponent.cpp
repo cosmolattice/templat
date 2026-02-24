@@ -23,15 +23,15 @@ namespace TempLat
   {
     auto toolBox = MemoryToolBox<3>::makeShared(32, 1);
     toolBox->setVerbose();
-    FieldCollection<Field<3, double>, double, 3> fc("abcdefg", toolBox);
+    FieldCollection<Field<3, double>, 3> fc("abcdefg", toolBox);
 
     fc[1] = 1;
     fc[2].inFourierSpace() = 2;
     tdd.verify(fc[1].isFourierSpace() == false);
     tdd.verify(fc[2].isFourierSpace() == true);
 
-    auto test1 = GetVectorComponentHelper<1, FieldCollection<Field<3, double>, double, 3>>(fc);
-    auto test2 = GetVectorComponentHelper<2, FieldCollection<Field<3, double>, double, 3>>(fc);
+    auto test1 = GetVectorComponentHelper<1, FieldCollection<Field<3, double>, 3>>(fc);
+    auto test2 = GetVectorComponentHelper<2, FieldCollection<Field<3, double>, 3>>(fc);
 
     auto test_wavenumber = GetVectorComponentHelper<1, WaveNumber<3>>(WaveNumber<3>(toolBox));
 
@@ -51,7 +51,6 @@ namespace TempLat
 
     tdd.verify(test1.toString() == "abcdefg_1(x)");
   }
-
 } // namespace TempLat
 
 namespace

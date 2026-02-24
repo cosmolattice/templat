@@ -11,6 +11,7 @@
 
 #include <cmath>
 #include <cstring>
+#include <string>
 
 namespace TempLat
 {
@@ -24,7 +25,8 @@ namespace TempLat
   {
   public:
     template <typename T>
-    static inline typename std::enable_if<std::is_floating_point<T>::value, std::string>::type format(T value)
+      requires std::is_floating_point_v<T>
+    static inline std::string format(T value)
     {
       char buffer[128];
       std::memset(buffer, 0, 128);
