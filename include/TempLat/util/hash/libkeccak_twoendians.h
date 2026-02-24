@@ -24,9 +24,9 @@
 
 namespace TempLat::KECCAK
 {
-    /* prepended CLAT_ in order to avoid conflicts with preprocessor definitions. */
-    namespace CLAT_LITTLE_ENDIAN
-    {
+  /* prepended CLAT_ in order to avoid conflicts with preprocessor definitions. */
+  namespace CLAT_LITTLE_ENDIAN
+  {
 #ifndef LITTLE_ENDIAN
 /* need to define this if your platform is LITTLE_ENDIAN (most user machines are) when including true keccak */
 #define LITTLE_ENDIAN
@@ -40,9 +40,9 @@ namespace TempLat::KECCAK
 #undef REMOVEENDIANAGAIN
 #endif
 
-    } // namespace CLAT_LITTLE_ENDIAN
-    namespace CLAT_BIG_ENDIAN
-    {
+  } // namespace CLAT_LITTLE_ENDIAN
+  namespace CLAT_BIG_ENDIAN
+  {
 #ifdef LITTLE_ENDIAN
 #undef LITTLE_ENDIAN
 #define REINSTATEENDIANAGAIN
@@ -54,7 +54,7 @@ namespace TempLat::KECCAK
 #define LITTLE_ENDIAN
 #undef REINSTATEENDIANAGAIN
 #endif
-    } // namespace CLAT_BIG_ENDIAN
+  } // namespace CLAT_BIG_ENDIAN
 } // namespace TempLat::KECCAK
 
 #undef INSIDE_TempLat_UTIL_HASH_LIBKECCAK_TWOENDIANS_H

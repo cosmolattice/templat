@@ -14,22 +14,18 @@
 
 namespace TempLat
 {
-
   /** @brief A namespace which contains symbols such as the epsilon tensor.
    *
    *
    * Unit test: ctest -R test-symbols
    **/
-
   namespace Symbols
   {
-
     template <int I, int J> constexpr DEVICE_FORCEINLINE_FUNCTION auto delta(Tag<I>, Tag<J>) { return ZeroType(); }
 
     template <int I> constexpr DEVICE_FORCEINLINE_FUNCTION auto delta(Tag<I>, Tag<I>) { return OneType(); }
 
-    template <int I, int J, int K>
-    constexpr DEVICE_FORCEINLINE_FUNCTION auto epsilon(Tag<I>, Tag<J>, Tag<K>)
+    template <int I, int J, int K> constexpr DEVICE_FORCEINLINE_FUNCTION auto epsilon(Tag<I>, Tag<J>, Tag<K>)
     {
       return ZeroType();
     }

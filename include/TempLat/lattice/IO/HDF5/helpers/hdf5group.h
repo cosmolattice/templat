@@ -16,13 +16,6 @@
 
 namespace TempLat
 {
-
-  /** @brief A class which overloads hdf5 groups.
-   *
-   *
-   * Unit test: ctest -R test-hdf5group
-   **/
-
   herr_t print_dataset_name(hid_t group_id, const char *name, const H5L_info_t *info, void *op_data)
   {
     (void)info;
@@ -45,6 +38,11 @@ namespace TempLat
     return 0;
   }
 
+  /** @brief A class which implements an HDF5 group, which can contain datasets and other groups.
+   *
+   *
+   * Unit test: ctest -R test-hdf5group
+   **/
   class HDF5Group : public HDF5Object
   {
   public:
@@ -102,7 +100,7 @@ namespace TempLat
       H5Pset_fill_time(prop, H5D_FILL_TIME_NEVER);
 
       HDF5TimeSeries<T> ret(H5Dcreate2(mId, name.c_str(), HDF5Type<typename std_atomic_type<T>::type>().type,
-                                        dataspace_id, H5P_DEFAULT, prop, H5P_DEFAULT));
+                                       dataspace_id, H5P_DEFAULT, prop, H5P_DEFAULT));
 
       H5Pclose(prop);
       H5Sclose(dataspace_id);
@@ -130,7 +128,6 @@ namespace TempLat
 
   private:
     bool alreadyClosed;
-    // Put all member variables and private methods here. These may change arbitrarily.
   };
 } // namespace TempLat
 

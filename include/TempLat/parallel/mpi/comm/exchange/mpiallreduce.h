@@ -133,7 +133,8 @@ namespace TempLat
 
 #else
     /** @brief Dummy's for the MPI-less compilation. */
-    template <typename T> const T &Allreduce(const T &whatever, MPI_Op operation, ptrdiff_t size = 1, int *error = nullptr)
+    template <typename T>
+    const T &Allreduce(const T &whatever, MPI_Op operation, ptrdiff_t size = 1, int *error = nullptr)
     {
       return whatever;
     }
