@@ -1,5 +1,5 @@
 message("") # Blank line for better readability
-message(STATUS "${Yellow}---------- Getting HDF5 ----------${ColorReset}")
+message(STATUS "${BoldYellow}---------- Getting HDF5 ----------${ColorReset}")
 
 # enable FetchContent
 include(FetchContent)
@@ -39,4 +39,4 @@ set(HDF5_LIBRARIES
 message(STATUS "HDF5 available")
 
 message(
-  STATUS "${Yellow}---------- Getting HDF5 DONE ----------${ColorReset}\n")
+  STATUS "${BoldYellow}---------- Getting HDF5 DONE ----------${ColorReset}\n")

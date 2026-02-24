@@ -63,27 +63,3 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 target_compile_options(TempLat INTERFACE -Wall -Wshadow)
-
-# ##############################################################################
-# These flags are deprecated from last version, notify the user if they are
-# still using them.
-# ##############################################################################
-
-if(DEFINED G++OPT)
-  message(
-    FATAL_ERROR
-      "G++OPT is deprecated. Please use CMAKE_BUILD_TYPE=Release or Debug instead, and set NATIVE, SSE, and AVX as needed."
-  )
-endif()
-if(DEFINED G++AVX)
-  message(
-    FATAL_ERROR
-      "G++AVX is deprecated. Please use CMAKE_BUILD_TYPE=Release or Debug instead, and set NATIVE, SSE, and AVX as needed."
-  )
-endif()
-if(DEFINED G++SSE)
-  message(
-    FATAL_ERROR
-      "G++SSE is deprecated. Please use CMAKE_BUILD_TYPE=Release or Debug instead, and set NATIVE, SSE, and AVX as needed."
-  )
-endif()

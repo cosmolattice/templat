@@ -2,7 +2,8 @@
 # Get Kokkos-FFT
 # ##############################################################################
 
-message(STATUS "${Yellow}---------- Getting KokkosFFT ----------${ColorReset}")
+message(
+  STATUS "${BoldYellow}---------- Getting KokkosFFT ----------${ColorReset}")
 
 include(FetchContent)
 FetchContent_Declare(
@@ -15,4 +16,5 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(KokkosFFT)
 
 message(
-  STATUS "${Yellow}---------- Getting KokkosFFT DONE ----------${ColorReset}\n")
+  STATUS
+    "${BoldYellow}---------- Getting KokkosFFT DONE ----------${ColorReset}\n")

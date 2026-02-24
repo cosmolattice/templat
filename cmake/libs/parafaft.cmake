@@ -1,5 +1,6 @@
 message("") # Blank line for better readability
-message(STATUS "${Yellow}---------- Getting ParaFaFT ----------${ColorReset}")
+message(
+  STATUS "${BoldYellow}---------- Getting ParaFaFT ----------${ColorReset}")
 
 # enable FetchContent
 include(FetchContent)
@@ -23,4 +24,5 @@ message(
   STATUS "ParaFaFT available with CUDA=${PARAFAFT_CUDA} HIP=${PARAFAFT_HIP}")
 
 message(
-  STATUS "${Yellow}---------- Getting ParaFaFT DONE ----------${ColorReset}\n")
+  STATUS
+    "${BoldYellow}---------- Getting ParaFaFT DONE ----------${ColorReset}\n")
