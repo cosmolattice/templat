@@ -120,30 +120,3 @@ if(TEMPLAT_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
-
-# ##############################################################################
-# Propagate options to parent project if this is included as a subdirectory
-# ##############################################################################
-
-if(PROJECT_PARENT)
-  return(
-    PROPAGATE
-    # Device options
-    CUDA
-    HIP
-    OpenMP
-    Threads
-    Serial
-    DEVICE_PROVIDER
-    # Library options
-    KOKKOSFFT
-    AUTOBUILD_FFTW
-    HDF5
-    MPI
-    PARAFAFT
-    TEMPLAT_TESTS
-    # Specific library configurations
-    HDF5_BUILD_EXAMPLES
-    HDF5_ENABLE_PARALLEL
-    BUILD_TESTING)
-endif()
