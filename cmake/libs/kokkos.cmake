@@ -17,13 +17,13 @@ set(Kokkos_ENABLE_HIP
     ${HIP}
     CACHE BOOL "")
 set(Kokkos_ENABLE_OPENMP
-    ${OpenMP}
+    ${OPENMP}
     CACHE BOOL "")
 set(Kokkos_ENABLE_THREADS
-    ${Threads}
+    ${PTHREADS}
     CACHE BOOL "")
 set(Kokkos_ENABLE_SERIAL
-    ${Serial}
+    ${NOTHREADING}
     CACHE BOOL "")
 set(Kokkos_ENABLE_TESTS
     OFF

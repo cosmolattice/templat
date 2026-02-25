@@ -16,7 +16,7 @@ if(MPI)
   set(FFTW_CONFIGFLAGS "${FFTW_CONFIGFLAGS} --enable-mpi")
 endif()
 
-if(OpenMP)
+if(OPENMP)
   set(FFTW_CONFIGFLAGS "${FFTW_CONFIGFLAGS} --enable-openmp")
 endif()
 
@@ -102,7 +102,7 @@ endif()
 # Build FFTW (float)
 # ##############################################################################
 
-if(Float)
+if(FLOAT)
   message(
     STATUS
       "Configuring FFTW (float)... (flags: --enable-float --enable-sse ${FFTW_CONFIGFLAGS})"

@@ -7,7 +7,7 @@ find_library(FFTW_THREADS_LIB fftw3_threads)
 mark_as_advanced(FFTW_LIB FFTW_THREADS_LIB)
 
 # If float support is enabled, find the single-precision FFTW libraries.
-if(Float)
+if(FLOAT)
   find_library(FFTWF_LIB fftw3f)
   find_library(FFTWF_THREADS_LIB fftw3f_threads)
   mark_as_advanced(FFTWF_LIB FFTWF_THREADS_LIB)
@@ -18,7 +18,7 @@ if(MPI)
   find_library(FFTW_MPI_LIB fftw3_mpi)
   mark_as_advanced(FFTW_MPI_LIB)
 
-  if(Float)
+  if(FLOAT)
     find_library(FFTWF_MPI_LIB fftw3f_mpi)
     mark_as_advanced(FFTWF_MPI_LIB)
   endif()
@@ -26,11 +26,11 @@ endif()
 
 # Catch an edge case: An enabled OpenMP backend without an OpenMP-enabled FFTW.
 # In this case, we must also find the OpenMP-enabled FFTW libraries.
-if(OpenMP)
+if(OPENMP)
   find_library(FFTW_OPENMP_LIB fftw3_omp)
   mark_as_advanced(FFTW_OPENMP_LIB)
 
-  if(Float)
+  if(FLOAT)
     find_library(FFTWF_OPENMP_LIB fftw3f_omp)
     mark_as_advanced(FFTWF_OPENMP_LIB)
   endif()
@@ -48,22 +48,22 @@ set(FFTW_LIBRARIES "")
 # MPI wrappers depend on the core libraries, so they must come first.
 if(MPI)
   list(APPEND FFTW_LIBRARIES ${FFTW_MPI_LIB})
-  if(Float)
+  if(FLOAT)
     list(APPEND FFTW_LIBRARIES ${FFTWF_MPI_LIB})
   endif()
 endif()
 
 # OpenMP wrappers also depend on the core libraries.
-if(OpenMP)
+if(OPENMP)
   list(APPEND FFTW_LIBRARIES ${FFTW_OPENMP_LIB})
-  if(Float)
+  if(FLOAT)
     list(APPEND FFTW_LIBRARIES ${FFTWF_OPENMP_LIB})
   endif()
 endif()
 
 # Threads and core come last (threads depends on core).
 list(APPEND FFTW_LIBRARIES ${FFTW_THREADS_LIB} ${FFTW_LIB})
-if(Float)
+if(FLOAT)
   list(APPEND FFTW_LIBRARIES ${FFTWF_THREADS_LIB} ${FFTWF_LIB})
 endif()
 
