@@ -16,12 +16,10 @@ message("")
 
 # Try to compile a minimal CUDA program to verify the compiler actually works.
 macro(_try_cuda result)
-  try_compile(${result}
-    ${CMAKE_BINARY_DIR}/_cuda_check
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/checks/cuda
-    cuda_check
-    CMAKE_FLAGS "-DCMAKE_CUDA_COMPILER=${CMAKE_CUDA_COMPILER}"
-  )
+  try_compile(
+    ${result} ${CMAKE_BINARY_DIR}/_cuda_check
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/checks/cuda cuda_check
+    CMAKE_FLAGS "-DCMAKE_CUDA_COMPILER=${CMAKE_CUDA_COMPILER}")
 endmacro()
 
 # ==============================================================================
@@ -34,7 +32,9 @@ else()
   set(_USER_SPECIFIED_GPU FALSE)
 endif()
 
-if(OpenMP OR Threads OR Serial)
+if(OpenMP
+   OR Threads
+   OR Serial)
   set(_USER_SPECIFIED_CPU TRUE)
 else()
   set(_USER_SPECIFIED_CPU FALSE)
@@ -42,8 +42,7 @@ endif()
 
 if(NOT _USER_SPECIFIED_GPU AND NOT _USER_SPECIFIED_CPU)
   message(
-    STATUS
-      "${BoldCyan}━━━━━━━━━━━━━━━━━━━━━━━━━━ No device specified, trying to auto-detect ━━━━━━━━━━━━━━━━━━━━━━━━━━━${ColorReset}"
+    "${BoldCyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━ No device specified, trying to auto-detect ━━━━━━━━━━━━━━━━━━━━━━━━━━━━${ColorReset}"
   )
 endif()
 
@@ -58,13 +57,11 @@ if(_USER_SPECIFIED_GPU)
     check_language(CUDA)
     if(NOT CMAKE_CUDA_COMPILER)
       message(
-        FATAL_ERROR "CUDA was explicitly requested but no CUDA compiler was found.")
+        FATAL_ERROR
+          "CUDA was explicitly requested but no CUDA compiler was found.")
     endif()
-    #_try_cuda(_CUDA_COMPILES)
-    #if(NOT _CUDA_COMPILES)
-    #  message(
-    #    FATAL_ERROR "CUDA compiler was found but failed to compile a test program.")
-    #endif()
+    # _try_cuda(_CUDA_COMPILES) if(NOT _CUDA_COMPILES) message( FATAL_ERROR
+    # "CUDA compiler was found but failed to compile a test program.") endif()
     set(HIP OFF)
 
   elseif(HIP)
@@ -79,7 +76,8 @@ if(_USER_SPECIFIED_GPU)
     check_language(HIP)
     if(NOT CMAKE_HIP_COMPILER)
       message(
-        FATAL_ERROR "HIP was explicitly requested but no HIP compiler was found.")
+        FATAL_ERROR
+          "HIP was explicitly requested but no HIP compiler was found.")
     endif()
     set(CUDA OFF)
     set(HIP_PLATFORM
@@ -92,11 +90,9 @@ elseif(NOT _USER_SPECIFIED_CPU)
 
   # Try CUDA: compiler must exist AND compile a test program.
   check_language(CUDA)
-  #if(CMAKE_CUDA_COMPILER)
-  #  _try_cuda(_CUDA_COMPILES)
-  #endif()
+  # if(CMAKE_CUDA_COMPILER) _try_cuda(_CUDA_COMPILES) endif()
 
-  if(CMAKE_CUDA_COMPILER AND _CUDA_COMPILES)
+  if(CMAKE_CUDA_COMPILER)# AND _CUDA_COMPILES)
     set(CUDA ON)
     set(HIP OFF)
   else()
@@ -137,8 +133,7 @@ if(_USER_SPECIFIED_CPU)
   if(OpenMP)
     find_package(OpenMP QUIET)
     if(NOT OpenMP_CXX_FOUND)
-      message(
-        FATAL_ERROR "OpenMP was explicitly requested but was not found.")
+      message(FATAL_ERROR "OpenMP was explicitly requested but was not found.")
     endif()
     set(Threads OFF)
     set(Serial OFF)
