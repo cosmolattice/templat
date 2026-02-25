@@ -27,7 +27,7 @@ namespace TempLat
    **/
   template <typename dummy = void> class RandomUniform
   {
-    using RNG2 = r123::Philox2x32;
+    using RNG2 = r123::Philox2x64;
     using INT2 = typename RNG2::ctr_type::value_type;
 
   public:

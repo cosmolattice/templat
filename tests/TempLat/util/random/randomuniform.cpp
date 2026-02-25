@@ -12,7 +12,6 @@
 
 namespace TempLat
 {
-
   struct RandomUniformTester {
     static void Test(TDDAssertion &tdd);
   };
@@ -29,21 +28,21 @@ namespace TempLat
       device::iteration::reduce<1>(
           "RandomUniformTester", {0}, {N},
           DEVICE_LAMBDA(device::IdxArray<1> i, double &sum) { sum += prng.get(i[0], i[0], 0); }, x);
-      tdd.verify(AlmostEqual(x, 500102.3901097552152350545));
+      tdd.verify(AlmostEqual(x, 500167.407740739873));
       device::iteration::reduce<1>(
           "RandomUniformTester", {0}, {N},
           DEVICE_LAMBDA(device::IdxArray<1> i, double &sum) { sum += prng.get(i[0], i[0], 1); }, x);
-      tdd.verify(AlmostEqual(x, 499372.8769075584132224321));
+      tdd.verify(AlmostEqual(x, 499917.024724008515));
 
       // And let's do that again:
       device::iteration::reduce<1>(
           "RandomUniformTester", {0}, {N},
           DEVICE_LAMBDA(device::IdxArray<1> i, double &sum) { sum += prng.get(i[0], i[0], 0); }, x);
-      tdd.verify(AlmostEqual(x, 500102.3901097552152350545));
+      tdd.verify(AlmostEqual(x, 500167.407740739873));
       device::iteration::reduce<1>(
           "RandomUniformTester", {0}, {N},
           DEVICE_LAMBDA(device::IdxArray<1> i, double &sum) { sum += prng.get(i[0], i[0], 1); }, x);
-      tdd.verify(AlmostEqual(x, 499372.8769075584132224321));
+      tdd.verify(AlmostEqual(x, 499917.024724008515));
 
       // Just a brief check, that all generated numbers are different
       device::memory::NDView<1, double> a("a", 10);

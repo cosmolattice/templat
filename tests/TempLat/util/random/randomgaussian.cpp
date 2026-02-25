@@ -41,7 +41,7 @@ namespace TempLat
         },
         x);
 
-    tdd.verify(AlmostEqual(x, 2672.0293294442953992984257638454));
+    tdd.verify(AlmostEqual(x, -10356.9192464654188));
 
     // Test saveState/loadState round-trip
     RandomGaussian rng("serialization_test");
