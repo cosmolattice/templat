@@ -71,7 +71,6 @@ namespace TempLat
 
     virtual ~ParafaftPlanHolder()
     {
-      say << "ParafaftPlanHolder is correctly being destructed.\n";
       // Parafaft cleans up internally via its destructor
     }
 

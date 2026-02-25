@@ -83,7 +83,7 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     FFTLibrarySelector(MPICartesianGroup group, const device::IdxArray<NDim> &nGridPoints,
                        bool forbidTransposition = false)
-        : mGroup(group), mNGridPoints(nGridPoints), mLayout(mNGridPoints), madePlansFloat(false),
+        : mGroup(group), mNGridPoints(nGridPoints), theLibrary(nullptr), mLayout(mNGridPoints), madePlansFloat(false),
           madePlansDouble(false), verbose(false)
     {
       /* here we take the decisions, although the decision to split the group has been made already. */
@@ -101,32 +101,37 @@ namespace TempLat
       [[maybe_unused]] constexpr bool haveKOKKOSFFT = false;
 #endif
 
-      // Priority: Parafaft > KokkosFFT > FFTW (when multi-dimensional split needed)
-// MPI case
+      // Priority: ParaFaFT > KokkosFFT > FFTW (when multi-dimensional split needed)
+
+      // First, the MPI case (ParaFaFT)
+
 #ifdef HAVE_MPI
 #ifdef HAVE_PARAFAFT
       if constexpr (haveParafaft && (NDim >= 2)) {
-        theLibrary = std::make_shared<ParafaftInterface<NDim>>();
-        backend = "Parafaft";
-      } else
+        if (group.size() > 1) {
+          theLibrary = std::make_shared<ParafaftInterface<NDim>>();
+          backend = "Parafaft";
+        }
+      }
 #endif
 #endif // HAVE_MPI
-      {
+
+      // KokkosFFT for single rank, if available and supported dimension
+
 #ifdef HAVE_KOKKOSFFT
+      if (theLibrary == nullptr && group.size() == 1) {
         if constexpr (haveKOKKOSFFT && (NDim <= 3)) {
-          if (group.size() == 1) {
-            theLibrary = std::make_shared<KokkosFFTInterface<NDim>>();
-            backend = "KokkosFFT";
-          } else {
-            theLibrary = std::make_shared<FFTWInterface<NDim>>();
-            backend = "FFTW";
-          }
-        } else
-#endif // HAVE_KOKKOSFFT
-        {
-          theLibrary = std::make_shared<FFTWInterface<NDim>>();
-          backend = "FFTW";
+          theLibrary = std::make_shared<KokkosFFTInterface<NDim>>();
+          backend = "KokkosFFT";
         }
+      }
+#endif // HAVE_KOKKOSFFT
+
+      // Final fallback to FFTW
+
+      if (theLibrary == nullptr) {
+        theLibrary = std::make_shared<FFTWInterface<NDim>>();
+        backend = "FFTW";
       }
       if (mGroup.getRank() == 0) sayShort << "Using " << backend << " backend for FFTs.\n";
       mLayout = theLibrary->computeLocalSizes(mGroup, mNGridPoints, forbidTransposition);
