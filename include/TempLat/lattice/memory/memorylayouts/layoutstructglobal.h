@@ -38,14 +38,13 @@ namespace TempLat
     DEVICE_FORCEINLINE_FUNCTION
     const device::IdxArray<NDim> &getGlobalSizes() const { return mGlobalSizes; }
 
-    /** returns the largest possible distance from the origin. mSignConversionMidpoint holds the
-     *  maximum value of each dimension. Check that in localIndexToGlobalCoordinate.
+    /** @brief returns the largest possible distance from the origin.
      */
     template <typename T = double> DEVICE_FORCEINLINE_FUNCTION T getMaxRadius() const
     {
       T r2 = 0;
-      for (auto &&it : mSignConversionMidpoint)
-        r2 += it * it;
+      for (size_t i = 0; i < NDim; ++i)
+        r2 += powr<2>(mGlobalSizes[i] / 2);
       return device::sqrt(r2);
     }
 
@@ -91,6 +90,8 @@ namespace TempLat
               << "  SignConversionMidpoint: " << ls.mSignConversionMidpoint << "\n";
       return ostream;
     }
+
+    void setSignConversionMidpoint(const device::IdxArray<NDim> &newMidpoint) { mSignConversionMidpoint = newMidpoint; }
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */

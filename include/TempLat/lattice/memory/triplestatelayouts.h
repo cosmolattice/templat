@@ -40,6 +40,7 @@ namespace TempLat
       mConfigSpaceWithGhosts_layout = mFFTLayout.configurationSpace;
       device::array<device::IdxArray<2>, NDim> configPadding{};
       device::IdxArray<NDim> localConfigSize{};
+      const auto nGridPoints = mFFTLayout.getNGridPoints();
       for (size_t i = 0; i < NDim; ++i) {
         configPadding[i][0] = mNGhostCells;
         configPadding[i][1] = mNGhostCells;
@@ -48,6 +49,7 @@ namespace TempLat
       mConfigSpaceWithGhosts_layout.setLocalSizes(localConfigSize);
       mConfigSpaceWithGhosts_layout.setNGhosts(mNGhostCells);
       mConfigSpaceWithGhosts_layout.setPadding(configPadding);
+      mConfigSpaceWithGhosts_layout.setSignConversionMidpoint(nGridPoints);
 
       mNecessaryMemoryAllocation = computeMemSize();
     }

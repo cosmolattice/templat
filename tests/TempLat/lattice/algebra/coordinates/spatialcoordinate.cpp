@@ -20,7 +20,7 @@ namespace TempLat
 
   template <size_t NDim> inline void SpatialCoordinateTester<NDim>::Test(TDDAssertion &tdd)
   {
-    const ptrdiff_t nGrid = 16, nGhost = 2;
+    const ptrdiff_t nGrid = 8, nGhost = 2;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
@@ -59,14 +59,24 @@ namespace TempLat
       device::apply([&](auto... i) { layout.putSpatialLocationFromMemoryIndexInto(global_idx, i...); },
                     idx_with_ghosts);
 
+      device::IdxArray<NDim> manual_global_idx;
+      const auto local_starts = layout.getLocalStarts();
+      for (size_t d = 0; d < NDim; ++d) {
+        manual_global_idx[d] = local_idx[d] + local_starts[d];
+      }
+
       bool this_correct = true;
 
       for (size_t d = 0; d < NDim; ++d) {
         const double expected_val = static_cast<double>(global_idx[d]);
+        const double manual_expected_val = static_cast<double>(manual_global_idx[d]);
 
         this_correct &= (phi_views[d](indices...) == expected_val);
+        this_correct &= (phi_views[d](indices...) == manual_expected_val);
         this_correct &=
             (device::apply([&](auto... i) { return DoEval::eval(x, i...)[d]; }, idx_with_ghosts) == expected_val);
+        this_correct &= (device::apply([&](auto... i) { return DoEval::eval(x, i...)[d]; }, idx_with_ghosts) ==
+                         manual_expected_val);
       }
 
       correct &= this_correct;
@@ -88,6 +98,12 @@ namespace TempLat
           ss << "phi[" << d << "] = " << phi_views[d](indices...);
           if (d < NDim - 1) ss << ", ";
         }
+        ss << " (expected ";
+        for (size_t d = 0; d < NDim; ++d) {
+          ss << manual_global_idx[d];
+          if (d < NDim - 1) ss << ", ";
+        }
+        ss << ")";
         ss << "\n";
         sayMPI << ss.str();
       }

@@ -108,6 +108,11 @@ namespace TempLat
 
     void setLocalSizes(const device::IdxArray<NDim> &input) { getTransposed().setLocalSizes(input); }
 
+    void setSignConversionMidpoint(const device::IdxArray<NDim> &newMidpoint)
+    {
+      getGlobal().setSignConversionMidpoint(newMidpoint);
+    }
+
     void setNGhosts(const device::Idx &nGhosts) { getTransposed().setNGhosts(nGhosts); }
 
     void setPadding(const device::array<device::IdxArray<2>, NDim> &padding) { getLocal().setPadding(padding); }
