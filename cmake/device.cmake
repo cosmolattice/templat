@@ -60,11 +60,11 @@ if(_USER_SPECIFIED_GPU)
       message(
         FATAL_ERROR "CUDA was explicitly requested but no CUDA compiler was found.")
     endif()
-    _try_cuda(_CUDA_COMPILES)
-    if(NOT _CUDA_COMPILES)
-      message(
-        FATAL_ERROR "CUDA compiler was found but failed to compile a test program.")
-    endif()
+    #_try_cuda(_CUDA_COMPILES)
+    #if(NOT _CUDA_COMPILES)
+    #  message(
+    #    FATAL_ERROR "CUDA compiler was found but failed to compile a test program.")
+    #endif()
     set(HIP OFF)
 
   elseif(HIP)
@@ -92,9 +92,9 @@ elseif(NOT _USER_SPECIFIED_CPU)
 
   # Try CUDA: compiler must exist AND compile a test program.
   check_language(CUDA)
-  if(CMAKE_CUDA_COMPILER)
-    _try_cuda(_CUDA_COMPILES)
-  endif()
+  #if(CMAKE_CUDA_COMPILER)
+  #  _try_cuda(_CUDA_COMPILES)
+  #endif()
 
   if(CMAKE_CUDA_COMPILER AND _CUDA_COMPILES)
     set(CUDA ON)

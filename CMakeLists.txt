@@ -150,6 +150,11 @@ if(MPI AND PARAFAFT)
   target_link_libraries(TempLat INTERFACE parafaft::parafaft)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/parafaft.cmake)
   target_compile_definitions(TempLat INTERFACE HAVE_PARAFAFT)
+elseif(PARAFAFT)
+  message(
+    WARNING
+      "ParaFaFT requires MPI. ParaFaFT will not be enabled since MPI was not enabled."
+  )
 endif()
 
 target_include_directories(
