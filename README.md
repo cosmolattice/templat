@@ -26,9 +26,7 @@ add_executable(my_executable main.cpp)
 # Link your executable against TempLat
 target_link_libraries(my_executable PRIVATE TempLat::TempLat)
 ```
-
 As an example, your `main.cpp` can look like this:
-
 ```c++
 #include "TempLat/session/sessionguard.h"
 
@@ -41,15 +39,18 @@ int main(int argc, char *argv[])
   return 0;
 };
 ```
-
 And then you can build and run your project as usual with CMake:
-
-```
+```bash
 mkdir build
 cd build
 cmake ..
 make -j
 ./my_executable
+```
+Which should output
+```
+(0.000s) MPI Rank 0 - main.cpp:7 -->
+Hello, TempLat!
 ```
 
 
