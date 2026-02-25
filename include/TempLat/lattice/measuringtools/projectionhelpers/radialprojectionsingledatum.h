@@ -46,12 +46,12 @@ namespace TempLat
 
     std::string getHeader(ptrdiff_t start, std::string prefix, bool withMultiplicity, int verbosity = 0) const
     {
-      return std::to_string(start) + ": " + prefix + "Average " +
+      return std::to_string(start) + ":" + prefix + "Average " +
              (verbosity == 2
-                  ? std::to_string(start + 1) + ": " + prefix + "SampleVariance, " + std::to_string(start + 2) + ": " +
-                        prefix + "Minimum, " + std::to_string(start + 3) + ": " + prefix + "Maximum" +
-                        (withMultiplicity ? (", " + std::to_string(start + 4) + ": multiplicity") : "")
-                  : (withMultiplicity ? (", " + std::to_string(start + 1) + ": multiplicity") : ""));
+                  ? std::to_string(start + 1) + ":" + prefix + "SampleVariance " + std::to_string(start + 2) + ":" +
+                        prefix + "Minimum " + std::to_string(start + 3) + ":" + prefix + "Maximum" +
+                        (withMultiplicity ? (" " + std::to_string(start + 4) + ":multiplicity") : "")
+                  : (withMultiplicity ? (" " + std::to_string(start + 1) + ":multiplicity") : ""));
     }
 
     std::string toString(bool withMultiplicity = false, int verbosity = 0, bool fourierMult = true) const
