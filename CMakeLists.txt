@@ -2,21 +2,20 @@
 # CMake configuration for TempLat, a modern C++ template library for lattice
 # computations.
 #
-# CMake Options: - PARAFAFT: compile TempLat with ParaFaft support for parallel
-# FFTs. Default: OFF - MPI: compile TempLat with MPI support. Default: OFF -
-# HDF5: compile TempLat with HDF5 support. Default: OFF - TEMPLAT_TESTS: enable
-# TempLat's tests. Default: OFF - DEVICE_PROVIDER: switches the backend for
-# parallelization. Default: Kokkos - CUDA: compile with CUDA support for GPU
-# parallelization. Default: OFF - HIP: compile with HIP support for GPU
-# parallelization. Default: OFF - OpenMP: compile with OpenMP support for CPU
-# parallelization. Default: OFF - Threads: compile with C++ threads support for
-# CPU parallelization. Default: OFF - Serial: compile without parallelization.
-# Default: OFF By default, TempLat will try to auto-detect the system's
-# capabilities and choose the backend. - NATIVE: pass --march=native to the
-# compiler for better performance. Default: ON on non-Darwin systems, OFF on
-# Darwin (macOS) - KOKKOSFFT: compile TempLat with KokkosFFT support for
-# single-node GPU FFTs. Default: ON when CUDA or HIP support is enabled, OFF
-# otherwise
+# CMake Options: 
+# - PARAFAFT: compile TempLat with ParaFaft support for parallel FFTs. Default: OFF 
+# - MPI: compile TempLat with MPI support. Default: OFF 
+# - HDF5: compile TempLat with HDF5 support. Default: OFF 
+# - TEMPLAT_TESTS: enable TempLat's tests. Default: OFF 
+# - DEVICE_PROVIDER: switches the backend for parallelization. Default: Kokkos 
+#   - CUDA: compile with CUDA support for GPU parallelization. Default: OFF 
+#   - HIP: compile with HIP support for GPU parallelization. Default: OFF 
+#   - OpenMP: compile with OpenMP support for CPU parallelization. Default: OFF 
+#   - Threads: compile with C++ threads support for CPU parallelization. Default: OFF 
+#   - Serial: compile without parallelization. Default: OFF
+# By default, TempLat will try to auto-detect the system's capabilities and choose the backend. 
+# - NATIVE: pass --march=native to the compiler for better performance. Default: ON on non-Darwin systems, OFF on Darwin (macOS)
+# - KOKKOSFFT: compile TempLat with KokkosFFT support for single-node GPU FFTs. Default: ON when CUDA or HIP support is enabled, OFF otherwise
 #
 # ##############################################################################
 
@@ -60,6 +59,8 @@ set(DEVICE_PROVIDER
 
 option(AUTOBUILD_FFTW
        "Automatically build FFTW from source if not found on the system" OFF)
+option(AUTOBUILD_HDF5
+       "Automatically build HDF5 from source if not found on the system" OFF)
 
 option(HDF5 "Use HDF5 for I/O" OFF)
 option(MPI "Use MPI for parallelization" OFF)
