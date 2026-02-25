@@ -15,7 +15,7 @@ set(PARAFAFT_HIP
 # declare ParaFaFT
 FetchContent_Declare(
   ParaFaFT # name of the content
-  GIT_REPOSITORY https://github.com/aflorio2/parafaft.git # the repository
+  GIT_REPOSITORY https://github.com/cosmolattice/parafaft.git # the repository
   GIT_TAG main # the tag
 )
 # make available
