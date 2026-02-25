@@ -11,6 +11,7 @@
 
 #include <cmath>
 #include <cstring>
+#include <string>
 
 namespace TempLat
 {
@@ -24,7 +25,8 @@ namespace TempLat
   {
   public:
     template <typename T>
-    static inline typename std::enable_if<std::is_floating_point<T>::value, std::string>::type format(T value)
+      requires std::is_floating_point_v<T>
+    static inline std::string format(T value)
     {
       char buffer[128];
       std::memset(buffer, 0, 128);
@@ -45,8 +47,8 @@ namespace TempLat
     }
 
     template <typename T>
-    static inline typename std::enable_if<std::is_floating_point<T>::value, std::string>::type
-    format_more(T value, int ndig)
+      requires std::is_floating_point<T>::value
+    static inline std::string format_more(T value, int ndig)
     {
       char buffer[128];
       std::memset(buffer, 0, 128);
@@ -139,7 +141,6 @@ namespace TempLat
       }
     }
   };
-
 } // namespace TempLat
 
 #endif

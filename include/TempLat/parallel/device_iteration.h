@@ -25,14 +25,14 @@ static_assert(false, "No device iteration backend selected.");
 
 namespace TempLat::device::iteration
 {
-      using export_device_namespace::iteration::fence;
-      using export_device_namespace::iteration::foreach;
-      using export_device_namespace::iteration::reduce;
+  using export_device_namespace::iteration::fence;
+  using export_device_namespace::iteration::foreach;
+  using export_device_namespace::iteration::reduce;
 
-      using export_device_namespace::iteration::Max;
-      using export_device_namespace::iteration::Min;
-      using export_device_namespace::iteration::Prod;
-      using export_device_namespace::iteration::Sum;
+  using export_device_namespace::iteration::Max;
+  using export_device_namespace::iteration::Min;
+  using export_device_namespace::iteration::Prod;
+  using export_device_namespace::iteration::Sum;
 } // namespace TempLat::device::iteration
 
 #endif

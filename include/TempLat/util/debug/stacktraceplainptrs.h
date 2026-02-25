@@ -54,11 +54,10 @@
 
 namespace TempLat
 {
-
   /** @brief Templated size: just throw in your array and we fill it to at most its size. Plain backtrace version. */
   template <size_t N>
-  inline typename std::enable_if<N != 1u && N != 0u && !TEMPLATEUNWIND, void>::type
-  StacktracePlainptrs(std::array<void *, N> *result, int *addrlen)
+    requires(N != 1 && N != 0 && !TEMPLATEUNWIND)
+  inline void StacktracePlainptrs(std::array<void *, N> *result, int *addrlen)
   {
 #ifdef TempLatPOSIXDETECTED
 
@@ -75,8 +74,8 @@ namespace TempLat
   /** @brief Templated size: just throw in your array and we fill it to at most its size. Libunwind (better!) version.
    */
   template <size_t N>
-  inline typename std::enable_if<N != 1u && N != 0u && TEMPLATEUNWIND, void>::type
-  StacktracePlainptrs(std::array<void *, N> *result, int *addrlen)
+    requires(N != 1 && N != 0 && TEMPLATEUNWIND)
+  inline void StacktracePlainptrs(std::array<void *, N> *result, int *addrlen)
   {
 #ifdef HAVE_LIBUNWIND
 

@@ -13,18 +13,11 @@
 
 namespace TempLat
 {
+  template <typename T> struct is_std_vector : std::false_type {
+  };
 
-  /** @brief A class which flattens a std vector.
-   *
-   * Unit test: ctest -R test-flattenstd
-   **/
-
-  // Trait to detect std::vector
-  template <typename T>
-  struct is_std_vector : std::false_type {};
-
-  template <typename T, typename A>
-  struct is_std_vector<std::vector<T, A>> : std::true_type {};
+  template <typename T, typename A> struct is_std_vector<std::vector<T, A>> : std::true_type {
+  };
 
   // Recursive flatten function for atomic types (leaf)
   template <typename T>
@@ -43,9 +36,11 @@ namespace TempLat
     }
   }
 
-  // Helper wrapper
-  template <typename NestedVec>
-  std::vector<typename std_atomic_type<NestedVec>::type> flatten(const NestedVec &nested)
+  /** @brief A function which flattens a std::vector.
+   *
+   * Unit test: ctest -R test-flattenstd
+   **/
+  template <typename NestedVec> std::vector<typename std_atomic_type<NestedVec>::type> flatten(const NestedVec &nested)
   {
     using AtomicT = typename std_atomic_type<NestedVec>::type;
     std::vector<AtomicT> flat;

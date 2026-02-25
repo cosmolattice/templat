@@ -22,8 +22,7 @@ namespace TempLat
   namespace Constants
   {
 
-    template <typename T = double>
-    constexpr T pi = std::numbers::pi_v<T>;
+    template <typename T = double> constexpr T pi = std::numbers::pi_v<T>;
 
     // constexpr static T reducedMPlanck = 2.435363e18; //GEV2, PDG value.
     template <typename T = double> constexpr T reducedMPlanck = T(2.435e18); // Agreement between PDG and CODATA

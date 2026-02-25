@@ -12,20 +12,16 @@
 namespace TempLat
 {
 
-  /** @brief A SFINAE class to get the base type of a composite container.
+  /** @brief A SFINAE struct to get the base type of a composite container.
    *
    * Unit test: ctest -R test-stdatomictype
    **/
-
-  // Base case: T is not a container
-  template <typename T, typename = void>
-  struct std_atomic_type {
+  template <typename T, typename = void> struct std_atomic_type {
     using type = T;
   };
 
   // Specialization: T has a nested value_type (i.e. is a container)
-  template <typename T>
-  struct std_atomic_type<T, std::void_t<typename T::value_type>> {
+  template <typename T> struct std_atomic_type<T, std::void_t<typename T::value_type>> {
     using type = typename std_atomic_type<typename T::value_type>::type;
   };
 

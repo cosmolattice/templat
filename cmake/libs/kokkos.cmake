@@ -2,7 +2,10 @@
 # Get Kokkos
 # ##############################################################################
 
-message(STATUS "${Yellow}---------- Getting Kokkos ----------${ColorReset}")
+message(
+  STATUS
+    "${BoldYellow}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching Kokkos ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${ColorReset}"
+)
 
 set(Kokkos_ENABLE_CUDA
     ${CUDA}
@@ -40,4 +43,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Kokkos)
 
 message(
-  STATUS "${Yellow}---------- Getting Kokkos DONE ----------${ColorReset}\n")
+  STATUS
+    "${BoldYellow}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching Kokkos DONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${ColorReset}\n"
+)

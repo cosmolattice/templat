@@ -22,19 +22,18 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
 
     template <typename U>
-    static inline typename std::enable_if<HasAsTupleCat<U>::value, decltype(std::declval<U>().asTupleCat())>::type
-    asTupleCat(U &obj)
+      requires HasAsTupleCat<U>::value
+    static inline auto asTupleCat(U &obj)
     {
       return obj.asTupleCat();
     }
 
-    template <typename U> static inline typename std::enable_if<!HasAsTupleCat<U>::value, U>::type &asTupleCat(U &obj)
+    template <typename U>
+      requires(!HasAsTupleCat<U>::value)
+    static inline auto asTupleCat(U &&obj)
     {
-      return obj;
+      return std::forward<U>(obj);
     }
-
-  private:
-    /* Put all member variables and private methods here. These may change arbitrarily. */
   };
 } // namespace TempLat
 

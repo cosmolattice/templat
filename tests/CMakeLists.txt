@@ -1,15 +1,23 @@
-# ---------- Number of MPI processes ----------
+# ##############################################################################
+# Number of MPI processes
+# ##############################################################################
 set(NPROCESSES
     4
     CACHE STRING "Number of MPI processes used for testing")
 
-# ---------- Helper function ----------
+# ##############################################################################
+# Helper function
+# ##############################################################################
+
 function(add_templat_test execName mainFile)
   add_executable(${execName} ${mainFile})
   target_link_libraries(${execName} PUBLIC TempLat::TempLat)
 endfunction()
 
-# ---------- Discover and register tests ----------
+# ##############################################################################
+# Discover and register tests
+# ##############################################################################
+
 file(GLOB_RECURSE test_sources "${CMAKE_CURRENT_SOURCE_DIR}/TempLat/*/*.cpp"
      "${CMAKE_CURRENT_SOURCE_DIR}/TempLat/*.cpp")
 
@@ -43,4 +51,38 @@ foreach(fn ${test_sources})
   endif()
 
   set_tests_properties(${target_name} PROPERTIES LABELS "${folder_labels}")
+endforeach()
+
+file(GLOB_RECURSE TL_headers
+     "${CMAKE_CURRENT_SOURCE_DIR}/../include/TempLat/*/*.h"
+     "${CMAKE_CURRENT_SOURCE_DIR}/../include/TempLat/*.h")
+
+# A list of files that really do not need tests, e.g. because they just bundle
+# includes.
+set(Allow_missing_tests
+    TempLat/cosmolattice.h TempLat/lattice/algebra/algebra.h
+    TempLat/lattice/algebra/operators/operators.h
+    TempLat/lattice/algebra/su2algebra/su2algebra.h)
+
+foreach(header ${TL_headers})
+  # strip the common prefix
+  cmake_path(RELATIVE_PATH header BASE_DIRECTORY
+             ${CMAKE_CURRENT_SOURCE_DIR}/../include/ OUTPUT_VARIABLE rel_header)
+  # replace .h with .cpp
+  string(REPLACE ".h" ".cpp" test_file "${rel_header}")
+
+  # skip if the file is in the allow list
+  if(rel_header IN_LIST Allow_missing_tests)
+    continue()
+  endif()
+
+  # Otherwise, complain if the corresponding .cpp file does not exist in the
+  # tests directory
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${test_file}")
+    continue() # skip if the corresponding .cpp file already exists
+  else()
+    message(
+      "${BoldMagenta} Header ${rel_header} does not have a corresponding test source file."
+    )
+  endif()
 endforeach()

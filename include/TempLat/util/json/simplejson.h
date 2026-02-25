@@ -27,7 +27,6 @@
 
 namespace json
 {
-
   using std::deque;
   using std::enable_if;
   using std::initializer_list;

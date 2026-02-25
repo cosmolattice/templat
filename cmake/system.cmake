@@ -2,9 +2,18 @@
 # Setting compiler flags depending on the system, build type and compiler.
 # ##############################################################################
 
-set(NATIVE
-    (NOT APPLE)
-    CACHE STRING "Set whether to use -march=native.")
+if(APPLE)
+  set(NATIVE
+      OFF
+      CACHE STRING "Set whether to use -march=native.")
+else()
+  set(NATIVE
+      ON
+      CACHE
+        STRING
+        "Set whether to use -march=native. Default is ON, but on Apple systems this is not supported, so it defaults to OFF."
+  )
+endif()
 set(SSE
     OFF
     CACHE
@@ -54,27 +63,3 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 target_compile_options(TempLat INTERFACE -Wall -Wshadow)
-
-# ##############################################################################
-# These flags are deprecated from last version, notify the user if they are
-# still using them.
-# ##############################################################################
-
-if(DEFINED G++OPT)
-  message(
-    FATAL_ERROR
-      "G++OPT is deprecated. Please use CMAKE_BUILD_TYPE=Release or Debug instead, and set NATIVE, SSE, and AVX as needed."
-  )
-endif()
-if(DEFINED G++AVX)
-  message(
-    FATAL_ERROR
-      "G++AVX is deprecated. Please use CMAKE_BUILD_TYPE=Release or Debug instead, and set NATIVE, SSE, and AVX as needed."
-  )
-endif()
-if(DEFINED G++SSE)
-  message(
-    FATAL_ERROR
-      "G++SSE is deprecated. Please use CMAKE_BUILD_TYPE=Release or Debug instead, and set NATIVE, SSE, and AVX as needed."
-  )
-endif()

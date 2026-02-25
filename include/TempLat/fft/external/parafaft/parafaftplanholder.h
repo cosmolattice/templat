@@ -134,13 +134,15 @@ namespace TempLat
     // Float precision - not supported
 #ifdef HAVE_FFTFLOAT
     template <typename S = T>
-    typename std::enable_if<std::is_same<S, float>::value, void>::type execute_r2c(MemoryBlock<S> &mBlock)
+      requires std::is_same_v<float, S>
+    void execute_r2c(MemoryBlock<S> &mBlock)
     {
       throw ParafaftCompiledWithoutSinglePrecisionSupport("Parafaft does not support single precision.");
     }
 
     template <typename S = T>
-    typename std::enable_if<std::is_same<S, float>::value, void>::type execute_c2r(MemoryBlock<S> &mBlock)
+      requires std::is_same_v<float, S>
+    void execute_c2r(MemoryBlock<S> &mBlock)
     {
       throw ParafaftCompiledWithoutSinglePrecisionSupport("Parafaft does not support single precision.");
     }

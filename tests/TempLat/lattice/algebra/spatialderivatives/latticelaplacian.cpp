@@ -251,7 +251,6 @@ namespace TempLat
 namespace
 {
   TempLat::TDDContainer<TempLat::LatticeLaplacianTester<1>> test1;
-  // TODO 2-Dim fails due to fourier transform - FIND OUT WHY
   TempLat::TDDContainer<TempLat::LatticeLaplacianTester<2>> test2;
   TempLat::TDDContainer<TempLat::LatticeLaplacianTester<3>> test3;
   TempLat::TDDContainer<TempLat::LatticeLaplacianTester<4>> test4;
