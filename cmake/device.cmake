@@ -1,14 +1,14 @@
 # ##############################################################################
 # Find out which backends are available
 #
-# Backends are split into two independent categories:
-#   GPU: CUDA, HIP               (at most one;  priority: CUDA > HIP)
-#   CPU: OpenMP, Threads, Serial  (exactly one;  priority: OpenMP > Threads > Serial)
+# Backends are split into two independent categories: GPU: CUDA, HIP (at most
+# one;  priority: CUDA > HIP) CPU: OPENMP, PTHREADS, NOTHREADING (exactly one;
+# priority: OPENMP > PTHREADS > NOTHREADING)
 #
-# If nothing is specified, both categories are auto-detected.
-# If the user specifies only a GPU backend, the CPU backend is auto-detected.
-# If the user specifies only a CPU backend, no GPU is used.
-# If the user specifies both, we use exactly what was requested.
+# If nothing is specified, both categories are auto-detected. If the user
+# specifies only a GPU backend, the CPU backend is auto-detected. If the user
+# specifies only a CPU backend, no GPU is used. If the user specifies both, we
+# use exactly what was requested.
 # ##############################################################################
 
 include(CheckLanguage)
@@ -32,9 +32,9 @@ else()
   set(_USER_SPECIFIED_GPU FALSE)
 endif()
 
-if(OpenMP
-   OR Threads
-   OR Serial)
+if(OPENMP
+   OR PTHREADS
+   OR NOTHREADING)
   set(_USER_SPECIFIED_CPU TRUE)
 else()
   set(_USER_SPECIFIED_CPU FALSE)
@@ -92,7 +92,7 @@ elseif(NOT _USER_SPECIFIED_CPU)
   check_language(CUDA)
   # if(CMAKE_CUDA_COMPILER) _try_cuda(_CUDA_COMPILES) endif()
 
-  if(CMAKE_CUDA_COMPILER)# AND _CUDA_COMPILES)
+  if(CMAKE_CUDA_COMPILER) # AND _CUDA_COMPILES)
     set(CUDA ON)
     set(HIP OFF)
   else()
@@ -124,27 +124,28 @@ else()
 endif()
 
 # ==============================================================================
-# Phase 2: Resolve CPU backend (OpenMP > Threads > Serial)
+# Phase 2: Resolve CPU backend (OPENMP > PTHREADS > NOTHREADING)
 # ==============================================================================
 
 if(_USER_SPECIFIED_CPU)
   # User explicitly requested a CPU backend — validate it.
 
-  if(OpenMP)
+  if(OPENMP)
     find_package(OpenMP QUIET)
     if(NOT OpenMP_CXX_FOUND)
-      message(FATAL_ERROR "OpenMP was explicitly requested but was not found.")
+      message(
+        FATAL_ERROR "OPENMP was explicitly requested but OpenMP was not found.")
     endif()
-    set(Threads OFF)
-    set(Serial OFF)
+    set(PTHREADS OFF)
+    set(NOTHREADING OFF)
 
-  elseif(Threads)
-    set(OpenMP OFF)
-    set(Serial OFF)
+  elseif(PTHREADS)
+    set(OPENMP OFF)
+    set(NOTHREADING OFF)
 
-  elseif(Serial)
-    set(OpenMP OFF)
-    set(Threads OFF)
+  elseif(NOTHREADING)
+    set(OPENMP OFF)
+    set(PTHREADS OFF)
   endif()
 
 else()
@@ -152,13 +153,13 @@ else()
 
   find_package(OpenMP QUIET)
   if(OpenMP_CXX_FOUND)
-    set(OpenMP ON)
-    set(Threads OFF)
-    set(Serial OFF)
+    set(OPENMP ON)
+    set(PTHREADS OFF)
+    set(NOTHREADING OFF)
   else()
-    set(OpenMP OFF)
-    set(Threads ON)
-    set(Serial OFF)
+    set(OPENMP OFF)
+    set(PTHREADS ON)
+    set(NOTHREADING OFF)
   endif()
 endif()
 
@@ -168,12 +169,12 @@ endif()
 
 if(NOT CUDA
    AND NOT HIP
-   AND NOT OpenMP
-   AND NOT Threads
-   AND NOT Serial)
+   AND NOT OPENMP
+   AND NOT PTHREADS
+   AND NOT NOTHREADING)
   message(
     FATAL_ERROR
-      "No valid device configuration found. Please specify at least one of: CUDA, HIP, OpenMP, Threads, or Serial."
+      "No valid device configuration found. Please specify at least one of: CUDA, HIP, OPENMP, PTHREADS, or NOTHREADING."
   )
 endif()
 
@@ -185,12 +186,12 @@ elseif(HIP)
 endif()
 
 set(_CPU_BACKEND "unknown")
-if(OpenMP)
+if(OPENMP)
   set(_CPU_BACKEND "OpenMP")
-elseif(Threads)
-  set(_CPU_BACKEND "Threads")
-elseif(Serial)
-  set(_CPU_BACKEND "Serial")
+elseif(PTHREADS)
+  set(_CPU_BACKEND "pthreads")
+elseif(NOTHREADING)
+  set(_CPU_BACKEND "no threading")
 endif()
 
 message(

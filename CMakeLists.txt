@@ -7,13 +7,14 @@
 # - MPI: compile TempLat with MPI support. Default: OFF 
 # - HDF5: compile TempLat with HDF5 support. Default: OFF 
 # - TEMPLAT_TESTS: enable TempLat's tests. Default: OFF 
-# - DEVICE_PROVIDER: switches the backend for parallelization. Default: Kokkos 
-#   - CUDA: compile with CUDA support for GPU parallelization. Default: OFF 
-#   - HIP: compile with HIP support for GPU parallelization. Default: OFF 
-#   - OpenMP: compile with OpenMP support for CPU parallelization. Default: OFF 
-#   - Threads: compile with C++ threads support for CPU parallelization. Default: OFF 
-#   - Serial: compile without parallelization. Default: OFF
+# - DEVICE_PROVIDER: switches the backend for parallelization. Default: Kokkos
+#   - CUDA: compile with CUDA support for GPU parallelization. Default: OFF
+#   - HIP: compile with HIP support for GPU parallelization. Default: OFF
+#   - OPENMP: compile with OpenMP support for CPU parallelization. Default: OFF
+#   - PTHREADS: compile with C++ threads support for CPU parallelization. Default: OFF
+#   - NOTHREADING: compile without parallelization. Default: OFF
 # By default, TempLat will try to auto-detect the system's capabilities and choose the backend. 
+# - FLOAT: compile with single-precision FFTW support. Default: OFF
 # - NATIVE: pass --march=native to the compiler for better performance. Default: ON on non-Darwin systems, OFF on Darwin (macOS)
 # - KOKKOSFFT: compile TempLat with KokkosFFT support for single-node GPU FFTs. Default: ON when CUDA or HIP support is enabled, OFF otherwise
 #
@@ -46,11 +47,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(CUDA "Enable CUDA support" OFF)
 option(HIP "Enable HIP support" OFF)
-option(OpenMP "Enable OpenMP support" OFF)
-option(Threads "Enable Threads support" OFF)
-option(Serial "Enable Serial support" OFF)
+option(OPENMP "Enable OpenMP support" OFF)
+option(PTHREADS "Enable pthreads support" OFF)
+option(NOTHREADING "Disable threading" OFF)
 
-option(Float "Enable Float support" OFF)
+option(FLOAT "Enable single-precision (float) FFTW support" OFF)
 
 set(DEVICE_PROVIDER
     "Kokkos"
@@ -108,10 +109,10 @@ target_link_libraries(TempLat INTERFACE Threads::Threads)
 # We need to force on float support for FFTW if KokkosFFT is enabled, since
 # KokkosFFT requires it.
 if(KOKKOSFFT)
-  if(NOT Float)
-    set(Float
+  if(NOT FLOAT)
+    set(FLOAT
         ON
-        CACHE BOOL "Enable Float support for FFTW (required by KokkosFFT)"
+        CACHE BOOL "Enable single-precision (float) FFTW support (required by KokkosFFT)"
               FORCE)
   endif()
 endif()

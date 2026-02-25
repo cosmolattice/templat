@@ -1,4 +1,40 @@
 # ##############################################################################
+# Device option renames (TempLat 1.0 → 1.1)
+# ##############################################################################
+
+if(DEFINED OpenMP AND NOT DEFINED OPENMP)
+  message(
+    WARNING
+      "${BoldMagenta}OpenMP is deprecated. Please use OPENMP instead.${ColorReset}"
+  )
+  set(OPENMP ${OpenMP})
+endif()
+
+if(DEFINED Threads AND NOT DEFINED PTHREADS)
+  message(
+    WARNING
+      "${BoldMagenta}Threads is deprecated. Please use PTHREADS instead.${ColorReset}"
+  )
+  set(PTHREADS ${Threads})
+endif()
+
+if(DEFINED Serial AND NOT DEFINED NOTHREADING)
+  message(
+    WARNING
+      "${BoldMagenta}Serial is deprecated. Please use NOTHREADING instead.${ColorReset}"
+  )
+  set(NOTHREADING ${Serial})
+endif()
+
+if(DEFINED Float AND NOT DEFINED FLOAT)
+  message(
+    WARNING
+      "${BoldMagenta}Float is deprecated. Please use FLOAT instead.${ColorReset}"
+  )
+  set(FLOAT ${Float})
+endif()
+
+# ##############################################################################
 # Dependency handling from CL1.0
 # ##############################################################################
 
