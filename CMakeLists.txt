@@ -67,6 +67,7 @@ option(HDF5 "Use HDF5 for I/O" OFF)
 option(MPI "Use MPI for parallelization" OFF)
 option(PARAFAFT "Use ParaFaft for parallel FFTs" OFF)
 option(TEMPLAT_TESTS "Build TempLat tests" OFF)
+option(TEMPLAT_BENCH "Build TempLat benchmarks" OFF)
 
 # ##############################################################################
 # Compatibility with CL1.0
@@ -179,4 +180,8 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/system.cmake)
 if(TEMPLAT_TESTS)
   enable_testing()
   add_subdirectory(tests)
+endif()
+
+if(TEMPLAT_BENCH)
+  add_subdirectory(benchmarks)
 endif()

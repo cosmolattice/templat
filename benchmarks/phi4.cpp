@@ -1,0 +1,74 @@
+#include "TempLat/util/tdd/tdd.h"
+#include "TempLat/session/sessionguard.h"
+#include "TempLat/util/benchmark.h"
+
+#include "TempLat/lattice/field/field.h"
+#include "TempLat/lattice/algebra/random/randomgaussianfield.h"
+#include "TempLat/lattice/algebra/spatialderivatives/latticelaplacian.h"
+
+int main(int argc, char **argv)
+{
+  using namespace TempLat;
+
+  SessionGuard guard(argc, argv, false);
+
+  constexpr size_t NDim = 3;
+  using T = double;
+  constexpr size_t nGrid = 512;
+  constexpr size_t nGhost = 1;
+  constexpr size_t nSteps = 100;
+  constexpr T dt = 0.01;
+
+  auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost, false);
+
+  toolBox->unsetVerbose();
+
+  Field<NDim, T> phi("phi", toolBox);
+  Field<NDim, T> pi("pi", toolBox);
+
+  phi.getMemoryManager()->confirmFourierSpace();
+  pi.getMemoryManager()->confirmFourierSpace();
+  phi.getMemoryManager()->confirmConfigSpace();
+  pi.getMemoryManager()->confirmConfigSpace();
+  phi.getMemoryManager()->confirmFourierSpace();
+  pi.getMemoryManager()->confirmFourierSpace();
+  phi.getMemoryManager()->confirmConfigSpace();
+  pi.getMemoryManager()->confirmConfigSpace();
+
+  Benchmark bench([&](Benchmark::Measurer &measurer) {
+    for (size_t i = 0; i < nSteps / 10; ++i) {
+      measurer.measure("x->k fourier", [&]() {
+        phi.getMemoryManager()->confirmFourierSpace();
+        pi.getMemoryManager()->confirmFourierSpace();
+        device::iteration::fence();
+      });
+
+      measurer.measure("initialize field", [&]() {
+        phi.inFourierSpace() = RandomGaussianField<NDim, T>("Hoi", toolBox);
+        pi.inFourierSpace() = RandomGaussianField<NDim, T>("Hai", toolBox);
+        device::iteration::fence();
+      });
+
+      measurer.measure("k->x fourier", [&]() {
+        phi.getMemoryManager()->confirmConfigSpace();
+        pi.getMemoryManager()->confirmConfigSpace();
+        device::iteration::fence();
+      });
+    }
+
+    for (size_t i = 0; i < nSteps; ++i) {
+      measurer.measure("ghosts", [&]() {
+        pi.updateGhosts();
+        device::iteration::fence();
+      });
+      measurer.measure("timestepping", [&]() {
+        pi = pi + dt * LatticeLaplacian<NDim, decltype(phi)>(phi) * dt;
+        phi = phi + dt * pi;
+        device::iteration::fence();
+      });
+    }
+  });
+  bench.run(1);
+  sayMPI << bench;
+  bench.log("phi4");
+}
