@@ -26,8 +26,7 @@ endif()
 
 message("") # Blank line for better readability
 message(
-  STATUS
-    "${BoldYellow}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching FFTW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${ColorReset}"
+  "${BoldYellow}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching FFTW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${ColorReset}"
 )
 
 # Download FFTW
@@ -155,6 +154,5 @@ endif()
 set(CMAKE_PREFIX_PATH "${FFTW_DIR};${CMAKE_PREFIX_PATH}")
 
 message(
-  STATUS
-    "${BoldYellow}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching FFTW DONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${ColorReset}\n"
+  "${BoldYellow}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching FFTW DONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${ColorReset}\n"
 )

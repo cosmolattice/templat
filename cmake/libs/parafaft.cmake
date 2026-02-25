@@ -1,7 +1,6 @@
 message("") # Blank line for better readability
 message(
-  STATUS
-    "${BoldYellow}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching ParaFaFT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${ColorReset}"
+  "${BoldYellow}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching ParaFaFT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${ColorReset}"
 )
 
 # enable FetchContent
@@ -26,6 +25,5 @@ message(
   STATUS "ParaFaFT available with CUDA=${PARAFAFT_CUDA} HIP=${PARAFAFT_HIP}")
 
 message(
-  STATUS
-    "${BoldYellow}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching ParaFaFT DONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${ColorReset}\n"
+  "${BoldYellow}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching ParaFaFT DONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${ColorReset}\n"
 )
