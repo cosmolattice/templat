@@ -47,7 +47,7 @@ namespace TempLat
 #define sayShort TempLat::SayComplete(NULL, 0)
 #define sayMPI                                                                                                         \
   TempLat::SayComplete((std::string("MPI Rank ") + std::to_string(TempLat::MPICommReference::worldRank()) + " - " +    \
-                        std::string(StripPathFromFileName(__FILE__)))                                                  \
+                        std::string(TempLat::StripPathFromFileName(__FILE__)))                                         \
                            .c_str(),                                                                                   \
                        __LINE__)
 } // namespace TempLat
