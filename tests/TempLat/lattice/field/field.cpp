@@ -20,8 +20,6 @@ namespace TempLat
     static void Test(TDDAssertion &tdd);
   };
 
-  // #include "TempLat/lattice/algebra/gettergetoffset.h"
-
   template <size_t NDim, typename T> inline void FieldTester<NDim, T>::Test(TDDAssertion &tdd)
   {
     const ptrdiff_t nGrid = 32, nGhost = 2;

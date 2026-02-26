@@ -17,7 +17,6 @@
 
 #include "TempLat/util/log/saycomplete.h"
 #include "TempLat/util/timer.h"
-#include "TempLat/parallel/device_iteration.h"
 
 #ifdef HAVE_MPI
 #include <mpi.h>
@@ -39,12 +38,36 @@ namespace TempLat
       {
         const Timer timer;
         f();
-        device::iteration::fence();
 #ifdef HAVE_MPI
         MPI_Barrier(MPI_COMM_WORLD);
 #endif
         const size_t elapsed = timer.nanoseconds();
         measurements.emplace_back(tag, elapsed);
+      }
+
+      void collect()
+      {
+        // collect all measurements from all processes and store them in measurements vector of the root process
+#ifdef HAVE_MPI
+        int world_size;
+        MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+        int world_rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+        for (int i = 0; i < world_size; ++i) {
+          if (i == world_rank) {
+            // Send measurements to root process
+            MPI_Send(measurements.data(), measurements.size() * sizeof(std::pair<std::string, double>), MPI_BYTE, 0, 0,
+                     MPI_COMM_WORLD);
+          } else if (i == 0) {
+            // Receive measurements from other processes
+            std::vector<std::pair<std::string, double>> recv_buffer;
+            MPI_Probe(i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(recv_buffer.data(), recv_buffer.size() * sizeof(std::pair<std::string, double>), MPI_BYTE, i, 0,
+                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            measurements.insert(measurements.end(), recv_buffer.begin(), recv_buffer.end());
+          }
+        }
+#endif
       }
 
       double getAverage(const std::string &tag) const
@@ -119,7 +142,7 @@ namespace TempLat
       // warmup
       if (n >= 10) {
         sayMPI << "Running warmup for " << std::max((size_t)10, n / 2) << " iterations.\n";
-        for (size_t i = 0; i < std::max((size_t)10, n / 2); ++i)
+        for (uint i = 0; i < std::max((size_t)10, n / 2); ++i)
           mFunction(dead_measurer);
       }
 

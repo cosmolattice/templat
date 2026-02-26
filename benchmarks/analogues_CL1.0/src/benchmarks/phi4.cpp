@@ -1,0 +1,65 @@
+#include "TempLat/util/tdd/tdd.h"
+#include "TempLat/session/sessionguard.h"
+#include "TempLat/util/benchmark.h"
+
+#include "TempLat/lattice/field/field.h"
+#include "TempLat/lattice/algebra/random/randomgaussianfield.h"
+#include "TempLat/lattice/algebra/spatialderivatives/latticelaplacian.h"
+
+int main(int argc, char **argv)
+{
+  using namespace TempLat;
+
+  SessionGuard guard(argc, argv, false);
+
+  constexpr size_t NDim = 3;
+  using T = double;
+  constexpr size_t nGrid = 512;
+  constexpr size_t nGhost = 1;
+  constexpr size_t nSteps = 10;
+  constexpr T dt = 0.01;
+
+  auto toolBox = MemoryToolBox::makeShared(NDim, nGrid, nGhost, false);
+
+  toolBox->unsetVerbose();
+
+  Field<T> phi("phi", toolBox);
+  Field<T> pi("pi", toolBox);
+
+  phi.getMemoryManager()->confirmFourierSpace();
+  pi.getMemoryManager()->confirmFourierSpace();
+  phi.getMemoryManager()->confirmConfigSpace();
+  pi.getMemoryManager()->confirmConfigSpace();
+  phi.getMemoryManager()->confirmFourierSpace();
+  pi.getMemoryManager()->confirmFourierSpace();
+  phi.getMemoryManager()->confirmConfigSpace();
+  pi.getMemoryManager()->confirmConfigSpace();
+
+  Benchmark bench([&](Benchmark::Measurer &measurer) {
+    measurer.measure("x->k fourier", [&]() {
+      phi.getMemoryManager()->confirmFourierSpace();
+      pi.getMemoryManager()->confirmFourierSpace();
+    });
+
+    measurer.measure("initialize field", [&]() {
+      phi.inFourierSpace() = RandomGaussianField<T>("Hoi", toolBox);
+      pi.inFourierSpace() = RandomGaussianField<T>("Hai", toolBox);
+    });
+
+    measurer.measure("k->x fourier", [&]() {
+      phi.getMemoryManager()->confirmConfigSpace();
+      pi.getMemoryManager()->confirmConfigSpace();
+    });
+
+    for (size_t i = 0; i < nSteps; ++i) {
+      measurer.measure("ghosts", [&]() { pi.updateGhosts(); });
+      measurer.measure("timestepping", [&]() {
+        pi = pi + dt * LatticeLaplacian<NDim, decltype(phi)>(phi) * dt;
+        phi = phi + dt * pi;
+      });
+    }
+  });
+  bench.run(1);
+  sayMPI << bench;
+  bench.log("phi4");
+}

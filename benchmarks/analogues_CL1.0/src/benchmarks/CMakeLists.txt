@@ -1,5 +1,5 @@
 # Glob all test sources and then create targets for each of them
-file(GLOB bench_sources "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+file(GLOB_RECURSE bench_sources "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 foreach(fn ${bench_sources})
   get_filename_component(f_name ${fn} NAME) # extract the filename from the full
                                             # path
@@ -8,6 +8,5 @@ foreach(fn ${bench_sources})
   # create a rule test_filename
   string(REPLACE ".cpp" "" target_name "bench-${f_name}")
 
-  add_executable(${target_name} ${fn})
-  target_link_libraries(${target_name} TempLat::TempLat)
+  add_cosmolattice(${target_name} ${fn} "")
 endforeach()
