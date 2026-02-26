@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 
   constexpr size_t NDim = 3;
   using T = double;
-  constexpr size_t nGrid = 512;
+  constexpr size_t nGrid = 256;
   constexpr size_t nGhost = 1;
   constexpr size_t nSteps = 100;
   constexpr T dt = 0.01;
@@ -69,6 +69,6 @@ int main(int argc, char **argv)
     }
   });
   bench.run(1);
-  sayMPI << bench;
+  bench.print();
   bench.log("phi4");
 }

@@ -148,9 +148,17 @@ namespace TempLat
 
       sayMPI << "Running benchmark for " << n << " iterations.\n";
 
+#ifdef HAVE_MPI
+      MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
       Measurer measurer;
       for (size_t i = 0; i < n; ++i)
         mFunction(measurer);
+
+#ifdef HAVE_MPI
+      MPI_Barrier(MPI_COMM_WORLD);
+#endif
 
       for (const auto &tag : measurer.getTags())
         mMeasurements[tag] = measurer.getMeasurement(tag);

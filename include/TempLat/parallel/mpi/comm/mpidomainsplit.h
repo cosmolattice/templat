@@ -9,6 +9,10 @@
 
 #include "TempLat/util/factorize.h"
 
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
+
 namespace TempLat
 {
 
@@ -42,6 +46,15 @@ namespace TempLat
             "You provided a larger number of dimensions to split than the number of dimensions.", nDimensionsToSplit,
             " > ", nDimensions);
 
+#ifdef HAVE_MPI
+      // Create (D-1)-dimensional Cartesian processor grid
+      for (int i = 0; i < nDimensionsToSplit; ++i) {
+        mDomainSplitting[i] = 0; // initialize to 1
+      }
+      MPI_Dims_create(mTotal, nDimensionsToSplit, mDomainSplitting.data());
+      return;
+#endif
+
       /* reverse sort */
       mFactors.sort(true);
 
@@ -68,8 +81,7 @@ namespace TempLat
     auto begin() { return mDomainSplitting.begin(); }
     auto end() { return mDomainSplitting.end(); }
 
-    operator std::vector<ptrdiff_t>() const { return mDomainSplitting; }
-    operator std::vector<int>() const { return std::vector<int>(mDomainSplitting.begin(), mDomainSplitting.end()); }
+    operator std::vector<int>() const { return mDomainSplitting; }
 
     ptrdiff_t computeSize() { return end() - begin(); }
 
@@ -85,7 +97,7 @@ namespace TempLat
     /* Put all member variables and private methods here. These may change arbitrarily. */
     const ptrdiff_t mTotal, mNDimensions, mNDimensionsToSplit;
     Factorize mFactors;
-    std::vector<ptrdiff_t> mDomainSplitting;
+    std::vector<int> mDomainSplitting;
 
     void verifySelf()
     {

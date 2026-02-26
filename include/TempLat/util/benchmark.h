@@ -37,6 +37,10 @@ namespace TempLat
     public:
       template <typename F> void measure(const std::string tag, F &&f)
       {
+        device::iteration::fence();
+#ifdef HAVE_MPI
+        MPI_Barrier(MPI_COMM_WORLD);
+#endif
         const Timer timer;
         f();
         device::iteration::fence();
@@ -45,6 +49,98 @@ namespace TempLat
 #endif
         const size_t elapsed = timer.nanoseconds();
         measurements.emplace_back(tag, elapsed);
+      }
+
+      void collect()
+      {
+#ifdef HAVE_MPI
+        int world_size, world_rank;
+        MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+        MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+        // Serialize measurements: flatten to tag lengths, tags, and elapsed times
+        std::vector<int> tag_lengths;
+        std::vector<char> tag_chars;
+        std::vector<double> elapsed_times;
+        for (const auto &m : measurements) {
+          tag_lengths.push_back(m.first.size());
+          tag_chars.insert(tag_chars.end(), m.first.begin(), m.first.end());
+          elapsed_times.push_back(m.second);
+        }
+        int num_measurements = measurements.size();
+
+        // Gather sizes at root
+        std::vector<int> recv_counts(world_size);
+        MPI_Gather(&num_measurements, 1, MPI_INT, recv_counts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+        // Gather tag lengths
+        std::vector<int> tag_len_recv;
+        if (world_rank == 0) tag_len_recv.resize(world_size * num_measurements); // over-allocate
+        MPI_Gather(tag_lengths.data(), num_measurements, MPI_INT, world_rank == 0 ? tag_len_recv.data() : nullptr,
+                   num_measurements, MPI_INT, 0, MPI_COMM_WORLD);
+
+        // Gather tags
+        int tag_chars_len = tag_chars.size();
+        std::vector<int> tag_chars_counts(world_size);
+        MPI_Gather(&tag_chars_len, 1, MPI_INT, tag_chars_counts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
+        std::vector<char> tag_chars_recv;
+        int total_tag_chars = 0;
+        if (world_rank == 0) {
+          for (int c : tag_chars_counts)
+            total_tag_chars += c;
+          tag_chars_recv.resize(total_tag_chars);
+        }
+        std::vector<int> tag_chars_displs(world_size);
+        if (world_rank == 0) {
+          int offset = 0;
+          for (int i = 0; i < world_size; ++i) {
+            tag_chars_displs[i] = offset;
+            offset += tag_chars_counts[i];
+          }
+        }
+        MPI_Gatherv(tag_chars.data(), tag_chars_len, MPI_CHAR, world_rank == 0 ? tag_chars_recv.data() : nullptr,
+                    world_rank == 0 ? tag_chars_counts.data() : nullptr,
+                    world_rank == 0 ? tag_chars_displs.data() : nullptr, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+        // Gather elapsed times
+        std::vector<double> elapsed_recv;
+        int total_measurements = 0;
+        if (world_rank == 0) {
+          for (int c : recv_counts)
+            total_measurements += c;
+          elapsed_recv.resize(total_measurements);
+        }
+        std::vector<int> elapsed_displs(world_size);
+        if (world_rank == 0) {
+          int offset = 0;
+          for (int i = 0; i < world_size; ++i) {
+            elapsed_displs[i] = offset;
+            offset += recv_counts[i];
+          }
+        }
+        MPI_Gatherv(elapsed_times.data(), num_measurements, MPI_DOUBLE, world_rank == 0 ? elapsed_recv.data() : nullptr,
+                    world_rank == 0 ? recv_counts.data() : nullptr, world_rank == 0 ? elapsed_displs.data() : nullptr,
+                    MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+        // Reconstruct all_measurements at root
+        if (world_rank == 0) {
+          std::vector<std::pair<std::string, double>> all_measurements;
+          int tag_pos = 0;
+          int elapsed_pos = 0;
+          for (int i = 0; i < world_size; ++i) {
+            for (int j = 0; j < recv_counts[i]; ++j) {
+              int len = tag_len_recv[i * num_measurements + j];
+              std::string tag(tag_chars_recv.begin() + tag_pos, tag_chars_recv.begin() + tag_pos + len);
+              tag_pos += len;
+              double elapsed = elapsed_recv[elapsed_pos++];
+              all_measurements.emplace_back(tag, elapsed);
+            }
+          }
+          measurements = all_measurements;
+        }
+#else
+        // No MPI: nothing to do
+#endif
       }
 
       double getAverage(const std::string &tag) const
@@ -77,8 +173,6 @@ namespace TempLat
           }
         }
         double stdD = count > 0 ? std::sqrt(totalSquaredDiff) / count : 0;
-        std::cout << "average: " << average << " count: " << count << " totalSquaredDiff: " << totalSquaredDiff
-                  << " std: " << stdD << "\n";
 
         return std::make_tuple(tag, average, stdD, min, max, count);
       }
@@ -103,9 +197,14 @@ namespace TempLat
 
     void run(size_t n = 0)
     {
+      int rank = 0;
+#ifdef HAVE_MPI
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
       Measurer dead_measurer;
       if (n == 0) {
-        sayMPI << "Estimating number of iterations to run for the benchmark.\n";
+        if (rank == 0) sayMPI << "Estimating number of iterations to run for the benchmark.\n";
         // If n is 0, we run the function once and check how long it takes.
         Timer timer;
         mFunction(dead_measurer);
@@ -118,16 +217,22 @@ namespace TempLat
 
       // warmup
       if (n >= 10) {
-        sayMPI << "Running warmup for " << std::max((size_t)10, n / 2) << " iterations.\n";
+        if (rank == 0) sayMPI << "Running warmup for " << std::max((size_t)10, n / 2) << " iterations.\n";
         for (size_t i = 0; i < std::max((size_t)10, n / 2); ++i)
           mFunction(dead_measurer);
       }
 
-      sayMPI << "Running benchmark for " << n << " iterations.\n";
+#ifdef HAVE_MPI
+      MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
+      if (rank == 0) sayMPI << "Running benchmark for " << n << " iterations.\n";
 
       Measurer measurer;
       for (size_t i = 0; i < n; ++i)
         mFunction(measurer);
+
+      measurer.collect();
 
       for (const auto &tag : measurer.getTags())
         mMeasurements[tag] = measurer.getMeasurement(tag);
@@ -165,11 +270,17 @@ namespace TempLat
       }
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const Benchmark &bench)
+    void print() const
     {
+#ifdef HAVE_MPI
+      MPI_Barrier(MPI_COMM_WORLD);
+      int world_rank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+      if (world_rank != 0) return; // Only print from the root process
+#endif
       const size_t tagWidth = 28;
       std::list<std::string> outputs;
-      for (const auto &el : bench.mMeasurements) {
+      for (const auto &el : mMeasurements) {
         const auto &[measurementTag, measurementData] = el;
         const auto &[tag, average, stdDev, minT, maxT, count] = measurementData;
 
@@ -224,9 +335,7 @@ namespace TempLat
         output += "\n";
       }
 
-      os << "\nBenchmark results:\n\n" << output;
-
-      return os;
+      std::cout << "\nBenchmark results:\n\n" << output;
     }
 
   private:
