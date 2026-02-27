@@ -4,8 +4,8 @@
 
 // File info: Main contributor(s): Franz R. Sattler,  Year: 2025
 
-#include "TempLat/parallel/threadsettings.h"
 #include "TempLat/util/tdd/tdd.h"
+#include "TempLat/parallel/threadsettings.h"
 
 namespace TempLat
 {
@@ -27,7 +27,19 @@ namespace TempLat
 
     ptrdiff_t manuallyComputedThreadCount = std::max((ptrdiff_t)1, initialThreadCount / 2);
 
-    tdd.verify(manuallyComputedThreadCount == newThreadCount);
+    tdd.verify(manuallyComputedThreadCount <= newThreadCount);
+
+    char *env_p = std::getenv("OMP_NUM_THREADS");
+    if (env_p != nullptr) {
+      ptrdiff_t ompThreads = std::atoi(env_p);
+      tdd.verify(ompThreads >= newThreadCount);
+    }
+
+    char *kokkosEnv_p = std::getenv("KOKKOS_NUM_THREADS");
+    if (kokkosEnv_p != nullptr) {
+      ptrdiff_t kokkosThreads = std::atoi(kokkosEnv_p);
+      tdd.verify(kokkosThreads >= newThreadCount);
+    }
 
     ThreadSettings::setMPILocalSize(initialMPISize);
 

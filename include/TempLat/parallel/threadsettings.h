@@ -10,9 +10,10 @@
 #include <thread>
 #include <algorithm>
 
+#include "TempLat/util/log/saycomplete.h"
+
 namespace TempLat
 {
-
   /** @brief A class which does bookkeeping, number of threads allowed by hardware, number of threads allowed by user,
    *etc.
    *
@@ -46,9 +47,10 @@ namespace TempLat
       stream << "Threading information:\n";
       stream << " - number of cores on machine:                               " << fts.mHardwareNumCores << "\n";
       stream << " - number of mpi processes for this session on this machine: " << fts.mMPILocalSize << "\n";
-      // stream << " - resulting maximum number of threads per process:          " <<
-      // fts.mHardwareAllowedThreadsPerProcess << "\n"; stream << " - user specified number of threads per process: " <<
-      // fts.mUserAllowedThreadsPerProcess << "\n";
+      stream << " - user specified number of threads per process:             " << fts.mUserAllowedThreadsPerProcess
+             << "\n";
+      stream << " - resulting maximum number of threads per process:          " << fts.mHardwareAllowedThreadsPerProcess
+             << "\n";
       return stream;
     }
 
@@ -65,12 +67,35 @@ namespace TempLat
           mUserAllowedThreadsPerProcess(mHardwareAllowedThreadsPerProcess)
     {
       mHardwareAllowedThreadsPerProcess = std::max(mHardwareAllowedThreadsPerProcess, ptrdiff_t{1});
+
+      ptrdiff_t kokkosThreads = 0;
+      if (const char *env_p = std::getenv("KOKKOS_NUM_THREADS")) kokkosThreads = std::atoi(env_p);
+
+      ptrdiff_t ompThreads = 0;
+      if (const char *env_p = std::getenv("OMP_NUM_THREADS")) ompThreads = std::atoi(env_p);
+
+      mUserAllowedThreadsPerProcess = std::max(kokkosThreads, ompThreads);
+      if (kokkosThreads > 0 && ompThreads > 0 && kokkosThreads != ompThreads) {
+        sayShort << "Warning: both KOKKOS_NUM_THREADS and OMP_NUM_THREADS are set, but to different values. Using the "
+                    "largest value.\n    KOKKOS_NUM_THREADS = "
+                 << kokkosThreads << ", OMP_NUM_THREADS = " << ompThreads << ".\n";
+      }
+
+      if (mUserAllowedThreadsPerProcess > 0)
+        mHardwareAllowedThreadsPerProcess = std::min(mUserAllowedThreadsPerProcess, mHardwareAllowedThreadsPerProcess);
+
+      std::cout << "Result: mHardwareNumCores = " << mHardwareNumCores << ", mMPILocalSize = " << mMPILocalSize
+                << ", mUserAllowedThreadsPerProcess = " << mUserAllowedThreadsPerProcess
+                << ", mHardwareAllowedThreadsPerProcess = " << mHardwareAllowedThreadsPerProcess << "\n";
     }
 
     void pSetMPILocalSize(ptrdiff_t newSize)
     {
       mMPILocalSize = newSize > 0 ? newSize : 1;
       mHardwareAllowedThreadsPerProcess = std::max(mHardwareNumCores / mMPILocalSize, ptrdiff_t{1});
+
+      if (mUserAllowedThreadsPerProcess > 0)
+        mHardwareAllowedThreadsPerProcess = std::min(mUserAllowedThreadsPerProcess, mHardwareAllowedThreadsPerProcess);
     }
 
     ptrdiff_t pGetMPILocalSize() const { return mMPILocalSize; }
