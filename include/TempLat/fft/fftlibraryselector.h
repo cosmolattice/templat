@@ -62,10 +62,6 @@ namespace TempLat
     result.push_back(getFFTWSessionGuard(pVerbose));
 #ifdef HAVE_MPI
 
-#ifdef HAVE_KOKKOSFFT
-    result.push_back(getKokkosFFTSessionGuard(pVerbose));
-#endif
-
 #endif
 #endif
 

@@ -8,7 +8,6 @@
 // File info: Main contributor(s): Franz R. Sattler,  Year: 2025
 
 #include "TempLat/fft/external/kokkosfft/kokkosfftmemorylayout.h"
-#include "TempLat/fft/external/kokkosfft/kokkosfftguard.h"
 
 namespace TempLat
 {

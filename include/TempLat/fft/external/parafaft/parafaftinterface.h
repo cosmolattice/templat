@@ -8,7 +8,6 @@
 // File info: Main contributor(s): Adrien Florio,  Year: 2026
 
 #include "TempLat/fft/external/parafaft/parafaftmemorylayout.h"
-#include "TempLat/fft/external/parafaft/parafaftguard.h"
 
 namespace TempLat
 {

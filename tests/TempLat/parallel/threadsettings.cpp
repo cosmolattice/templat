@@ -9,14 +9,12 @@
 
 namespace TempLat
 {
-
   struct ThreadSettingsTester {
     static void Test(TDDAssertion &tdd);
   };
 
   void ThreadSettingsTester::Test(TDDAssertion &tdd)
   {
-
     ptrdiff_t initialThreadCount = ThreadSettings::getMaxThreadCount();
 
     ptrdiff_t initialMPISize = ThreadSettings::getMPILocalSize();
