@@ -4,8 +4,6 @@ message(
 )
 
 # enable FetchContent
-include(FetchContent)
-set(FETCHCONTENT_QUIET ON)
 set(PARAFAFT_CUDA
     ${CUDA}
     CACHE BOOL "")

@@ -31,14 +31,13 @@ set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION
     ON
     CACHE BOOL "")
 
-include(FetchContent)
 FetchContent_Declare(
   Kokkos
   DOWNLOAD_EXTRACT_TIMESTAMP FALSE
   URL https://github.com/kokkos/kokkos/releases/download/5.0.2/kokkos-5.0.2.tar.gz
   URL_HASH
     SHA256=188817bb452ca805ee8701f1c5adbbb4fb83dc8d1c50624566a18a719ba0fa5e
-  SYSTEM)
+  ${SYSTEM_MARKER})
 FetchContent_MakeAvailable(Kokkos)
 
 message(

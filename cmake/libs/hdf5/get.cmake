@@ -4,11 +4,6 @@ message(
 )
 
 # enable FetchContent
-include(FetchContent)
-set(FETCHCONTENT_QUIET
-    ON
-    CACHE BOOL "")
-mark_as_advanced(FETCHCONTENT_QUIET)
 set(HDF5_ENABLE_PARALLEL
     ${MPI}
     CACHE BOOL "")

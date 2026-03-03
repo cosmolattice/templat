@@ -17,3 +17,18 @@ if(NOT WIN32)
   set(BoldCyan "${Esc}[1;36m")
   set(BoldWhite "${Esc}[1;37m")
 endif()
+
+include(FetchContent)
+set(FETCHCONTENT_QUIET
+    ON
+    CACHE BOOL "Suppress output from FetchContent during configuration")
+mark_as_advanced(FETCHCONTENT_QUIET)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.25")
+  set(SYSTEM_MARKER
+      SYSTEM
+      CACHE INTERNAL "")
+else()
+  set(SYSTEM_MARKER
+      ""
+      CACHE INTERNAL "")
+endif()
