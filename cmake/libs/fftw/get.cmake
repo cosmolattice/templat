@@ -48,7 +48,11 @@ if(NOT EXISTS "${FFTW_DIR}/fftw-3.3.10")
   message(STATUS "Extracting FFTW...")
   execute_process(
     COMMAND ${CMAKE_COMMAND} -E tar xzf "${FFTW_DIR}/fftw-3.3.10.tar.gz"
-    WORKING_DIRECTORY "${FFTW_DIR}")
+    WORKING_DIRECTORY "${FFTW_DIR}"
+    RESULT_VARIABLE fftw_configure_ret)
+  if(NOT fftw_configure_ret EQUAL 0)
+    message(FATAL_ERROR "FFTW extraction failed.")
+  endif()
 else()
   message(
     STATUS
