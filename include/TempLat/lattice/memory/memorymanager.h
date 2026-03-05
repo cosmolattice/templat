@@ -76,23 +76,6 @@ namespace TempLat
 
     template <typename R = T> auto getRawHostView() const { return mBlock.template getRawHostView<R>(); }
 
-    inline complex<T> &as_complex(ptrdiff_t i)
-    {
-#ifdef CHECKBOUNDS
-      checkComplexBounds(i);
-#endif
-      /* https://stackoverflow.com/a/41654651/2295722 : cast double to complex is part of the standard since C++11. */
-      return reinterpret_cast<complex<T> *>((T *)mBlock)[i];
-    }
-
-    inline const complex<T> &as_complex(ptrdiff_t i) const
-    {
-#ifdef CHECKBOUNDS
-      checkComplexBounds(i);
-#endif
-      return reinterpret_cast<complex<T> *>((T *)mBlock)[i];
-    }
-
     ptrdiff_t confirmConfigSpace()
     {
       ptrdiff_t result = allocate();
@@ -252,6 +235,8 @@ namespace TempLat
     }
 
     friend bool operator==(const MemoryManager &a, const MemoryManager &b) { return a.mBlock == b.mBlock; }
+
+    size_t bytes() const { return mBlock.size() * sizeof(T); }
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */

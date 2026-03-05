@@ -11,7 +11,6 @@
 
 namespace TempLat
 {
-
   template <size_t NDim, typename T> struct MemoryBlockTester {
     static void Test(TDDAssertion &tdd);
   };

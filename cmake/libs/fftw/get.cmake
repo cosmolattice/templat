@@ -121,7 +121,7 @@ if(FLOAT)
   if(NOT fftw_configure_ret EQUAL 0)
     message(
       FATAL_ERROR
-        "FFTW configure failed. See ${FFTW_DIR}/configure.log for details.")
+        "FFTWf configure failed. See ${FFTW_DIR}/configure.log for details.")
   endif()
 
   message(
@@ -134,7 +134,7 @@ if(FLOAT)
     RESULT_VARIABLE fftw_build_ret)
   if(NOT fftw_build_ret EQUAL 0)
     message(
-      FATAL_ERROR "FFTW build failed. See ${FFTW_DIR}/build.log for details.")
+      FATAL_ERROR "FFTWf build failed. See ${FFTW_DIR}/build.log for details.")
   endif()
 
   message(STATUS "Installing FFTW (float)...")
@@ -147,7 +147,7 @@ if(FLOAT)
   if(NOT fftw_install_ret EQUAL 0)
     message(
       FATAL_ERROR
-        "FFTW install failed. See ${FFTW_DIR}/install.log for details.")
+        "FFTWf install failed. See ${FFTW_DIR}/install.log for details.")
   endif()
 endif()
 
