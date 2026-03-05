@@ -55,7 +55,7 @@ namespace TempLat
       mType = cMixedType;
     }
 
-    template <typename T> inline void c2r(MemoryBlock<NDim, T> mBlock, T scale)
+    template <typename T> inline void c2r(MemoryBlock<NDim, T> &mBlock, T scale)
     {
       T intrinsicScale = (T)(mLayout.getIntrinsicScales().c2r);
       switch (mType) {
@@ -70,7 +70,7 @@ namespace TempLat
       }
     }
 
-    template <typename T> inline void r2c(MemoryBlock<NDim, T> mBlock, T scale)
+    template <typename T> inline void r2c(MemoryBlock<NDim, T> &mBlock, T scale)
     {
       T intrinsicScale = (T)(mLayout.getIntrinsicScales().r2c);
       switch (mType) {

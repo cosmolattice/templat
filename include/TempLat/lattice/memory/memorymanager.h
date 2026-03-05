@@ -38,7 +38,7 @@ namespace TempLat
       const size_t size = mToolBox->mLayouts.getNecessaryMemoryAllocation();
       if (mToolBox->verbosity.allocation) sayMPI << "Allocating memory with " << size << " elements.\n";
       mAllocated = true;
-      mBlock = MemoryBlock<NDim, T>(size);
+      mBlock.allocate();
       return 1;
     }
 

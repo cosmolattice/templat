@@ -40,6 +40,17 @@ namespace TempLat
       zero();
     }
 
+    void allocate()
+    {
+      if (mData.is_allocated()) return;
+      mData = device::memory::NDView<1, T>("MemoryBlock", mSize);
+      zero();
+    }
+
+    // Don't allow copy construction or copy assignment, to avoid accidental copies of large memory blocks.
+    MemoryBlock(const MemoryBlock &) = delete;
+    MemoryBlock &operator=(const MemoryBlock &) = delete;
+
     /** getter */
     size_t size() const { return mSize; }
 
