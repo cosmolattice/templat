@@ -40,10 +40,10 @@ namespace TempLat
       zero();
     }
 
-    void allocate()
+    void allocate(size_t size)
     {
-      if (mData.is_allocated()) return;
-      mData = device::memory::NDView<1, T>("MemoryBlock", mSize);
+      this->mSize = size;
+      if (mData.size() != size) mData = device::memory::NDView<1, T>("MemoryBlock", mSize);
       zero();
     }
 
