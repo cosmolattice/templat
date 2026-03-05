@@ -55,8 +55,6 @@ namespace TempLat
     {
       return fs[t - Tag<SHIFTIND>()];
     }
-    auto operator()(size_t i) const { return fs[i - Tag<SHIFTIND>()]; }
-    auto operator[](size_t i) const { return fs[i - Tag<SHIFTIND>()]; }
 
     template <int M> auto getComp(Tag<M> t) { return fs[t]; }
 

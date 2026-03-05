@@ -52,7 +52,9 @@ namespace TempLat
       for_in_range<0, size>([&](auto j) { std::get<j>(fs) = nakedR::Getter::get(r, j); });
     }
 
-    template <int M> auto &operator()(Tag<M> t)
+    template <int M>
+      requires(M >= Q::SHIFTIND && M < size + Q::SHIFTIND)
+    auto &operator()(Tag<M> t)
     {
       // Also work with operator [], but might be confusing that it is NOT an int (cant call f[1] -> f[1_c])
       return std::get<M - Q::SHIFTIND>(fs);
