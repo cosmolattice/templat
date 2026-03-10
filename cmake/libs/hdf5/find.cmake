@@ -10,3 +10,6 @@ execute_process(
 if(find_result EQUAL 0)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/hdf5/find/CMakeLists.txt)
 endif()
+
+message(STATUS "HDF5 include dirs: ${HDF5_INCLUDE_DIRS}")
+target_include_directories(TempLat INTERFACE ${HDF5_INCLUDE_DIRS})
