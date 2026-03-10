@@ -2,7 +2,7 @@
 
 ### Enable testing
 
-To enable testing, add the flag `-DTESTING=ON` when configuring the project with CMake. 
+To enable testing, add the flag `-DTEMPLAT_TESTS=ON` when configuring the project with CMake. 
 
 You can then run the full test suite using CTest:
 ```bash
