@@ -32,7 +32,7 @@ to run all tests whose name contains `su2`.
 ### Test output
 
 By default, `ctest` only shows the output of failed tests. If you want to see the output of all tests, you can use the `--output-on-failure` flag as shown in the examples above. This will print the output of each test, regardless of whether it passed or failed.
-To see the full output of all tests, you can use the `--verbose` flag:
+To see the full output of all tests, you can use the `--verbose` (or shorter `-V`) flag:
 ```bash
 ctest --verbose
 ```
