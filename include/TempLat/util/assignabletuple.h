@@ -38,13 +38,6 @@ namespace TempLat
       return (*this)(t + Tag<Shift>()); // get component runs from 0 to N-1 always. (internal getter).
     }
 
-    template <int N>
-      requires(N >= 0 && N < size)
-    auto operator()() const
-    {
-      return getComp(Tag<N>());
-    }
-
     using Getter = GetComponent;
     static constexpr int SHIFTIND = Shift;
   };
