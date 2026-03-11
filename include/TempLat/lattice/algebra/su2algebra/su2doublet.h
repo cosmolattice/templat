@@ -24,32 +24,34 @@ namespace TempLat
    *
    * Unit test: ctest -R test-su2doublet
    **/
-  template <size_t _NDim, typename T> class SU2Doublet
+  template <typename T, size_t _NDim = 0> class SU2Doublet
   {
   public:
     // Put public methods here. These should change very little over time.
+    static_assert(_NDim != 0, "NDim template parameter is required. Use e.g. SU2Doublet<double, 3>.");
+
     static constexpr size_t NDim = _NDim;
 
-    SU2Doublet(Field<NDim, T> f1, Field<NDim, T> f2, Field<NDim, T> f3, Field<NDim, T> f4)
+    SU2Doublet(Field<T, NDim> f1, Field<T, NDim> f2, Field<T, NDim> f3, Field<T, NDim> f4)
         : fs{{f1, f2, f3, f4}}, mName("NoName"), mLayout(f1.getToolBox()->mLayouts.getConfigSpaceLayout())
     {
     }
     SU2Doublet(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox,
                LatticeParameters<T> pLatPar = LatticeParameters<T>())
         : mName(name), fs{{
-                           Field<NDim, T>(name + "_0", toolBox, pLatPar), //
-                           Field<NDim, T>(name + "_1", toolBox, pLatPar), //
-                           Field<NDim, T>(name + "_2", toolBox, pLatPar), //
-                           Field<NDim, T>(name + "_3", toolBox, pLatPar)  //
+                           Field<T, NDim>(name + "_0", toolBox, pLatPar), //
+                           Field<T, NDim>(name + "_1", toolBox, pLatPar), //
+                           Field<T, NDim>(name + "_2", toolBox, pLatPar), //
+                           Field<T, NDim>(name + "_3", toolBox, pLatPar)  //
                        }},
           mLayout(toolBox->mLayouts.getConfigSpaceLayout())
     {
     }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION const Field<NDim, T> &SU2DoubletGet(Tag<N> t) const { return fs[t]; }
+    template <int N> DEVICE_FORCEINLINE_FUNCTION const Field<T, NDim> &SU2DoubletGet(Tag<N> t) const { return fs[t]; }
 
     template <typename... IDX>
-      requires requires(Field<NDim, T> f, IDX... idx) {
+      requires requires(Field<T, NDim> f, IDX... idx) {
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(f, idx...);
       }
@@ -126,7 +128,7 @@ namespace TempLat
 
     const device::memory::host_string mName;
 
-    device::array<Field<NDim, T>, 4> fs;
+    device::array<Field<T, NDim>, 4> fs;
 
     LayoutStruct<NDim> mLayout;
   };

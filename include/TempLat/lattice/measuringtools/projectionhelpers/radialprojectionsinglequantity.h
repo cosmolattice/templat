@@ -107,7 +107,7 @@ namespace TempLat
     template <typename S> friend class RadialProjectionResult;
 
   private:
-    using DeviceView = device::memory::NDView<1, T>;
+    using DeviceView = device::memory::NDView<T, 1>;
     using HostMirror = typename DeviceView::host_mirror_type;
 
     DeviceView mAveragesDevice;

@@ -26,17 +26,17 @@ namespace TempLat
    *
    * Unit test: ctest -R test-kokkosfftplanholder
    **/
-  template <size_t NDim, typename T> class KokkosFFTPlanHolder : public FFTPlanInterface<NDim, T>
+  template <typename T, size_t NDim> class KokkosFFTPlanHolder : public FFTPlanInterface<T, NDim>
   {
   public:
     // Put public methods here. These should change very little over time.
 
     using PlanType_c2r =
-        typename KokkosFFT::Plan<Kokkos::DefaultExecutionSpace, device::memory::NDViewUnmanaged<NDim, complex<T>>,
-                                 device::memory::NDViewUnmanaged<NDim, T>, NDim>;
+        typename KokkosFFT::Plan<Kokkos::DefaultExecutionSpace, device::memory::NDViewUnmanaged<complex<T>, NDim>,
+                                 device::memory::NDViewUnmanaged<T, NDim>, NDim>;
     using PlanType_r2c =
-        typename KokkosFFT::Plan<Kokkos::DefaultExecutionSpace, device::memory::NDViewUnmanaged<NDim, T>,
-                                 device::memory::NDViewUnmanaged<NDim, complex<T>>, NDim>;
+        typename KokkosFFT::Plan<Kokkos::DefaultExecutionSpace, device::memory::NDViewUnmanaged<T, NDim>,
+                                 device::memory::NDViewUnmanaged<complex<T>, NDim>, NDim>;
 
     /**
      * @brief What's the intention here? Well, KokkosFFT does not support multi-dimensional FFTs directly, but only 1D,
@@ -72,42 +72,42 @@ namespace TempLat
 
     virtual ~KokkosFFTPlanHolder() = default;
 
-    virtual void c2r(MemoryBlock<NDim, T> &mBlock) { execute_c2r(mBlock); };
-    virtual void r2c(MemoryBlock<NDim, T> &mBlock) { execute_r2c(mBlock); };
+    virtual void c2r(MemoryBlock<T, NDim> &mBlock) { execute_c2r(mBlock); };
+    virtual void r2c(MemoryBlock<T, NDim> &mBlock) { execute_r2c(mBlock); };
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
     MPICartesianGroup mGroup;
     Plans mPlans;
 
-    void execute_r2c(MemoryBlock<NDim, T> &mBlock)
+    void execute_r2c(MemoryBlock<T, NDim> &mBlock)
     {
       device::iteration::fence();
       auto fourier_view = device::apply(
           [&](auto &&...args) {
-            return device::memory::NDViewUnmanaged<NDim, complex<T>>(reinterpret_cast<complex<T> *>(mBlock.data()),
+            return device::memory::NDViewUnmanaged<complex<T>, NDim>(reinterpret_cast<complex<T> *>(mBlock.data()),
                                                                      args...);
           },
           mPlans.fourierSizes);
       auto config_view = device::apply(
-          [&](auto &&...args) { return device::memory::NDViewUnmanaged<NDim, T>(mBlock.data(), args...); },
+          [&](auto &&...args) { return device::memory::NDViewUnmanaged<T, NDim>(mBlock.data(), args...); },
           mPlans.configSizes);
 
       mPlans.execute_r2c(config_view, fourier_view);
       device::iteration::fence();
     }
 
-    void execute_c2r(MemoryBlock<NDim, T> &mBlock)
+    void execute_c2r(MemoryBlock<T, NDim> &mBlock)
     {
       device::iteration::fence();
       auto fourier_view = device::apply(
           [&](auto &&...args) {
-            return device::memory::NDViewUnmanaged<NDim, complex<T>>(reinterpret_cast<complex<T> *>(mBlock.data()),
+            return device::memory::NDViewUnmanaged<complex<T>, NDim>(reinterpret_cast<complex<T> *>(mBlock.data()),
                                                                      args...);
           },
           mPlans.fourierSizes);
       auto config_view = device::apply(
-          [&](auto &&...args) { return device::memory::NDViewUnmanaged<NDim, T>(mBlock.data(), args...); },
+          [&](auto &&...args) { return device::memory::NDViewUnmanaged<T, NDim>(mBlock.data(), args...); },
           mPlans.configSizes);
 
       mPlans.execute_c2r(fourier_view, config_view);

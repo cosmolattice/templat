@@ -49,9 +49,9 @@ namespace TempLat
       auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
       toolBox->setVerbose();
 
-      ComplexField<NDim, T> fa("a", toolBox);
-      Field<NDim, T> fb("b", toolBox);
-      Field<NDim, T> fc("c", toolBox);
+      ComplexField<T, NDim> fa("a", toolBox);
+      Field<T, NDim> fb("b", toolBox);
+      Field<T, NDim> fc("c", toolBox);
 
       fa = Complexify(3.8, 9.1);
       fb = norm2(fa);

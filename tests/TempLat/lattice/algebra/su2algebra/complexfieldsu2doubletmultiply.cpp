@@ -20,9 +20,9 @@ namespace TempLat
   {
     // Test the SU2Doublet class
     auto toolBox = MemoryToolBox<3>::makeShared(16, 1);
-    ComplexField<3, float> cfield("testCField", toolBox);
-    SU2Doublet<3, float> doublet2("testDoublet2", toolBox);
-    SU2Doublet<3, float> doublet3("testDoublet3", toolBox);
+    ComplexField<float, 3> cfield("testCField", toolBox);
+    SU2Doublet<float, 3> doublet2("testDoublet2", toolBox);
+    SU2Doublet<float, 3> doublet3("testDoublet3", toolBox);
 
     cfield(0_c) = 1.0f;
     cfield(1_c) = 2.0f;

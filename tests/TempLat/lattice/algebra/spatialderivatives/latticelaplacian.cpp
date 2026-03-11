@@ -32,11 +32,11 @@ namespace TempLat
     // Test 1: Laplacian of linear function sc1 = x[0]
     // Laplacian is computed as: sum_dir (f[i+e_dir] - 2*f[i] + f[i-e_dir])
     {
-      Field<NDim, double> sc1("SC1", toolBox);
+      Field<double, NDim> sc1("SC1", toolBox);
       sc1 = coord(1_c);
       sc1.updateGhosts();
 
-      Field<NDim, double> result_field("result1", toolBox);
+      Field<double, NDim> result_field("result1", toolBox);
       result_field = LatLapl(sc1);
 
       auto sc1_view = sc1.getFullNDHostView();
@@ -82,15 +82,15 @@ namespace TempLat
 
     // Test 2: Laplacian of sc1^2 (quadratic in x[0])
     {
-      Field<NDim, double> sc1("SC1_sq", toolBox);
+      Field<double, NDim> sc1("SC1_sq", toolBox);
       sc1 = coord(1_c);
       sc1.updateGhosts();
 
-      Field<NDim, double> sc1_sq("SC1_sq_field", toolBox);
+      Field<double, NDim> sc1_sq("SC1_sq_field", toolBox);
       sc1_sq = sc1 * sc1;
       sc1_sq.updateGhosts();
 
-      Field<NDim, double> result_field("result2", toolBox);
+      Field<double, NDim> result_field("result2", toolBox);
       result_field = LatLapl(sc1 * sc1);
 
       auto sc1_sq_view = sc1_sq.getFullNDHostView();
@@ -135,19 +135,19 @@ namespace TempLat
 
     // Test 3: Laplacian of sc1 * sc2 (if NDim >= 2)
     if constexpr (NDim >= 2) {
-      Field<NDim, double> sc1("SC1_prod", toolBox);
+      Field<double, NDim> sc1("SC1_prod", toolBox);
       sc1 = coord(1_c);
       sc1.updateGhosts();
 
-      Field<NDim, double> sc2("SC2_prod", toolBox);
+      Field<double, NDim> sc2("SC2_prod", toolBox);
       sc2 = coord(2_c);
       sc2.updateGhosts();
 
-      Field<NDim, double> sc1_sc2("SC1_SC2_field", toolBox);
+      Field<double, NDim> sc1_sc2("SC1_SC2_field", toolBox);
       sc1_sc2 = sc1 * sc2;
       sc1_sc2.updateGhosts();
 
-      Field<NDim, double> result_field("result3", toolBox);
+      Field<double, NDim> result_field("result3", toolBox);
       result_field = LatLapl(sc1 * sc2);
 
       auto sc1_sc2_view = sc1_sc2.getFullNDHostView();
@@ -192,17 +192,17 @@ namespace TempLat
 
     // Test 4: Laplacian of (sc1 + sc2)^2 (if NDim >= 2)
     if constexpr (NDim >= 2) {
-      Field<NDim, double> sc1("SC1_sum", toolBox);
+      Field<double, NDim> sc1("SC1_sum", toolBox);
       sc1 = coord(1_c);
 
-      Field<NDim, double> sc2("SC2_sum", toolBox);
+      Field<double, NDim> sc2("SC2_sum", toolBox);
       sc2 = coord(2_c);
 
-      Field<NDim, double> sc_sum_sq("SC_sum_sq_field", toolBox);
+      Field<double, NDim> sc_sum_sq("SC_sum_sq_field", toolBox);
       sc_sum_sq = pow<2>(sc1 + sc2);
       sc_sum_sq.updateGhosts();
 
-      Field<NDim, double> result_field("result4", toolBox);
+      Field<double, NDim> result_field("result4", toolBox);
       result_field = LatLapl(pow<2>(sc1 + sc2));
 
       auto sc_sum_sq_view = sc_sum_sq.getFullNDHostView();

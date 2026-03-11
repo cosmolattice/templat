@@ -30,13 +30,13 @@ namespace TempLat
    *  Your implementation of FFTPlanInterface must take care of freeing the plan(s) upon destruction. So you should use
    * shared_ptr's!
    */
-  template <size_t NDim, typename T> class FFTPlanInterface
+  template <typename T, size_t NDim> class FFTPlanInterface
   {
   public:
     /* virtual desctructor can not be abstract: https://stackoverflow.com/a/13444839/2295722 */
     virtual ~FFTPlanInterface() = default;
-    virtual void c2r(MemoryBlock<NDim, T> &mBlock) = 0;
-    virtual void r2c(MemoryBlock<NDim, T> &mBlock) = 0;
+    virtual void c2r(MemoryBlock<T, NDim> &mBlock) = 0;
+    virtual void r2c(MemoryBlock<T, NDim> &mBlock) = 0;
   };
 
   /** @brief A pure abstract class (interface!) which defines the methods that you must implement for your new fft
@@ -81,12 +81,12 @@ namespace TempLat
      * shared_ptr's. Since we use virtual methods here, we cannot use templates. Only one type of dynamic typing allowed
      * by C++, either runtime (virtual) or compile time (template).
      */
-    virtual std::shared_ptr<FFTPlanInterface<NDim, float>> getPlans_float(const MPICartesianGroup &group,
+    virtual std::shared_ptr<FFTPlanInterface<float, NDim>> getPlans_float(const MPICartesianGroup &group,
                                                                           const FFTLayoutStruct<NDim> &layout) = 0;
     /** @brief Create fully working plans, which must self-destruct in the FFTPlanInterface's destructor. Use
      * shared_ptr's.
      */
-    virtual std::shared_ptr<FFTPlanInterface<NDim, double>> getPlans_double(const MPICartesianGroup &group,
+    virtual std::shared_ptr<FFTPlanInterface<double, NDim>> getPlans_double(const MPICartesianGroup &group,
                                                                             const FFTLayoutStruct<NDim> &layout) = 0;
   };
 

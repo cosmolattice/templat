@@ -49,7 +49,7 @@ namespace TempLat
    *
    * Unit test: ctest -R test-parafaftplanholder
    **/
-  template <size_t NDim, typename T> class ParafaftPlanHolder : public FFTPlanInterface<NDim, T>
+  template <typename T, size_t NDim> class ParafaftPlanHolder : public FFTPlanInterface<T, NDim>
   {
   public:
     using Complex = complex<T>;
@@ -80,7 +80,7 @@ namespace TempLat
      * Parafaft's backward() copies input to internal buffers before processing,
      * so using the same memory for both is safe.
      */
-    virtual void c2r(MemoryBlock<NDim, T> &mBlock) override { execute_c2r(mBlock); }
+    virtual void c2r(MemoryBlock<T, NDim> &mBlock) override { execute_c2r(mBlock); }
 
     /**
      * @brief Real-to-complex forward transform (in-place).
@@ -88,7 +88,7 @@ namespace TempLat
      * Parafaft's forward() copies input to internal buffers before processing,
      * so using the same memory for both is safe.
      */
-    virtual void r2c(MemoryBlock<NDim, T> &mBlock) override { execute_r2c(mBlock); }
+    virtual void r2c(MemoryBlock<T, NDim> &mBlock) override { execute_r2c(mBlock); }
 
   private:
 #ifdef HAVE_MPI
@@ -105,7 +105,7 @@ namespace TempLat
     // Double precision implementation using in-place padded buffer API
     template <typename S = T>
       requires std::is_same<S, double>::value
-    void execute_r2c(MemoryBlock<NDim, S> &mBlock)
+    void execute_r2c(MemoryBlock<S, NDim> &mBlock)
     {
 #ifdef HAVE_MPI
 #ifdef HAVE_PARAFAFT
@@ -119,7 +119,7 @@ namespace TempLat
     // Double precision implementation using in-place padded buffer API
     template <typename S = T>
       requires std::is_same<S, double>::value
-    void execute_c2r(MemoryBlock<NDim, S> &mBlock)
+    void execute_c2r(MemoryBlock<S, NDim> &mBlock)
     {
 #ifdef HAVE_MPI
 #ifdef HAVE_PARAFAFT

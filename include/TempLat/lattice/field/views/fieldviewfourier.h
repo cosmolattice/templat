@@ -30,13 +30,13 @@ namespace TempLat
    *
    * Unit test: ctest -R test-fieldviewconfig
    **/
-  template <size_t _NDim, typename T> class FourierView : public AbstractField<_NDim, T>
+  template <typename T, size_t _NDim> class FourierView : public AbstractField<T, _NDim>
   {
   public:
     static constexpr size_t NDim = _NDim;
 
-    using AbstractField<NDim, T>::mManager;
-    using AbstractField<NDim, T>::mToolBox;
+    using AbstractField<T, NDim>::mManager;
+    using AbstractField<T, NDim>::mToolBox;
 
     template <typename R> void operator=(R &&g) { this->assign(std::forward<R>(g)); }
 
@@ -125,7 +125,7 @@ namespace TempLat
         break;
       case SpaceStateType::Fourier:
       default:
-        AbstractField<NDim, T>::confirmSpace(newLayout, spaceType);
+        AbstractField<T, NDim>::confirmSpace(newLayout, spaceType);
         break;
       }
     }
@@ -179,10 +179,10 @@ namespace TempLat
 
     std::string to_string() const { return mManager->getName() + "(k)"; }
 
-    template <size_t __NDim, typename S> friend class Field;
+    template <typename S, size_t __NDim> friend class Field;
 
   private:
-    FourierView(const AbstractField<NDim, T> &f) : AbstractField<NDim, T>(f)
+    FourierView(const AbstractField<T, NDim> &f) : AbstractField<T, NDim>(f)
     {
       if (mToolBox == nullptr) return;
       auto layout = mToolBox->mLayouts.getFourierSpaceLayout();
@@ -191,9 +191,9 @@ namespace TempLat
       mRawView = mManager->template getRawView<complex<T>>();
     }
 
-    device::memory::NDViewUnmanaged<NDim, complex<T>> mView;
-    device::memory::NDViewUnmanaged<1, complex<T>> mRawView;
-    device::memory::NDViewUnmanagedHost<NDim, complex<T>> mHostView;
+    device::memory::NDViewUnmanaged<complex<T>, NDim> mView;
+    device::memory::NDViewUnmanaged<complex<T>, 1> mRawView;
+    device::memory::NDViewUnmanagedHost<complex<T>, NDim> mHostView;
 
     device::IdxArray<NDim> memorySizes;
     device::array<device::pair<ptrdiff_t, ptrdiff_t>, NDim> localSlicing;

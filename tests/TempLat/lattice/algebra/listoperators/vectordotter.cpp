@@ -28,7 +28,7 @@ namespace TempLat
 
       SpatialCoordinate<NDim> x(toolBox);
 
-      Field<NDim, double> fieldX("fieldX", toolBox);
+      Field<double, NDim> fieldX("fieldX", toolBox);
 
       fieldX = dot(x, x);
 

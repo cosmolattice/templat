@@ -24,7 +24,7 @@ namespace TempLat
 
     auto mToolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
-    Field<NDim, double> phi("phi", mToolBox);
+    Field<double, NDim> phi("phi", mToolBox);
     auto phi_of_k = phi.inFourierSpace();
     const double mFac = 1.;
     phi_of_k = mFac * WaveNumber<NDim>(mToolBox).norm();

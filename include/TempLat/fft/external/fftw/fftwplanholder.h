@@ -30,7 +30,7 @@ namespace TempLat
    *
    * Unit test: ctest -R test-fftwplanholder
    **/
-  template <size_t NDim, typename T> class FFTWPlanHolder : public FFTPlanInterface<NDim, T>
+  template <typename T, size_t NDim> class FFTWPlanHolder : public FFTPlanInterface<T, NDim>
   {
   public:
 #ifdef HAVE_FFTFLOAT
@@ -55,8 +55,8 @@ namespace TempLat
       }
     }
 
-    virtual void c2r(MemoryBlock<NDim, T> &mBlock) { execute_c2r(*mPlanC2R, mBlock); };
-    virtual void r2c(MemoryBlock<NDim, T> &mBlock) { execute_r2c(*mPlanR2C, mBlock); };
+    virtual void c2r(MemoryBlock<T, NDim> &mBlock) { execute_c2r(*mPlanC2R, mBlock); };
+    virtual void r2c(MemoryBlock<T, NDim> &mBlock) { execute_r2c(*mPlanR2C, mBlock); };
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
@@ -80,7 +80,7 @@ namespace TempLat
 #endif
     template <typename S = T>
       requires std::is_same_v<S, double>
-    void execute_r2c(plan somePlan, MemoryBlock<NDim, S> &mBlock)
+    void execute_r2c(plan somePlan, MemoryBlock<S, NDim> &mBlock)
     {
       auto block_view = mBlock.getRawHostView();
       fftw_execute_dft_r2c(somePlan, block_view.data(), (fftw_complex *)block_view.data());
@@ -90,7 +90,7 @@ namespace TempLat
 #ifdef HAVE_FFTFLOAT
     template <typename S = T>
       requires std::is_same_v<S, float>
-    void execute_r2c(plan somePlan, MemoryBlock<NDim, S> &mBlock)
+    void execute_r2c(plan somePlan, MemoryBlock<S, NDim> &mBlock)
     {
       auto block_view = mBlock.getRawHostView();
       fftwf_execute_dft_r2c(somePlan, block_view.data(), (fftwf_complex *)block_view.data());
@@ -100,7 +100,7 @@ namespace TempLat
 
     template <typename S = T>
       requires std::is_same_v<S, double>
-    void execute_c2r(plan somePlan, MemoryBlock<NDim, S> &mBlock)
+    void execute_c2r(plan somePlan, MemoryBlock<S, NDim> &mBlock)
     {
       // sayMPI << "FFTW double c2r starting. Plan: " << somePlan << "\n";
       // sayMPI << "with block size: " << mBlock.size() << "\n";
@@ -113,7 +113,7 @@ namespace TempLat
 #ifdef HAVE_FFTFLOAT
     template <typename S = T>
       requires std::is_same_v<S, float>
-    void execute_c2r(plan somePlan, MemoryBlock<NDim, S> &mBlock)
+    void execute_c2r(plan somePlan, MemoryBlock<S, NDim> &mBlock)
     {
       auto block_view = mBlock.getRawHostView();
       fftwf_execute_dft_c2r(somePlan, (fftwf_complex *)block_view.data(), block_view.data());

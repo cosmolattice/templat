@@ -416,7 +416,7 @@ namespace TempLat
           mDataset.writeSlices(sdata, subdims, offsets);
         } else {
           // Otherwise, we get the data point by point.
-          device::memory::NDView<1, vType> device_buf("buffer", toolBox->mNGridPointsVec[dim]);
+          device::memory::NDView<vType, 1> device_buf("buffer", toolBox->mNGridPointsVec[dim]);
           auto functor = DEVICE_LAMBDA(device::IdxArray<1> jdx)
           {
             device::Idx i = jdx[0];

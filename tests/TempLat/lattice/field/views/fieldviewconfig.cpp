@@ -13,25 +13,25 @@
 namespace TempLat
 {
 
-  template <size_t NDim, typename T> struct ConfigViewTester {
+  template <typename T, size_t NDim> struct ConfigViewTester {
     static void Test(TDDAssertion &tdd);
   };
 
-  template <size_t NDim, typename T> inline void ConfigViewTester<NDim, T>::Test(TDDAssertion &tdd)
+  template <typename T, size_t NDim> inline void ConfigViewTester<T, NDim>::Test(TDDAssertion &tdd)
   {
     const ptrdiff_t nGrid = 16, nGhost = 2;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
-    Field<NDim, T> a("a", toolBox);
-    Field<NDim, T> b("b", toolBox);
+    Field<T, NDim> a("a", toolBox);
+    Field<T, NDim> b("b", toolBox);
 
     constexpr T value = 100. * nGrid * NDim * nGhost;
 
     a = value;
     b = value;
 
-    tdd.verify(HasSpaceConfirmationMethods<Field<NDim, T>, NDim>);
+    tdd.verify(HasSpaceConfirmationMethods<Field<T, NDim>, NDim>);
 
     // get host views
     auto a_host = a.getLocalNDHostView();
@@ -73,12 +73,12 @@ namespace TempLat
 
 namespace
 {
-  TempLat::TDDContainer<TempLat::ConfigViewTester<1, double>> test1;
-  TempLat::TDDContainer<TempLat::ConfigViewTester<2, double>> test2;
-  TempLat::TDDContainer<TempLat::ConfigViewTester<3, double>> test3;
-  TempLat::TDDContainer<TempLat::ConfigViewTester<4, double>> test4;
-  TempLat::TDDContainer<TempLat::ConfigViewTester<1, float>> test1f;
-  TempLat::TDDContainer<TempLat::ConfigViewTester<2, float>> test2f;
-  TempLat::TDDContainer<TempLat::ConfigViewTester<3, float>> test3f;
-  TempLat::TDDContainer<TempLat::ConfigViewTester<4, float>> test4f;
+  TempLat::TDDContainer<TempLat::ConfigViewTester<double, 1>> test1;
+  TempLat::TDDContainer<TempLat::ConfigViewTester<double, 2>> test2;
+  TempLat::TDDContainer<TempLat::ConfigViewTester<double, 3>> test3;
+  TempLat::TDDContainer<TempLat::ConfigViewTester<double, 4>> test4;
+  TempLat::TDDContainer<TempLat::ConfigViewTester<float, 1>> test1f;
+  TempLat::TDDContainer<TempLat::ConfigViewTester<float, 2>> test2f;
+  TempLat::TDDContainer<TempLat::ConfigViewTester<float, 3>> test3f;
+  TempLat::TDDContainer<TempLat::ConfigViewTester<float, 4>> test4f;
 } // namespace

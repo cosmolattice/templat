@@ -89,8 +89,8 @@ namespace TempLat
     }
 
     /** @brief overload for passing objects which have a data() and a size() method, like std::vector<T> */
-    template <template <size_t _NDim, typename S, typename... MArgs> class M, typename T, typename... Args>
-    void operator()(M<NDim, T, Args...> &obj)
+    template <template <typename S, size_t _NDim, typename... MArgs> class M, typename T, typename... Args>
+    void operator()(M<T, NDim, Args...> &obj)
     {
       Timer timer;
       bustTheGhosts(obj);
@@ -107,7 +107,7 @@ namespace TempLat
     // for some reasons, icc does not understand the default nested template for zero arguments.
 
     /** @brief overload for passing objects which have a data() and a size() method, like std::vector<T> */
-    template <template <size_t _NDim, typename S> class M, typename T> void operator()(M<NDim, T> &obj)
+    template <template <typename S, size_t _NDim> class M, typename T> void operator()(M<T, NDim> &obj)
     {
       operator()((T *)obj.data(), obj.size());
     }
@@ -125,7 +125,7 @@ namespace TempLat
      */
     device::Idx mDirection;
 
-    template <typename T> void bustTheGhosts(MemoryBlock<NDim, T> &block)
+    template <typename T> void bustTheGhosts(MemoryBlock<T, NDim> &block)
     {
       const auto from_padding = mFrom.getPadding();
       const auto to_padding = mTo.getPadding();
@@ -178,7 +178,7 @@ namespace TempLat
           tslab_sizes[i] = to_sizes[i];
       }
       auto tslab = device::apply(
-          [&](const auto &...args) { return device::memory::NDView<NDim, T>("GhostBusterTSlab", args...); },
+          [&](const auto &...args) { return device::memory::NDView<T, NDim>("GhostBusterTSlab", args...); },
           tslab_sizes);
 
       int _j_lim = mDirection > 0 ? std::min(to_sizes[dim], from_sizes[dim] + from_padding[dim][1])

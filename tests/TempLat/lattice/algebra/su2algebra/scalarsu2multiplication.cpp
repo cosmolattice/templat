@@ -14,16 +14,16 @@
 namespace TempLat
 {
 
-  template <size_t NDim, typename T> struct ComplexFieldSU2MultiplyTester {
+  template <typename T, size_t NDim> struct ComplexFieldSU2MultiplyTester {
     static void Test(TDDAssertion &tdd);
   };
 
-  template <size_t NDim, typename T> inline void ComplexFieldSU2MultiplyTester<NDim, T>::Test(TDDAssertion &tdd)
+  template <typename T, size_t NDim> inline void ComplexFieldSU2MultiplyTester<T, NDim>::Test(TDDAssertion &tdd)
   {
     auto toolBox = MemoryToolBox<NDim>::makeShared(16, 1);
-    Field<NDim, T> field("testField", toolBox);
-    SU2Field<NDim, T> su2("testSU2", toolBox);
-    SU2Field<NDim, T> result("testResultSU2", toolBox);
+    Field<T, NDim> field("testField", toolBox);
+    SU2Field<T, NDim> su2("testSU2", toolBox);
+    SU2Field<T, NDim> result("testResultSU2", toolBox);
 
     field = -3;
 
@@ -55,12 +55,12 @@ namespace TempLat
 
 namespace
 {
-  // TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<1, double>> test1;
-  TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<2, double>> test2;
-  TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<3, double>> test3;
-  TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<4, double>> test4;
-  // TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<1, float>> test1f;
-  // TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<2, float>> test2f;
-  // TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<3, float>> test3f;
-  // TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<4, float>> test4f;
+  // TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<double, 1>> test1;
+  TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<double, 2>> test2;
+  TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<double, 3>> test3;
+  TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<double, 4>> test4;
+  // TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<float, 1>> test1f;
+  // TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<float, 2>> test2f;
+  // TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<float, 3>> test3f;
+  // TempLat::TDDContainer<TempLat::ComplexFieldSU2MultiplyTester<float, 4>> test4f;
 } // namespace

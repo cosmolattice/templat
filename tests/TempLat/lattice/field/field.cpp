@@ -16,11 +16,11 @@
 namespace TempLat
 {
 
-  template <size_t NDim, typename T> struct FieldTester {
+  template <typename T, size_t NDim> struct FieldTester {
     static void Test(TDDAssertion &tdd);
   };
 
-  template <size_t NDim, typename T> inline void FieldTester<NDim, T>::Test(TDDAssertion &tdd)
+  template <typename T, size_t NDim> inline void FieldTester<T, NDim>::Test(TDDAssertion &tdd)
   {
     const ptrdiff_t nGrid = 32, nGhost = 2;
 
@@ -29,17 +29,17 @@ namespace TempLat
 
     // make sure the GetNDim machinery works (sanity check, otherwise everything will just fail).
     {
-      static_assert(GetNDim::get<Field<NDim, T>>() == NDim);
+      static_assert(GetNDim::get<Field<T, NDim>>() == NDim);
     }
 
     // Test whether a transformation of the field forward and backward works.
     {
-      Field<NDim, T> original("original", toolBox);
+      Field<T, NDim> original("original", toolBox);
       SpatialCoordinate x(toolBox);
       original = x(1_c);
       original.updateGhosts();
 
-      Field<NDim, T> copy("copy", toolBox);
+      Field<T, NDim> copy("copy", toolBox);
       copy = original;
 
       // get host views
@@ -85,11 +85,11 @@ namespace TempLat
     // ------------------------------------------------------------------------------------------
 
     {
-      Field<NDim, T> phi("phi", toolBox);
-      Field<NDim, T> chi("chi", toolBox);
+      Field<T, NDim> phi("phi", toolBox);
+      Field<T, NDim> chi("chi", toolBox);
       WaveNumber k(toolBox);
 
-      auto field_tester = [&](Field<NDim, T> &f, auto &&op, double expected) {
+      auto field_tester = [&](Field<T, NDim> &f, auto &&op, double expected) {
         f = op;
 
         auto view = f.getLocalNDHostView();
@@ -151,9 +151,9 @@ namespace TempLat
     // ------------------------------------------------------------------------------------------
 
     {
-      Field<NDim, T> phi("phi", toolBox);
-      Field<NDim, T> chi("chi", toolBox);
-      Field<NDim, T> psi("psi", toolBox);
+      Field<T, NDim> phi("phi", toolBox);
+      Field<T, NDim> chi("chi", toolBox);
+      Field<T, NDim> psi("psi", toolBox);
 
       std::cout << "Layout info: " << toolBox->mLayouts.getConfigSpaceLayout() << "\n";
 
@@ -161,13 +161,13 @@ namespace TempLat
       tdd.verify(phi.mManager->isFourierSpace());
 
       WaveNumber k(toolBox);
-      phi.inFourierSpace() = k.norm2() * RandomGaussianField<NDim, T>("Hoi", toolBox);
+      phi.inFourierSpace() = k.norm2() * RandomGaussianField<T, NDim>("Hoi", toolBox);
 
       // just manipulated phi(k), so it must still be in Fourier space, and ghosts are stale.
       tdd.verify(phi.mManager->isFourierSpace());
       tdd.verify(phi.mManager->areGhostsStale());
 
-      chi = LatticeLaplacian<NDim, decltype(phi)>(phi);
+      chi = LatticeLaplacian<decltype(phi)>(phi);
       // just manipulated chi(x), so it must still be in configuration space, and ghosts are stale.
       tdd.verify(!chi.mManager->isFourierSpace());
       tdd.verify(chi.mManager->isConfigSpace());
@@ -194,5 +194,5 @@ namespace TempLat
 
 namespace
 {
-  TempLat::TDDContainer<TempLat::FieldTester<3, double>> test;
+  TempLat::TDDContainer<TempLat::FieldTester<double, 3>> test;
 }

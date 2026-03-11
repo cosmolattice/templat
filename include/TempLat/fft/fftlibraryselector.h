@@ -151,7 +151,7 @@ namespace TempLat
       return result;
     };
 
-    void r2c(MemoryBlock<NDim, double> &mBlock)
+    void r2c(MemoryBlock<double, NDim> &mBlock)
     {
       getPlans_double();
       if (verbose) sayMPI << "Going to perform double r2c.\n";
@@ -159,7 +159,7 @@ namespace TempLat
       mBlock.flagHostMirrorOutdated();
     }
 
-    void r2c(MemoryBlock<NDim, float> &mBlock)
+    void r2c(MemoryBlock<float, NDim> &mBlock)
     {
       getPlans_float();
       if (verbose) sayMPI << "Going to perform float r2c.\n";
@@ -167,7 +167,7 @@ namespace TempLat
       mBlock.flagHostMirrorOutdated();
     }
 
-    void c2r(MemoryBlock<NDim, double> &mBlock)
+    void c2r(MemoryBlock<double, NDim> &mBlock)
     {
       getPlans_double();
       if (verbose) sayMPI << "Going to perform double c2r.\n";
@@ -175,7 +175,7 @@ namespace TempLat
       mBlock.flagHostMirrorOutdated();
     }
 
-    void c2r(MemoryBlock<NDim, float> &mBlock)
+    void c2r(MemoryBlock<float, NDim> &mBlock)
     {
       getPlans_float();
       if (verbose) sayMPI << "Going to perform float c2r.\n";
@@ -209,8 +209,8 @@ namespace TempLat
 
     bool madePlansFloat;
     bool madePlansDouble;
-    std::shared_ptr<FFTPlanInterface<NDim, float>> mPlansFloat;
-    std::shared_ptr<FFTPlanInterface<NDim, double>> mPlansDouble;
+    std::shared_ptr<FFTPlanInterface<float, NDim>> mPlansFloat;
+    std::shared_ptr<FFTPlanInterface<double, NDim>> mPlansDouble;
 
     bool verbose;
 

@@ -19,7 +19,7 @@ namespace TempLat
   {
     auto toolbox = MemoryToolBox<3>::makeShared(16, 1);
 
-    SU2Field<3, double> A("A", toolbox);
+    SU2Field<double, 3> A("A", toolbox);
 
     A(1_c) = 0.2;
     A(2_c) = 0.3;

@@ -18,8 +18,8 @@ namespace TempLat
   {
     // Test the SU2Doublet class
     auto toolBox = MemoryToolBox<3>::makeShared(16, 1);
-    SU2Doublet<3, float> doublet("testDoublet", toolBox);
-    SU2Doublet<3, float> doublet2("testDoublet2", toolBox);
+    SU2Doublet<float, 3> doublet("testDoublet", toolBox);
+    SU2Doublet<float, 3> doublet2("testDoublet2", toolBox);
 
     doublet2(0_c) = 1.0f;
     doublet2(1_c) = 2.0f;
@@ -50,12 +50,12 @@ namespace TempLat
         }
     tdd.verify(all_true);
 
-    std::vector<SU2Doublet<3, double>> fs;
+    std::vector<SU2Doublet<double, 3>> fs;
     for (int i = 0; i < 4; ++i) {
-      fs.push_back(SU2Doublet<3, double>("dd_" + std::to_string(i + 0), toolBox));
+      fs.push_back(SU2Doublet<double, 3>("dd_" + std::to_string(i + 0), toolBox));
     }
 
-    std::vector<SU2Doublet<3, double>> fs2(fs);
+    std::vector<SU2Doublet<double, 3>> fs2(fs);
   }
 
 } // namespace TempLat

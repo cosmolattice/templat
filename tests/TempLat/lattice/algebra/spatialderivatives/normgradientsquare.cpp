@@ -25,13 +25,13 @@ namespace TempLat
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
     /* create the random field once, keep in memory. Trade off between RAM use and redundant computations. */
-    Field<NDim, double> gaussian("gaussian", toolBox);
-    gaussian.inFourierSpace() = 1 * RandomGaussianField<NDim, double>("hoi", toolBox);
+    Field<double, NDim> gaussian("gaussian", toolBox);
+    gaussian.inFourierSpace() = 1 * RandomGaussianField<double, NDim>("hoi", toolBox);
     gaussian += 0;
 
-    Field<NDim, double> normGradSq("normGradSq", toolBox);
+    Field<double, NDim> normGradSq("normGradSq", toolBox);
     normGradSq = Grad2(gaussian);
-    Field<NDim, double> LatForwardGradNorm2("LatForwardGradNorm2", toolBox);
+    Field<double, NDim> LatForwardGradNorm2("LatForwardGradNorm2", toolBox);
     LatForwardGradNorm2 = LatForwardGrad(gaussian).norm2();
 
     bool allGood = true;

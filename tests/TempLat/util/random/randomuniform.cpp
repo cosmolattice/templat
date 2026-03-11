@@ -45,7 +45,7 @@ namespace TempLat
       tdd.verify(AlmostEqual(x, 499917.024724008515));
 
       // Just a brief check, that all generated numbers are different
-      device::memory::NDView<1, double> a("a", 10);
+      device::memory::NDView<double, 1> a("a", 10);
       device::iteration::foreach<1>(
           "RandomUniformTester", {0}, {10},
           DEVICE_LAMBDA(device::IdxArray<1> i) { a(i[0]) = prng.get(i[0], i[0], 0); });
@@ -55,7 +55,7 @@ namespace TempLat
         tdd.verify(!AlmostEqual(a_host(i), a_host(i + 1)));
 
       // If we use the same state, all values should be identical
-      device::memory::NDView<1, double> b("b", 2);
+      device::memory::NDView<double, 1> b("b", 2);
       device::iteration::foreach<1>(
           "RandomUniformTester", {0}, {2}, DEVICE_LAMBDA(device::IdxArray<1> i) { b(i[0]) = prng.get(0, 0, 0); });
       auto b_host = device::memory::createMirrorView(b);

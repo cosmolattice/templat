@@ -28,7 +28,7 @@ namespace TempLat
     SpatialCoordinate<NDim> x(toolBox);
 
     // Create fields for each wavenumber component
-    std::vector<Field<NDim, double>> phi_components;
+    std::vector<Field<double, NDim>> phi_components;
     phi_components.reserve(NDim);
     for (size_t d = 0; d < NDim; ++d) {
       phi_components.emplace_back("phi_" + std::to_string(d), toolBox);
@@ -45,7 +45,7 @@ namespace TempLat
         constexpr size_t i = decltype(_i)::value;
         constexpr_for<0, NDim>([&](auto _j) {
           constexpr size_t j = decltype(_j)::value;
-          Field<NDim, double> result("result", toolBox);
+          Field<double, NDim> result("result", toolBox);
           phi_components[i].getMemoryManager()->updateGhosts();
           result = shift(phi_components[i], _j + Tag<1>()) - phi_components[i];
           result.getMemoryManager()->updateGhosts();
@@ -54,7 +54,7 @@ namespace TempLat
 
           auto view_orig = phi_components[i].getLocalNDHostView();
 
-          Field<NDim, double> shiftOnly("shiftOnly", toolBox);
+          Field<double, NDim> shiftOnly("shiftOnly", toolBox);
           shiftOnly = shift(phi_components[i], _j + Tag<1>());
           shiftOnly.getMemoryManager()->updateGhosts();
           auto view_shift = shiftOnly.getLocalNDHostView();

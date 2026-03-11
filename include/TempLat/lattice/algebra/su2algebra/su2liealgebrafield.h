@@ -17,13 +17,15 @@ namespace TempLat
    *
    * Unit test: ctest -R test-su2liealgebrafield
    **/
-  template <size_t _NDim, typename T> class SU2LieAlgebraField
+  template <typename T, size_t _NDim = 0> class SU2LieAlgebraField
   {
   public:
     // Put public methods here. These should change very little over time.
+    static_assert(_NDim != 0, "NDim template parameter is required. Use e.g. SU2LieAlgebraField<double, 3>.");
+
     static constexpr size_t NDim = _NDim;
 
-    SU2LieAlgebraField(Field<NDim, T> f1, Field<NDim, T> f2, Field<NDim, T> f3)
+    SU2LieAlgebraField(Field<T, NDim> f1, Field<T, NDim> f2, Field<T, NDim> f3)
         : fs{{f1, f2, f3}}, mName("NoName"), mLayout(fs[0].getToolBox()->mLayouts.getConfigSpaceLayout())
     {
     }
@@ -31,9 +33,9 @@ namespace TempLat
     SU2LieAlgebraField(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox,
                        LatticeParameters<T> pLatPar)
         : fs{{
-              Field<NDim, T>(name + "_1", toolBox, pLatPar), //
-              Field<NDim, T>(name + "_2", toolBox, pLatPar), //
-              Field<NDim, T>(name + "_3", toolBox, pLatPar)  //
+              Field<T, NDim>(name + "_1", toolBox, pLatPar), //
+              Field<T, NDim>(name + "_2", toolBox, pLatPar), //
+              Field<T, NDim>(name + "_3", toolBox, pLatPar)  //
           }},
           mName(name), mLayout(toolBox->mLayouts.getConfigSpaceLayout())
     {
@@ -81,7 +83,7 @@ namespace TempLat
     }
 
     template <typename... IDX>
-      requires requires(Field<NDim, T> f, IDX... idx) {
+      requires requires(Field<T, NDim> f, IDX... idx) {
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(f, idx...);
       }
@@ -118,7 +120,7 @@ namespace TempLat
     static constexpr size_t numberToSkipAsTuple = 1;
 
   private:
-    device::array<Field<NDim, T>, 3> fs;
+    device::array<Field<T, NDim>, 3> fs;
     const device::memory::host_string mName;
     LayoutStruct<NDim> mLayout;
   };

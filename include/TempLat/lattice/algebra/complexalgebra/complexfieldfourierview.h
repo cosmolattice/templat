@@ -23,11 +23,11 @@ namespace TempLat
    *
    * Unit test: ctest -R test-complexfieldfourierview
    **/
-  template <size_t NDim, typename T> class ComplexFieldFourierView
+  template <typename T, size_t NDim> class ComplexFieldFourierView
   {
   public:
     // Put public methods here. These should change very little over time.
-    ComplexFieldFourierView(FourierView<NDim, T> r, FourierView<NDim, T> i)
+    ComplexFieldFourierView(FourierView<T, NDim> r, FourierView<T, NDim> i)
         : mR(r), mI(i), mToolBox(mR.getToolBox() == nullptr ? mI.getToolBox() : mR.getToolBox()),
           mLayout(mToolBox->mLayouts.getFourierSpaceLayout())
     {
@@ -104,8 +104,8 @@ namespace TempLat
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
 
-    FourierView<NDim, T> mR;
-    FourierView<NDim, T> mI;
+    FourierView<T, NDim> mR;
+    FourierView<T, NDim> mI;
 
     device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
 

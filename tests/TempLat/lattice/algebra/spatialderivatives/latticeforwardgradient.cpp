@@ -34,11 +34,11 @@ namespace TempLat
       constexpr int dir = decltype(dirTag)::value;
       constexpr size_t d = static_cast<size_t>(dir) - 1;
 
-      Field<NDim, double> sc("SC_" + std::to_string(dir), toolBox);
+      Field<double, NDim> sc("SC_" + std::to_string(dir), toolBox);
       sc = x(dirTag);
       sc.updateGhosts();
 
-      Field<NDim, double> fgsc("fgSC_" + std::to_string(dir), toolBox);
+      Field<double, NDim> fgsc("fgSC_" + std::to_string(dir), toolBox);
       fgsc = getVectorComponent(LatForwardGrad(sc), dirTag - Tag<1>{});
 
       bool OK = true;

@@ -29,7 +29,7 @@ namespace TempLat
 
     // Create an SU2Field and set each component to a spatial coordinate direction.
     // Component 1 -> x_0, Component 2 -> x_1, Component 3 -> x_2
-    SU2Field<NDim, double> su2("su2", toolBox, LatticeParameters<double>());
+    SU2Field<double, NDim> su2("su2", toolBox, LatticeParameters<double>());
     su2(1_c) = x(1_c);
     su2(2_c) = x(2_c);
     su2(3_c) = x(3_c);
@@ -47,7 +47,7 @@ namespace TempLat
         constexpr_for<0, 3>([&](auto _comp) {
           constexpr size_t comp = decltype(_comp)::value;
 
-          Field<NDim, double> result("result", toolBox);
+          Field<double, NDim> result("result", toolBox);
           result = shift(su2, _dir + Tag<1>()).SU2Get(Tag<comp + 1>()) - su2.SU2Get(Tag<comp + 1>());
           auto view = result.getLocalNDHostView();
 

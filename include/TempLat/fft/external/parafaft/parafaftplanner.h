@@ -55,7 +55,7 @@ namespace TempLat
      *
      * Not supported - parafaft only supports double precision.
      */
-    virtual std::shared_ptr<FFTPlanInterface<NDim, float>> getPlans_float(const MPICartesianGroup &group,
+    virtual std::shared_ptr<FFTPlanInterface<float, NDim>> getPlans_float(const MPICartesianGroup &group,
                                                                           const FFTLayoutStruct<NDim> &layout) override
     {
 #ifndef HAVE_FFTFLOAT
@@ -63,7 +63,7 @@ namespace TempLat
 #else
       throw ParafaftCompiledWithoutSinglePrecisionSupport("Parafaft does not support single precision FFTs.");
 #endif
-      return std::shared_ptr<FFTPlanInterface<NDim, float>>();
+      return std::shared_ptr<FFTPlanInterface<float, NDim>>();
     }
 
     /**
@@ -72,7 +72,7 @@ namespace TempLat
      * Creates a parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend> object and wraps it in ParafaftPlanHolder.
      * Parafaft's in-place API accepts padded buffers matching CosmoLattice's layout.
      */
-    virtual std::shared_ptr<FFTPlanInterface<NDim, double>>
+    virtual std::shared_ptr<FFTPlanInterface<double, NDim>>
     getPlans_double(const MPICartesianGroup &group, const FFTLayoutStruct<NDim> &layout) override
     {
 #ifdef HAVE_MPI
@@ -93,14 +93,14 @@ namespace TempLat
       auto parafaftObj =
           std::make_shared<parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend>>(globalShape, group.getBaseComm());
 
-      return std::make_shared<ParafaftPlanHolder<NDim, double>>(group, parafaftObj);
+      return std::make_shared<ParafaftPlanHolder<double, NDim>>(group, parafaftObj);
 #else
       throw ParafaftPlannerException("Parafaft is disabled (HAVE_PARAFAFT not defined).");
-      return std::shared_ptr<FFTPlanInterface<NDim, double>>();
+      return std::shared_ptr<FFTPlanInterface<double, NDim>>();
 #endif
 #else
       throw ParafaftPlannerException("Parafaft requires MPI.");
-      return std::shared_ptr<FFTPlanInterface<NDim, double>>();
+      return std::shared_ptr<FFTPlanInterface<double, NDim>>();
 #endif
     }
   };

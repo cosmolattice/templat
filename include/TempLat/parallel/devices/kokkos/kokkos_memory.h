@@ -17,13 +17,13 @@
 
 namespace TempLat::device_kokkos::memory
 {
-  template <size_t NDim, typename T, typename Exec = DefaultExecutionSpace, typename Layout = DefaultLayout>
+  template <typename T, size_t NDim, typename Exec = DefaultExecutionSpace, typename Layout = DefaultLayout>
   using NDView = Kokkos::View<typename GetKokkosNDStarType<NDim, T>::type, // Get the star syntax for
                                                                            // dimensionality recursively with
                               Layout, // LayoutRight is most compatible for now, may change in future
                               Exec    // Choice between GPU and CPU
                               >;
-  template <size_t NDim, typename T, typename Exec = DefaultExecutionSpace, typename Layout = DefaultLayout>
+  template <typename T, size_t NDim, typename Exec = DefaultExecutionSpace, typename Layout = DefaultLayout>
   using NDViewUnmanaged =
       Kokkos::View<typename GetKokkosNDStarType<NDim, T>::type, // Get the star syntax for dimensionality
                                                                 // recursively
@@ -32,7 +32,7 @@ namespace TempLat::device_kokkos::memory
                    Kokkos::MemoryTraits<Kokkos::Unmanaged> // No allocation: Attach to existing memory
                    >;
 
-  template <size_t NDim, typename T>
+  template <typename T, size_t NDim>
   using NDViewUnmanagedHost =
       Kokkos::View<typename GetKokkosNDStarType<NDim, T>::type, // Get the star syntax for dimensionality
                                                                 // recursively
@@ -123,7 +123,7 @@ namespace TempLat::device_kokkos::memory
 
     // If the source view is contiguous, we can use a simple copy
     if (contiguous) {
-      auto destView = NDViewUnmanaged<dim, T, Exec, Layout>(dest, src.layout());
+      auto destView = NDViewUnmanaged<T, dim, Exec, Layout>(dest, src.layout());
       Kokkos::deep_copy(destView, src);
     } else {
       // If not, we first need a temporary contiguous copy on device
@@ -131,11 +131,11 @@ namespace TempLat::device_kokkos::memory
       for (size_t i = 0; i < dim; ++i)
         localSizes[i] = src.extent(i);
       auto device_temp = device_kokkos::apply(
-          [&](const auto... sizes) { return NDView<dim, T, Exec, Layout>("temp", sizes...); }, localSizes);
+          [&](const auto... sizes) { return NDView<T, dim, Exec, Layout>("temp", sizes...); }, localSizes);
       copyDeviceToDevice(src, device_temp);
 
       // now copy the contiguous temp to host
-      auto destView = NDViewUnmanaged<dim, T, Exec, Layout>(dest, device_temp.layout());
+      auto destView = NDViewUnmanaged<T, dim, Exec, Layout>(dest, device_temp.layout());
       Kokkos::deep_copy(destView, device_temp);
     }
   }
@@ -152,7 +152,7 @@ namespace TempLat::device_kokkos::memory
 
     // If the destination view is contiguous, we can use a simple copy
     if (contiguous) {
-      auto srcView = NDViewUnmanaged<dim, T, Exec, Layout>(const_cast<T *>(src), dest.layout());
+      auto srcView = NDViewUnmanaged<T, dim, Exec, Layout>(const_cast<T *>(src), dest.layout());
       Kokkos::deep_copy(dest, srcView);
     } else {
       // If not, we first need a temporary contiguous copy on device
@@ -160,7 +160,7 @@ namespace TempLat::device_kokkos::memory
       for (size_t i = 0; i < dim; ++i)
         localSizes[i] = dest.extent(i);
       auto device_temp = device_kokkos::apply(
-          [&](const auto... sizes) { return NDView<dim, T, Exec, Layout>("temp", sizes...); }, localSizes);
+          [&](const auto... sizes) { return NDView<T, dim, Exec, Layout>("temp", sizes...); }, localSizes);
       copyHostToDevice(src, device_temp);
 
       // now copy the contiguous temp to the original view

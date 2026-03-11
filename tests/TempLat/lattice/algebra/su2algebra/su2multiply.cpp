@@ -23,9 +23,9 @@ namespace TempLat
     using T = float;
 
     auto toolBox = MemoryToolBox<3>::makeShared(8, 1);
-    SU2Field<NDim, T> su2_1("testSU2_1", toolBox);
-    SU2Field<NDim, T> su2_2("testSU2_2", toolBox);
-    SU2Field<NDim, T> result("resultSU2", toolBox);
+    SU2Field<T, NDim> su2_1("testSU2_1", toolBox);
+    SU2Field<T, NDim> su2_2("testSU2_2", toolBox);
+    SU2Field<T, NDim> result("resultSU2", toolBox);
 
     su2_1(1_c) = 0.1;
     su2_1(2_c) = 0.2;

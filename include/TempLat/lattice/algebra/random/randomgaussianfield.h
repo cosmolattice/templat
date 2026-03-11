@@ -25,10 +25,11 @@ namespace TempLat
    *
    * Unit test: ctest -R test-randomgaussianfield
    **/
-  template <size_t NDim, typename T, bool Real, bool Unitary>
+  template <typename T, size_t NDim, bool Real, bool Unitary>
   class RandomGaussianFieldHelper : public DimensionCountRecorder<NDim>
   {
     using RNGInteger = typename RandomGaussian::IntegerType;
+    static_assert(NDim != 0, "NDim template parameter is required.");
 
   public:
     // Put public methods here. These should change very little over time.
@@ -144,11 +145,11 @@ namespace TempLat
     device::IdxArray<NDim> mGlobalSizes;
   };
 
-  template <size_t NDim, typename T> using RandomGaussianField = RandomGaussianFieldHelper<NDim, T, false, false>;
+  template <typename T, size_t NDim = 0> using RandomGaussianField = RandomGaussianFieldHelper<T, NDim, false, false>;
 
-  template <size_t NDim, typename T> using RandomRayleighField = RandomGaussianFieldHelper<NDim, T, true, false>;
+  template <typename T, size_t NDim = 0> using RandomRayleighField = RandomGaussianFieldHelper<T, NDim, true, false>;
 
-  template <size_t NDim, typename T> using RandomUniformUnitaryField = RandomGaussianFieldHelper<NDim, T, false, true>;
+  template <typename T, size_t NDim = 0> using RandomUniformUnitaryField = RandomGaussianFieldHelper<T, NDim, false, true>;
 
 } // namespace TempLat
 

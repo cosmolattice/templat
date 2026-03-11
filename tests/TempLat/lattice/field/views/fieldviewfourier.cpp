@@ -12,19 +12,19 @@
 namespace TempLat
 {
 
-  template <size_t NDim, typename T> struct FourierViewTester {
+  template <typename T, size_t NDim> struct FourierViewTester {
     static void Test(TDDAssertion &tdd);
   };
 
-  template <size_t NDim, typename T> inline void FourierViewTester<NDim, T>::Test(TDDAssertion &tdd)
+  template <typename T, size_t NDim> inline void FourierViewTester<T, NDim>::Test(TDDAssertion &tdd)
   {
     const ptrdiff_t nGrid = 16, nGhost = 1;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
     toolBox->setVerbose();
 
-    Field<NDim, T> a("a", toolBox);
-    Field<NDim, T> x("x", toolBox);
+    Field<T, NDim> a("a", toolBox);
+    Field<T, NDim> x("x", toolBox);
 
     constexpr T value = 100. * nGrid * NDim * nGhost;
 
@@ -69,15 +69,15 @@ namespace TempLat
 
 namespace
 {
-  // TempLat::TDDContainer<TempLat::FourierViewTester<1, double>> test1;
-  TempLat::TDDContainer<TempLat::FourierViewTester<2, double>> test2;
-  TempLat::TDDContainer<TempLat::FourierViewTester<3, double>> test3;
-  TempLat::TDDContainer<TempLat::FourierViewTester<4, double>> test4;
+  // TempLat::TDDContainer<TempLat::FourierViewTester<double, 1>> test1;
+  TempLat::TDDContainer<TempLat::FourierViewTester<double, 2>> test2;
+  TempLat::TDDContainer<TempLat::FourierViewTester<double, 3>> test3;
+  TempLat::TDDContainer<TempLat::FourierViewTester<double, 4>> test4;
 
 #ifdef HAVE_FFTFLOAT
-  TempLat::TDDContainer<TempLat::FourierViewTester<1, float>> test1f;
-  TempLat::TDDContainer<TempLat::FourierViewTester<2, float>> test2f;
-  TempLat::TDDContainer<TempLat::FourierViewTester<3, float>> test3f;
-  TempLat::TDDContainer<TempLat::FourierViewTester<4, float>> test4f;
+  TempLat::TDDContainer<TempLat::FourierViewTester<float, 1>> test1f;
+  TempLat::TDDContainer<TempLat::FourierViewTester<float, 2>> test2f;
+  TempLat::TDDContainer<TempLat::FourierViewTester<float, 3>> test3f;
+  TempLat::TDDContainer<TempLat::FourierViewTester<float, 4>> test4f;
 #endif
 } // namespace

@@ -60,7 +60,7 @@ namespace TempLat
       }
     };
 
-    template <size_t NDim> void datum_initialize(MemoryBlock<NDim, datum<NDim>> &block, const LayoutStruct<NDim> layout)
+    template <size_t NDim> void datum_initialize(MemoryBlock<datum<NDim>, NDim> &block, const LayoutStruct<NDim> layout)
     {
       const auto localSizes = layout.getLocalSizes();
       const ptrdiff_t nGhost = layout.getNGhosts();
@@ -152,7 +152,7 @@ namespace TempLat
         sayMPI << "Current view:" << gridArrayStr.str();
       };
 
-      MemoryBlock<nd, TestScratch::datum<nd>> block(pow<nd>(nGrid + 2 * nGhost));
+      MemoryBlock<TestScratch::datum<nd>, nd> block(pow<nd>(nGrid + 2 * nGhost));
       const auto config_layout = fullLayout.getConfigSpaceLayout();
       TestScratch::datum_initialize<nd>(block, config_layout);
 

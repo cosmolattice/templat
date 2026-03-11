@@ -97,7 +97,7 @@ namespace TempLat
     sayMPI << "Using backend: " << ffter.getBackend() << " NDim = " << NDim << ", grid size = " << nGrid[0] << "\n";
 
     auto fftLayout = ffter.getLayout();
-    MemoryBlock<NDim, T> mem(fftLayout.getMinimalMemorySize());
+    MemoryBlock<T, NDim> mem(fftLayout.getMinimalMemorySize());
 
     const auto configLayout = fftLayout.configurationSpace;
 

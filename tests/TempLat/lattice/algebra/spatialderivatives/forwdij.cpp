@@ -37,11 +37,11 @@ namespace TempLat
       constexpr int dir = decltype(dirTag)::value;
       constexpr size_t d = static_cast<size_t>(dir) - 1;
 
-      Field<NDim, double> sc("SC_" + std::to_string(d), toolBox);
+      Field<double, NDim> sc("SC_" + std::to_string(d), toolBox);
       sc = x(dirTag);
       sc.updateGhosts();
 
-      Field<NDim, double> fijsc("fijSC_" + std::to_string(d), toolBox);
+      Field<double, NDim> fijsc("fijSC_" + std::to_string(d), toolBox);
       fijsc = forwDij(sc, Tag<dir>{});
 
       bool OK = true;
@@ -87,15 +87,15 @@ namespace TempLat
     // Test 2: ForwDij of quadratic function sc^2
     // For f(x) = x^2, forward sum is (x^2 + (x+1)^2) / dx = (2x^2 + 2x + 1) / dx
     {
-      Field<NDim, double> sc("SC_sq", toolBox);
+      Field<double, NDim> sc("SC_sq", toolBox);
       sc = x(1_c);
       sc.updateGhosts();
 
-      Field<NDim, double> sc_sq("SC_sq_field", toolBox);
+      Field<double, NDim> sc_sq("SC_sq_field", toolBox);
       sc_sq = sc * sc;
       sc_sq.updateGhosts();
 
-      Field<NDim, double> fijsc_sq("fijSC_sq", toolBox);
+      Field<double, NDim> fijsc_sq("fijSC_sq", toolBox);
       fijsc_sq = forwDij(sc * sc, Tag<1>{});
 
       bool OK = true;
@@ -137,20 +137,20 @@ namespace TempLat
 
     // Test 3: ForwDij of product of coordinates (if NDim >= 2)
     if constexpr (NDim >= 2) {
-      Field<NDim, double> sc1("SC1_prod", toolBox);
+      Field<double, NDim> sc1("SC1_prod", toolBox);
       sc1 = x(1_c);
       sc1.updateGhosts();
 
-      Field<NDim, double> sc2("SC2_prod", toolBox);
+      Field<double, NDim> sc2("SC2_prod", toolBox);
       sc2 = x(2_c);
       sc2.updateGhosts();
 
-      Field<NDim, double> sc_prod("SC_prod_field", toolBox);
+      Field<double, NDim> sc_prod("SC_prod_field", toolBox);
       sc_prod = sc1 * sc2;
       sc_prod.updateGhosts();
 
       // Test forward sum in direction 1 (index 0)
-      Field<NDim, double> fij_prod_dir1("fij_prod_dir1", toolBox);
+      Field<double, NDim> fij_prod_dir1("fij_prod_dir1", toolBox);
       fij_prod_dir1 = forwDij(sc1 * sc2, Tag<1>{});
 
       bool OK = true;

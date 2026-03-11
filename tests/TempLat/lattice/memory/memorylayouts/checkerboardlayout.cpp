@@ -81,7 +81,7 @@ namespace TempLat
     for (size_t d = 0; d < NDim; ++d)
       flatSize *= (sizesInMem[d] + 2 * nGhosts);
 
-    auto parityView = device::memory::NDView<1, device::Idx>("parityCheck", flatSize);
+    auto parityView = device::memory::NDView<device::Idx, 1>("parityCheck", flatSize);
 
     // Initialize to -1
     device::iteration::foreach<1>("Init", {0}, {flatSize},
@@ -199,8 +199,8 @@ namespace TempLat
 
     constexpr device::Idx totalSites = N * N * N;
 
-    auto evenView = device::memory::NDView<1, device::Idx>("evenVis", totalSites);
-    auto oddView = device::memory::NDView<1, device::Idx>("oddVis", totalSites);
+    auto evenView = device::memory::NDView<device::Idx, 1>("evenVis", totalSites);
+    auto oddView = device::memory::NDView<device::Idx, 1>("oddVis", totalSites);
 
     // Initialize to -1
     device::iteration::foreach<1>("InitEvenVis", {0}, {totalSites},

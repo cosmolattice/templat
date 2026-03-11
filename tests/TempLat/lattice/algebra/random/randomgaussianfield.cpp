@@ -24,10 +24,10 @@ namespace TempLat
     auto toolBox = MemoryToolBox<3>::makeShared(nGrid, nGhost);
     const ptrdiff_t localFourierGridPoints = fourierGridPoints / toolBox->getNProcesses();
 
-    RandomGaussianField<3, double> myField("Hello world", toolBox);
+    RandomGaussianField<double, 3> myField("Hello world", toolBox);
 
-    Field<3, double> a("a", toolBox);
-    Field<3, double> b("b", toolBox);
+    Field<double, 3> a("a", toolBox);
+    Field<double, 3> b("b", toolBox);
 
     // Get random values
     a.inFourierSpace() = myField;
@@ -69,26 +69,26 @@ namespace TempLat
 
     {
       // Test saveState/loadState round-trip
-      RandomGaussianField<3, double> rng("serialization_test", toolBox);
+      RandomGaussianField<double, 3> rng("serialization_test", toolBox);
 
       // Generate some values after saving state
-      Field<3, double> field2("field2", toolBox);
+      Field<double, 3> field2("field2", toolBox);
       field2.inFourierSpace() = rng;
 
       std::string savedState = rng.saveState();
 
       // Generate again, to see we get different values
-      Field<3, double> field1("field1", toolBox);
+      Field<double, 3> field1("field1", toolBox);
       field1.inFourierSpace() = rng;
 
-      RandomGaussianField<3, double> rng2("different_seed", toolBox);
+      RandomGaussianField<double, 3> rng2("different_seed", toolBox);
       rng2.loadState(savedState);
 
       tdd.verify(rng.getCurrentSeed() == rng2.getCurrentSeed());
       tdd.verify(savedState == rng2.saveState());
 
       // Generate again from rng2, to see we get same values as field1
-      Field<3, double> field3("field3", toolBox);
+      Field<double, 3> field3("field3", toolBox);
       field3.inFourierSpace() = rng2;
 
       auto field1_host = field1.inFourierSpace().getRawHostView();

@@ -31,17 +31,17 @@ namespace TempLat
    *
    * Unit test: ctest -R test-fieldviewconfig
    **/
-  template <size_t _NDim, typename T> class ConfigView : public AbstractField<_NDim, T>
+  template <typename T, size_t _NDim> class ConfigView : public AbstractField<T, _NDim>
   {
   public:
     // Put public methods here. These should change very little over time.
     static constexpr size_t NDim = _NDim;
 
-    using AbstractField<NDim, T>::mManager;
-    using AbstractField<NDim, T>::mToolBox;
+    using AbstractField<T, NDim>::mManager;
+    using AbstractField<T, NDim>::mToolBox;
 
     ConfigView(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar)
-        : AbstractField<NDim, T>(name, toolBox, pLatPar), mDisableFFTBlocking(false)
+        : AbstractField<T, NDim>(name, toolBox, pLatPar), mDisableFFTBlocking(false)
     {
       if (toolBox != nullptr)
         mLayout = mToolBox->mLayouts.getConfigSpaceLayout();
@@ -92,7 +92,7 @@ namespace TempLat
 
     template <typename R> void operator+=(R &&g) { this->operator=(*this + g); }
 
-    void operator=(const ConfigView<NDim, T> &other) { this->assign(other); }
+    void operator=(const ConfigView<T, NDim> &other) { this->assign(other); }
 
     template <typename... IDX>
       requires requires {
@@ -117,7 +117,7 @@ namespace TempLat
         break;
       case SpaceStateType::Configuration:
       default:
-        AbstractField<NDim, T>::confirmSpace(newLayout, spaceType);
+        AbstractField<T, NDim>::confirmSpace(newLayout, spaceType);
         break;
       }
     }
@@ -157,9 +157,9 @@ namespace TempLat
   private:
     LayoutStruct<NDim> mLayout;
 
-    device::memory::NDViewUnmanaged<NDim, T> mView;
-    device::memory::NDViewUnmanaged<1, T> mRawView;
-    device::memory::NDViewUnmanagedHost<NDim, T> mHostView;
+    device::memory::NDViewUnmanaged<T, NDim> mView;
+    device::memory::NDViewUnmanaged<T, 1> mRawView;
+    device::memory::NDViewUnmanagedHost<T, NDim> mHostView;
 
     device::IdxArray<NDim> memorySizes;
     device::array<std::pair<ptrdiff_t, ptrdiff_t>, NDim> localSlicing;

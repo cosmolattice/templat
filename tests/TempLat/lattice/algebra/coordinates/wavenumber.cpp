@@ -25,14 +25,14 @@ namespace TempLat
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
     // Create fields for each wavenumber component
-    std::vector<Field<NDim, double>> phi_components;
+    std::vector<Field<double, NDim>> phi_components;
     phi_components.reserve(NDim);
     for (size_t d = 0; d < NDim; ++d) {
       phi_components.emplace_back("phi_" + std::to_string(d), toolBox);
     }
 
-    Field<NDim, double> phinorm("phinorm", toolBox);
-    Field<NDim, double> phinorm2("phinorm2", toolBox);
+    Field<double, NDim> phinorm("phinorm", toolBox);
+    Field<double, NDim> phinorm2("phinorm2", toolBox);
 
     WaveNumber<NDim> k(toolBox);
 

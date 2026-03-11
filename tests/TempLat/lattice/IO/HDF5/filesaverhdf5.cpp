@@ -28,7 +28,7 @@ namespace TempLat
       const ptrdiff_t nGrid = 16, nGhost = 1;
       auto toolBox = MemoryToolBox<3>::makeShared(nGrid, nGhost);
 
-      Field<3, double> phi("phi", toolBox);
+      Field<double, 3> phi("phi", toolBox);
       phi = 42.0;
 
       fs.create("./FILE.h5");

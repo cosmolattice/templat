@@ -56,7 +56,7 @@ namespace TempLat
             "Can only work with identical padding at start and end of each dimension, not this.", allSame);
     }
 
-    template <typename T> void update(MemoryBlock<NDim, T> &block)
+    template <typename T> void update(MemoryBlock<T, NDim> &block)
     {
 #ifdef HAVE_MPI
       // There is no MPI splitting in one dimension. Also, when we have only a single node, there is no need to do MPI
@@ -77,7 +77,7 @@ namespace TempLat
     device::Idx mGhostDepth;
     GhostSubarrayMap<NDim> mGhostSubarrayMap;
 
-    template <typename T> void pUpdate(MemoryBlock<NDim, T> &block)
+    template <typename T> void pUpdate(MemoryBlock<T, NDim> &block)
     {
       /* iterate dimensions */
       for (size_t d = 0; d < NDim; ++d) {
@@ -90,7 +90,7 @@ namespace TempLat
     }
 
   public:
-    template <typename T> void update_forDimension_device(MemoryBlock<NDim, T> &block, size_t dimension)
+    template <typename T> void update_forDimension_device(MemoryBlock<T, NDim> &block, size_t dimension)
     {
       // We will copy slabs of thickness ghostDepth in the dimension 'dimension'.
       device::IdxArray<NDim> full_sizes = mLayout.getSizesInMemory();
@@ -106,9 +106,9 @@ namespace TempLat
 
       // We need two slabs of thickness ghostDepth
       auto sendSlab = device::apply(
-          [&](const auto &...args) { return device::memory::NDView<NDim, T>("sendSlab", args...); }, slab_sizes);
+          [&](const auto &...args) { return device::memory::NDView<T, NDim>("sendSlab", args...); }, slab_sizes);
       auto receiveSlab = device::apply(
-          [&](const auto &...args) { return device::memory::NDView<NDim, T>("receiveSlab", args...); }, slab_sizes);
+          [&](const auto &...args) { return device::memory::NDView<T, NDim>("receiveSlab", args...); }, slab_sizes);
 
       // To get the right subviews of the full data, we need to create slices for each dimension
       device::array<std::pair<device::Idx, device::Idx>, NDim> send_slices{};
@@ -181,7 +181,7 @@ namespace TempLat
     }
 
   private:
-    template <typename T> void update_forDimension(MemoryBlock<NDim, T> &block, device::Idx dimension)
+    template <typename T> void update_forDimension(MemoryBlock<T, NDim> &block, device::Idx dimension)
     {
       auto *ptr = block.data();
 #ifdef HAVE_MPI
@@ -202,7 +202,7 @@ namespace TempLat
     }
 
   public:
-    template <typename T> void pUpdate_NOMPI(MemoryBlock<NDim, T> &block, device::Idx dimension = 0)
+    template <typename T> void pUpdate_NOMPI(MemoryBlock<T, NDim> &block, device::Idx dimension = 0)
     {
       // Get View to the full data
       const auto ghostDepth = mLayout.getPadding()[0][0];

@@ -32,7 +32,7 @@ namespace TempLat
 
       const ptrdiff_t iEnd = layout.getMinimalMemorySize();
 
-      MemoryBlock<3, double> mem(iEnd);
+      MemoryBlock<double, 3> mem(iEnd);
       auto host_mem_view = mem.getRawHostView();
       auto mem_view = mem.getRawView();
 

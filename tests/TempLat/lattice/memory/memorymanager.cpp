@@ -10,17 +10,17 @@
 namespace TempLat
 {
 
-  template <size_t NDim, typename T> struct MemoryManagerTester {
+  template <typename T, size_t NDim> struct MemoryManagerTester {
     static void Test(TDDAssertion &tdd);
   };
 
-  template <size_t NDim, typename T> void MemoryManagerTester<NDim, T>::Test(TDDAssertion &tdd)
+  template <typename T, size_t NDim> void MemoryManagerTester<T, NDim>::Test(TDDAssertion &tdd)
   {
     auto toolBox = MemoryToolBox<NDim>::makeShared(192, 2);
 
     toolBox->mFFTLibrary.setVerbose();
 
-    MemoryManager<NDim, T> mManager(toolBox);
+    MemoryManager<T, NDim> mManager(toolBox);
 
     if (TDDRegister::isSingleUnitTest()) {
       std::cerr << mManager << "\n\n";
@@ -66,5 +66,5 @@ namespace TempLat
 
 namespace
 {
-  TempLat::TDDContainer<TempLat::MemoryManagerTester<3, double>> test;
+  TempLat::TDDContainer<TempLat::MemoryManagerTester<double, 3>> test;
 }

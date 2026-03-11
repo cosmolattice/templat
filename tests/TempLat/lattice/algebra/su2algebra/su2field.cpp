@@ -10,21 +10,21 @@
 
 namespace TempLat
 {
-  template <size_t NDim, typename T> struct SU2FieldTester {
+  template <typename T, size_t NDim> struct SU2FieldTester {
     static void Test(TDDAssertion &tdd);
   };
 
-  template <size_t NDim, typename T> void SU2FieldTester<NDim, T>::Test(TDDAssertion &tdd)
+  template <typename T, size_t NDim> void SU2FieldTester<T, NDim>::Test(TDDAssertion &tdd)
   {
     const device::Idx nGrid = 8, nGhost = 1;
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
-    Field<NDim, T> f0("myField0", toolBox);
-    Field<NDim, T> f1("myField1", toolBox);
-    Field<NDim, T> f2("myField2", toolBox);
-    Field<NDim, T> f3("myField3", toolBox);
+    Field<T, NDim> f0("myField0", toolBox);
+    Field<T, NDim> f1("myField1", toolBox);
+    Field<T, NDim> f2("myField2", toolBox);
+    Field<T, NDim> f3("myField3", toolBox);
 
-    auto res = SU2Field<NDim, T>(f0, f1, f2, f3);
+    auto res = SU2Field<T, NDim>(f0, f1, f2, f3);
 
     tdd.verify(res.SU2Get(2_c).toString() == "myField2(x)");
 
@@ -41,7 +41,7 @@ namespace TempLat
       tdd.verify(all_true);
     }
 
-    SU2Field<NDim, double> mySU2("allNew", toolBox, LatticeParameters<double>());
+    SU2Field<double, NDim> mySU2("allNew", toolBox, LatticeParameters<double>());
     tdd.verify(mySU2(3_c).toString() == "allNew_3(x)");
     tdd.verify(mySU2(0_c).toString() == "allNew_0(x)");
 
@@ -73,7 +73,7 @@ namespace TempLat
 
     // Test unitarize: set c1=0.5, c2=0.5, c3=0.5, then unitarize should give c0 = sqrt(1 - 0.75) = 0.5
     {
-      SU2Field<NDim, double> uField("uTest", toolBox, LatticeParameters<double>());
+      SU2Field<double, NDim> uField("uTest", toolBox, LatticeParameters<double>());
       uField(1_c) = 0.5;
       uField(2_c) = 0.5;
       uField(3_c) = 0.5;
@@ -92,8 +92,8 @@ namespace TempLat
 
 namespace
 {
-  TempLat::TDDContainer<TempLat::SU2FieldTester<1, double>> test5;
-  TempLat::TDDContainer<TempLat::SU2FieldTester<2, double>> test6;
-  TempLat::TDDContainer<TempLat::SU2FieldTester<3, double>> test7;
-  TempLat::TDDContainer<TempLat::SU2FieldTester<4, double>> test8;
+  TempLat::TDDContainer<TempLat::SU2FieldTester<double, 1>> test5;
+  TempLat::TDDContainer<TempLat::SU2FieldTester<double, 2>> test6;
+  TempLat::TDDContainer<TempLat::SU2FieldTester<double, 3>> test7;
+  TempLat::TDDContainer<TempLat::SU2FieldTester<double, 4>> test8;
 } // namespace

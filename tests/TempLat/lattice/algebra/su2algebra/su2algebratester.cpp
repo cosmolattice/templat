@@ -85,9 +85,9 @@ namespace TempLat
 
     // Multiplication, test again.
 
-    SU2Field<3, double> A("A", toolBox, LatticeParameters<double>());
-    SU2Field<3, double> B("B", toolBox, LatticeParameters<double>());
-    SU2Doublet<3, double> C("C", toolBox, LatticeParameters<double>());
+    SU2Field<double, 3> A("A", toolBox, LatticeParameters<double>());
+    SU2Field<double, 3> B("B", toolBox, LatticeParameters<double>());
+    SU2Doublet<double, 3> C("C", toolBox, LatticeParameters<double>());
 
     A = SU2Wrap(1., 0.2, 0.13, 0.14);
     B = SU2Wrap(1., 0.2, 0.13, 0.14);
@@ -164,31 +164,31 @@ namespace TempLat
 
     static_assert(
         HasSU2DoubletGet<
-            ComplexFieldSU2DoubletMultiplication<U1Exponential<Operators::Multiplication<double, Field<3, double>>>,
-                                                 SU2DoubletShifterByOne<SU2Doublet<3, double>, 1>>>);
+            ComplexFieldSU2DoubletMultiplication<U1Exponential<Operators::Multiplication<double, Field<double, 3>>>,
+                                                 SU2DoubletShifterByOne<SU2Doublet<double, 3>, 1>>>);
 
     static_assert(
         HasSU2DoubletGet<SU2SU2DoubletMultiplication<
-            SU2Field<3, double>,
-            ComplexFieldSU2DoubletMultiplication<U1Exponential<Operators::Multiplication<double, Field<3, double>>>,
-                                                 SU2DoubletShifterByOne<SU2Doublet<3, double>, 1>>>>);
+            SU2Field<double, 3>,
+            ComplexFieldSU2DoubletMultiplication<U1Exponential<Operators::Multiplication<double, Field<double, 3>>>,
+                                                 SU2DoubletShifterByOne<SU2Doublet<double, 3>, 1>>>>);
 
-    static_assert(HasSU2DoubletGet<SU2DoubletSubtract<SU2Doublet<3, double>, SU2Doublet<3, double>>>);
+    static_assert(HasSU2DoubletGet<SU2DoubletSubtract<SU2Doublet<double, 3>, SU2Doublet<double, 3>>>);
 
     static_assert(
-        HasSU2DoubletGet<SU2DoubletSubtract<SU2Doublet<3, double>,
-                                            SU2SU2DoubletMultiplication<SU2Field<3, double>, SU2Doublet<3, double>>>>);
+        HasSU2DoubletGet<SU2DoubletSubtract<SU2Doublet<double, 3>,
+                                            SU2SU2DoubletMultiplication<SU2Field<double, 3>, SU2Doublet<double, 3>>>>);
 
     static_assert(
         HasSU2DoubletGet<SU2DoubletSubtract<
-            SU2Doublet<3, double>,
-            ComplexFieldSU2DoubletMultiplication<U1Exponential<Operators::Multiplication<double, Field<3, double>>>,
-                                                 SU2Doublet<3, double>>>>);
+            SU2Doublet<double, 3>,
+            ComplexFieldSU2DoubletMultiplication<U1Exponential<Operators::Multiplication<double, Field<double, 3>>>,
+                                                 SU2Doublet<double, 3>>>>);
 
-    static_assert(HasSU2DoubletGet<SU2DoubletShifterByOne<SU2Doublet<3, double>, 1>>);
+    static_assert(HasSU2DoubletGet<SU2DoubletShifterByOne<SU2Doublet<double, 3>, 1>>);
 
     static_assert(
-        HasSU2DoubletGet<SU2DoubletSubtract<SU2Doublet<3, double>, SU2DoubletShifterByOne<SU2Doublet<3, double>, 1>>>);
+        HasSU2DoubletGet<SU2DoubletSubtract<SU2Doublet<double, 3>, SU2DoubletShifterByOne<SU2Doublet<double, 3>, 1>>>);
   }
 
 } // namespace TempLat

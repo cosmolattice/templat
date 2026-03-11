@@ -29,7 +29,7 @@ namespace TempLat
 
     double x = 0;
 
-    device::memory::NDView<1, size_t> measure("measure", 2 * measure_center);
+    device::memory::NDView<size_t, 1> measure("measure", 2 * measure_center);
     device::iteration::reduce<1>(
         "RandomGaussian_test", {0}, {N},
         DEVICE_LAMBDA(device::IdxArray<1> i, double &sum) {

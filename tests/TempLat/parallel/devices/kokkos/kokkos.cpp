@@ -110,7 +110,7 @@ namespace TempLat
     // ---- test singleset ----
     {
       auto toolBox = MemoryToolBox<2>::makeShared(8, 0);
-      Field<2, double> rField("rField", toolBox);
+      Field<double, 2> rField("rField", toolBox);
       const auto layout = toolBox->mLayouts.getConfigSpaceLayout();
       for (size_t i = 0; i < layout.getLocalSizes()[0]; ++i) {
         for (size_t j = 0; j < layout.getLocalSizes()[1]; ++j) {

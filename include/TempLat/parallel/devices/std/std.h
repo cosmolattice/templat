@@ -71,11 +71,11 @@ namespace TempLat
     // View types
     // ------------------------------------------------
 
-    template <size_t NDim, typename T> class NDView
+    template <typename T, size_t NDim> class NDView
     {
     };
 
-    template <size_t NDim, typename T> class NDViewUnmanaged
+    template <typename T, size_t NDim> class NDViewUnmanaged
     {
     };
   } // namespace std_device

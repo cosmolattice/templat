@@ -27,8 +27,8 @@ namespace TempLat
 
     WaveNumber k(toolBox);
 
-    ComplexField<NDim, double> phi("phi", toolBox);
-    ComplexField<NDim, double> xi("xi", toolBox);
+    ComplexField<double, NDim> phi("phi", toolBox);
+    ComplexField<double, NDim> xi("xi", toolBox);
 
     tdd.verify(phi.inFourierSpace()(0_c).isFourierSpace());
     tdd.verify(phi.inFourierSpace()(1_c).isFourierSpace());

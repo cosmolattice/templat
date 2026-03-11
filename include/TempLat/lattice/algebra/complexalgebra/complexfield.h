@@ -23,14 +23,15 @@ namespace TempLat
    *
    * Unit test: ctest -R test-complexfield
    **/
-  template <size_t _NDim, typename T> class ComplexField
+  template <typename T, size_t _NDim = 0> class ComplexField
   {
   public:
     // Put public methods here. These should change very little over time.
+    static_assert(_NDim != 0, "NDim template parameter is required. Use e.g. ComplexField<double, 3>.");
 
     static constexpr size_t NDim = _NDim;
 
-    ComplexField(Field<NDim, T> f1, Field<NDim, T> f2)
+    ComplexField(Field<T, NDim> f1, Field<T, NDim> f2)
         : mR(f1), mI(f2), mName("complex(" + f1.getName() + ", " + f2.getName() + ")"),
           mToolBox(mR.getToolBox() == nullptr ? mI.getToolBox() : mR.getToolBox()),
           mLayout(mToolBox->mLayouts.getConfigSpaceLayout())
@@ -75,7 +76,7 @@ namespace TempLat
       return result;
     }
 
-    ComplexFieldFourierView<NDim, T> inFourierSpace() { return {mR.inFourierSpace(), mI.inFourierSpace()}; }
+    ComplexFieldFourierView<T, NDim> inFourierSpace() { return {mR.inFourierSpace(), mI.inFourierSpace()}; }
 
     template <typename R> void operator=(R &&g)
     {
@@ -136,8 +137,8 @@ namespace TempLat
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
-    Field<NDim, T> mR;
-    Field<NDim, T> mI;
+    Field<T, NDim> mR;
+    Field<T, NDim> mI;
 
     device::memory::host_string mName;
 
@@ -146,9 +147,9 @@ namespace TempLat
     LayoutStruct<NDim> mLayout;
   };
 
-  template <size_t NDim, typename T> auto CField(Field<NDim, T> f1, Field<NDim, T> f2)
+  template <typename T, size_t NDim> auto CField(Field<T, NDim> f1, Field<T, NDim> f2)
   {
-    return ComplexField<NDim, T>(f1, f2);
+    return ComplexField<T, NDim>(f1, f2);
   }
 } // namespace TempLat
 

@@ -21,12 +21,12 @@ namespace TempLat
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(32, 1);
 
-    Field<NDim, double> f0("myField0", toolBox);
-    Field<NDim, double> f1("myField1", toolBox);
-    Field<NDim, double> f2("myField2", toolBox);
-    Field<NDim, double> f3("myField3", toolBox);
+    Field<double, NDim> f0("myField0", toolBox);
+    Field<double, NDim> f1("myField1", toolBox);
+    Field<double, NDim> f2("myField2", toolBox);
+    Field<double, NDim> f3("myField3", toolBox);
 
-    auto res = SU2Field<NDim, double>(f0, f1, f2, f3);
+    auto res = SU2Field<double, NDim>(f0, f1, f2, f3);
 
     tdd.verify(res.SU2Get(2_c).toString() == "myField2(x)");
 
@@ -37,7 +37,7 @@ namespace TempLat
     auto ff3_view = ff3.getLocalNDHostView();
     tdd.verify(ff3_view(0, 0, 0) == 24);
 
-    SU2Field<NDim, double> mySU2("pimpin", toolBox, LatticeParameters<double>());
+    SU2Field<double, NDim> mySU2("pimpin", toolBox, LatticeParameters<double>());
     tdd.verify(mySU2(3_c).toString() == "pimpin_3(x)");
   }
 

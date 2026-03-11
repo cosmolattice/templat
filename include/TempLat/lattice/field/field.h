@@ -24,45 +24,47 @@ namespace TempLat
    *
    * Unit test: ctest -R test-field
    **/
-  template <size_t _NDim, typename T> class Field : public ConfigView<_NDim, T>
+  template <typename T, size_t _NDim = 0> class Field : public ConfigView<T, _NDim>
   {
   public:
     // Put public methods here. These should change very little over time.
 
+    static_assert(_NDim != 0, "NDim template parameter is required. Use e.g. Field<double, 3>.");
+
     static constexpr size_t NDim = _NDim;
     using value_type = T;
 
-    using ConfigView<NDim, T>::mManager;
+    using ConfigView<T, NDim>::mManager;
 
     Field(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox,
           LatticeParameters<T> pLatPar = LatticeParameters<T>())
-        : ConfigView<NDim, T>(name, toolBox, pLatPar), mFourierView(*this)
+        : ConfigView<T, NDim>(name, toolBox, pLatPar), mFourierView(*this)
     {
     }
 
-    template <typename R> void operator=(R &&g) { ConfigView<NDim, T>::operator=(g); }
+    template <typename R> void operator=(R &&g) { ConfigView<T, NDim>::operator=(g); }
 
-    void operator=(const Field<NDim, T> &other) { operator=(OneType() * other); }
+    void operator=(const Field<T, NDim> &other) { operator=(OneType() * other); }
 
-    FourierView<NDim, T> &inFourierSpace()
+    FourierView<T, NDim> &inFourierSpace()
     {
       mManager->confirmFourierSpace();
       return mFourierView;
     }
 
     template <typename S>
-      requires(!std::is_same_v<Field<NDim, T>, S>)
+      requires(!std::is_same_v<Field<T, NDim>, S>)
     auto d(const S &other) const
     {
       return ZeroType();
     }
     /** @brief The real overlord: is it a Field, then we must compare. */
-    ptrdiff_t d(const Field<NDim, T> &other) const { return *this == other ? 1 : 0; }
+    ptrdiff_t d(const Field<T, NDim> &other) const { return *this == other ? 1 : 0; }
 
-    friend bool operator==(const Field<NDim, T> &a, const Field<NDim, T> &b) { return a.mManager == b.mManager; }
+    friend bool operator==(const Field<T, NDim> &a, const Field<T, NDim> &b) { return a.mManager == b.mManager; }
 
     template <typename S>
-      requires std::is_same_v<Field<NDim, T>, S>
+      requires std::is_same_v<Field<T, NDim>, S>
     auto d(const S &other) const
     {
       return OneType();
@@ -70,7 +72,7 @@ namespace TempLat
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
-    FourierView<NDim, T> mFourierView;
+    FourierView<T, NDim> mFourierView;
   };
 } // namespace TempLat
 

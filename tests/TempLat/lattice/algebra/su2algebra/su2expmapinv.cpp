@@ -24,13 +24,13 @@ namespace TempLat
     auto toolBox = MemoryToolBox<NDim>::makeShared(16, 1);
     LatticeParameters<double> latPar;
 
-    SU2Field<NDim, double> U("test_U", toolBox, latPar);
+    SU2Field<double, NDim> U("test_U", toolBox, latPar);
     U(1_c) = 0.23;
     U(2_c) = 0.11;
     U(3_c) = 0.4;
     U.unitarize();
 
-    SU2Field<NDim, double> roundtrip("test_rt", toolBox, latPar);
+    SU2Field<double, NDim> roundtrip("test_rt", toolBox, latPar);
     roundtrip = exp(expinv(U));
 
     auto u0view = U(0_c).getLocalNDHostView();

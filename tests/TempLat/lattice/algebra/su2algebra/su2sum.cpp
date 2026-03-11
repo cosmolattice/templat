@@ -18,9 +18,9 @@ namespace TempLat
   void SU2SumTester::Test(TDDAssertion &tdd)
   {
     auto toolBox = MemoryToolBox<3>::makeShared(16, 1);
-    SU2Field<3, float> su2_1("testSU2_1", toolBox);
-    SU2Field<3, float> su2_2("testSU2_2", toolBox);
-    SU2Field<3, float> result("resultSU2", toolBox);
+    SU2Field<float, 3> su2_1("testSU2_1", toolBox);
+    SU2Field<float, 3> su2_2("testSU2_2", toolBox);
+    SU2Field<float, 3> result("resultSU2", toolBox);
 
     su2_1(1_c) = 1.0f;
     su2_1(2_c) = -1.5f;

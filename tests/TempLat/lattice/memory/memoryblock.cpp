@@ -11,15 +11,15 @@
 
 namespace TempLat
 {
-  template <size_t NDim, typename T> struct MemoryBlockTester {
+  template <typename T, size_t NDim> struct MemoryBlockTester {
     static void Test(TDDAssertion &tdd);
   };
 
-  template <size_t NDim, typename T> void MemoryBlockTester<NDim, T>::Test(TDDAssertion &tdd)
+  template <typename T, size_t NDim> void MemoryBlockTester<T, NDim>::Test(TDDAssertion &tdd)
   {
     // Basic raw access
     {
-      MemoryBlock<NDim, T> test(128);
+      MemoryBlock<T, NDim> test(128);
 
       device::iteration::foreach<1>(
           "it1", {0}, {128}, DEVICE_LAMBDA(const device::IdxArray<1> i) { test[i[0]] = i[0]; });
@@ -34,7 +34,7 @@ namespace TempLat
     }
     // Slicing
     if constexpr (NDim == 3) {
-      MemoryBlock<NDim, T> test(16 * 16 * 16);
+      MemoryBlock<T, NDim> test(16 * 16 * 16);
 
       auto view = test.template getNDView<T>(device::IdxArray<3>{{16, 16, 16}});
 
@@ -60,8 +60,8 @@ namespace TempLat
 
 namespace
 {
-  TempLat::TDDContainer<TempLat::MemoryBlockTester<3, double>> test;
+  TempLat::TDDContainer<TempLat::MemoryBlockTester<double, 3>> test;
 #ifdef HAVE_FFTFLOAT
-  TempLat::TDDContainer<TempLat::MemoryBlockTester<3, float>> test2;
+  TempLat::TDDContainer<TempLat::MemoryBlockTester<float, 3>> test2;
 #endif
 } // namespace

@@ -26,7 +26,7 @@ namespace TempLat
    * memory tools.
    *
    **/
-  template <size_t _NDim, typename T> class AbstractField
+  template <typename T, size_t _NDim> class AbstractField
   {
   public:
     // Put public methods here. These should change very little over time.
@@ -72,7 +72,7 @@ namespace TempLat
     void setGhostsAreStale() const { mManager->setGhostsAreStale(); }
     bool areGhostsStale() const { return mManager->areGhostsStale(); }
 
-    device::memory::host_ptr<MemoryManager<NDim, T>> getMemoryManager() const { return mManager; }
+    device::memory::host_ptr<MemoryManager<T, NDim>> getMemoryManager() const { return mManager; }
 
     DEVICE_FORCEINLINE_FUNCTION
     auto getDx() const { return latPar.getDx(); }
@@ -87,7 +87,7 @@ namespace TempLat
     /* Put all member variables and private methods here. These may change arbitrarily. */
 
     device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
-    device::memory::host_ptr<MemoryManager<NDim, T>> mManager;
+    device::memory::host_ptr<MemoryManager<T, NDim>> mManager;
 
     const LatticeParameters<T> latPar; // Information about the lattice (dx, kir...)
                                        // Conceptually not amazing but really useful.

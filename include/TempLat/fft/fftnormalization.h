@@ -55,7 +55,7 @@ namespace TempLat
       mType = cMixedType;
     }
 
-    template <typename T> inline void c2r(MemoryBlock<NDim, T> &mBlock, T scale)
+    template <typename T> inline void c2r(MemoryBlock<T, NDim> &mBlock, T scale)
     {
       T intrinsicScale = (T)(mLayout.getIntrinsicScales().c2r);
       switch (mType) {
@@ -70,7 +70,7 @@ namespace TempLat
       }
     }
 
-    template <typename T> inline void r2c(MemoryBlock<NDim, T> &mBlock, T scale)
+    template <typename T> inline void r2c(MemoryBlock<T, NDim> &mBlock, T scale)
     {
       T intrinsicScale = (T)(mLayout.getIntrinsicScales().r2c);
       switch (mType) {
@@ -85,7 +85,7 @@ namespace TempLat
       }
     }
 
-    template <typename T> inline void apply(MemoryBlock<NDim, T> &mBlock, T norm)
+    template <typename T> inline void apply(MemoryBlock<T, NDim> &mBlock, T norm)
     {
       auto block_view = mBlock.getRawView();
       auto functor = DEVICE_LAMBDA(const device::IdxArray<1> &i) { block_view(i[0]) *= norm; };

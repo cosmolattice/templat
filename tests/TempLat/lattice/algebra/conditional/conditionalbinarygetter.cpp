@@ -64,11 +64,11 @@ namespace TempLat
 
     sqrt(MyClass2(1)).eval(1, 2, 3); // should compile
 
-    using A = Operators::Multiplication<Operators::Cosine<Operators::Multiplication<double, Field<3UL, double>>>,
-                                        ExpressionShifterByOne<Field<3UL, double>, 1>>;
+    using A = Operators::Multiplication<Operators::Cosine<Operators::Multiplication<double, Field<double, 3>>>,
+                                        ExpressionShifterByOne<Field<double, 3>, 1>>;
 
-    using B = Operators::Multiplication<Operators::Sine<Operators::Multiplication<double, Field<3UL, double>>>,
-                                        ExpressionShifterByOne<Field<3UL, double>, 1>>;
+    using B = Operators::Multiplication<Operators::Sine<Operators::Multiplication<double, Field<double, 3>>>,
+                                        ExpressionShifterByOne<Field<double, 3>, 1>>;
 
     tdd.verify(ConditionalBinaryGetter<A, B> == true);
 

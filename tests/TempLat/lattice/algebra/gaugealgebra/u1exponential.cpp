@@ -28,19 +28,19 @@ namespace TempLat
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
-    Field<NDim, T> psi("psi", toolBox);
+    Field<T, NDim> psi("psi", toolBox);
     SpatialCoordinate x(toolBox);
     psi = getVectorComponent(x, Tag<0>{});
     psi.updateGhosts();
 
     auto U1 = complexPhase(psi);
 
-    ComplexField<NDim, T> expected("expected", toolBox);
+    ComplexField<T, NDim> expected("expected", toolBox);
     expected.ComplexFieldGet(Tag<0>()) = cos(psi);
     expected.ComplexFieldGet(Tag<1>()) = sin(psi);
     expected.updateGhosts();
 
-    ComplexField<NDim, T> diff("diff", toolBox);
+    ComplexField<T, NDim> diff("diff", toolBox);
     diff = U1;
     diff.updateGhosts();
 

@@ -63,7 +63,7 @@ namespace TempLat
       for (size_t d = 0; d < NDim; ++d)
         maxLocalSize = device::max(maxLocalSize, static_cast<size_t>(localSizes[d]));
       mMaxLocalSize = maxLocalSize;
-      mDeviceResult = device::memory::NDView<1, vType>("wallResult", maxLocalSize);
+      mDeviceResult = device::memory::NDView<vType, 1>("wallResult", maxLocalSize);
 
       // Host workspace: NDim vectors, each of global size N[t]
       for (size_t t = 0; t < NDim; ++t)
@@ -149,7 +149,7 @@ namespace TempLat
     device::IdxArray<NDim> mLocalSizes{};
     device::IdxArray<NDim> mLocalStarts{};
 
-    device::memory::NDView<1, vType> mDeviceResult;
+    device::memory::NDView<vType, 1> mDeviceResult;
     size_t mMaxLocalSize;
 
     std::array<std::vector<vType>, NDim> mWorkspace;

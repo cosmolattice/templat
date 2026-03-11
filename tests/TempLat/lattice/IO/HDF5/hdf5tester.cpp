@@ -31,7 +31,7 @@ namespace TempLat
       const ptrdiff_t nGrid = 16, nGhost = 1;
       auto toolBox = MemoryToolBox<3>::makeShared(nGrid, nGhost);
 
-      Field<3, double> phi("phi", toolBox);
+      Field<double, 3> phi("phi", toolBox);
       SpatialCoordinate<3> coords(toolBox);
       auto x = coords(1_c);
       auto y = coords(2_c);
@@ -45,7 +45,7 @@ namespace TempLat
       fs.save(0.45, "aDot");
       fs.close();
 
-      Field<3, double> psi("phi", toolBox);
+      Field<double, 3> psi("phi", toolBox);
       double aDot = 0;
 
       fl.open("./FILE.h5");

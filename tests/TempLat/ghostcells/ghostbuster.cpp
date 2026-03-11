@@ -68,7 +68,7 @@ namespace TempLat
       LayoutStruct<NDim> layoutTo(layout);
       layoutTo.setPadding(nGhostTo);
 
-      MemoryBlock<NDim, Testing::datum> memory(std::max(memSize1, memSize2));
+      MemoryBlock<Testing::datum, NDim> memory(std::max(memSize1, memSize2));
 
       // Initialize memory with coordinate values
       {
@@ -190,7 +190,7 @@ namespace TempLat
         LayoutStruct<3> layoutTo(layout);
         layoutTo.setPadding(nGhostB);
 
-        MemoryBlock<3, Testing::datum> memory(std::max(memSize1, memSize2));
+        MemoryBlock<Testing::datum, 3> memory(std::max(memSize1, memSize2));
 
         // setup the controlled known memory; each entry equals its position
         {

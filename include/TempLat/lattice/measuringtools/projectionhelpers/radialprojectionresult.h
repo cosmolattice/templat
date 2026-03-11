@@ -220,7 +220,7 @@ namespace TempLat
     RadialProjectionSingleQuantity<T> mValues, mBinBounds;
     std::vector<T> centralBinBounds; // Naive central values of the bin. Does not need to be set.
 
-    using DeviceView = device::memory::NDView<1, floatType>;
+    using DeviceView = device::memory::NDView<floatType, 1>;
     using HostMirror = typename DeviceView::host_mirror_type;
 
     HostMirror mMultiplicities;

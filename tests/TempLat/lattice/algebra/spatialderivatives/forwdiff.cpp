@@ -37,11 +37,11 @@ namespace TempLat
       constexpr int dir = decltype(dirTag)::value;
       constexpr size_t d = static_cast<size_t>(dir) - 1;
 
-      Field<NDim, double> sc("SC_" + std::to_string(d), toolBox);
+      Field<double, NDim> sc("SC_" + std::to_string(d), toolBox);
       sc = x(dirTag);
       sc.updateGhosts();
 
-      Field<NDim, double> fdsc("fdSC_" + std::to_string(d), toolBox);
+      Field<double, NDim> fdsc("fdSC_" + std::to_string(d), toolBox);
       fdsc = forwDiff(sc, Tag<dir>{});
 
       bool OK = true;
@@ -87,15 +87,15 @@ namespace TempLat
     // Test 2: ForwDiff of quadratic function sc^2
     // For f(x) = x^2, forward difference is ((x+1)^2 - x^2) = 2x + 1
     {
-      Field<NDim, double> sc("SC_sq", toolBox);
+      Field<double, NDim> sc("SC_sq", toolBox);
       sc = x(1_c);
       sc.updateGhosts();
 
-      Field<NDim, double> sc_sq("SC_sq_field", toolBox);
+      Field<double, NDim> sc_sq("SC_sq_field", toolBox);
       sc_sq = sc * sc;
       sc_sq.updateGhosts();
 
-      Field<NDim, double> fdsc_sq("fdSC_sq", toolBox);
+      Field<double, NDim> fdsc_sq("fdSC_sq", toolBox);
       fdsc_sq = forwDiff(sc * sc, Tag<1>{});
 
       bool OK = true;
@@ -137,20 +137,20 @@ namespace TempLat
 
     // Test 3: ForwDiff of product of coordinates (if NDim >= 2)
     if constexpr (NDim >= 2) {
-      Field<NDim, double> sc1("SC1_prod", toolBox);
+      Field<double, NDim> sc1("SC1_prod", toolBox);
       sc1 = x(1_c);
       sc1.updateGhosts();
 
-      Field<NDim, double> sc2("SC2_prod", toolBox);
+      Field<double, NDim> sc2("SC2_prod", toolBox);
       sc2 = x(2_c);
       sc2.updateGhosts();
 
-      Field<NDim, double> sc_prod("SC_prod_field", toolBox);
+      Field<double, NDim> sc_prod("SC_prod_field", toolBox);
       sc_prod = sc1 * sc2;
       sc_prod.updateGhosts();
 
       // Test forward diff in direction 1 (index 0)
-      Field<NDim, double> fd_prod_dir1("fd_prod_dir1", toolBox);
+      Field<double, NDim> fd_prod_dir1("fd_prod_dir1", toolBox);
       fd_prod_dir1 = forwDiff(sc1 * sc2, Tag<1>{});
 
       bool OK = true;

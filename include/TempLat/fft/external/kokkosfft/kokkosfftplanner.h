@@ -35,7 +35,7 @@ namespace TempLat
     /** @brief Create fully working plans, which must self-destruct in the FFTPlanInterface's destructor. Use
      * shared_ptr's.
      */
-    virtual std::shared_ptr<FFTPlanInterface<NDim, float>> getPlans_float(const MPICartesianGroup &group,
+    virtual std::shared_ptr<FFTPlanInterface<float, NDim>> getPlans_float(const MPICartesianGroup &group,
                                                                           const FFTLayoutStruct<NDim> &layout)
     {
       return make_plans<float>(group, layout);
@@ -44,7 +44,7 @@ namespace TempLat
     /** @brief Create fully working plans, which must self-destruct in the FFTPlanInterface's destructor. Use
      * shared_ptr's.
      */
-    virtual std::shared_ptr<FFTPlanInterface<NDim, double>> getPlans_double(const MPICartesianGroup &group,
+    virtual std::shared_ptr<FFTPlanInterface<double, NDim>> getPlans_double(const MPICartesianGroup &group,
                                                                             const FFTLayoutStruct<NDim> &layout)
     {
       return make_plans<double>(group, layout);
@@ -55,7 +55,7 @@ namespace TempLat
     unsigned int patienceFlag;
 
     template <typename T>
-    std::shared_ptr<KokkosFFTPlanHolder<NDim, T>> make_plans(const MPICartesianGroup &group,
+    std::shared_ptr<KokkosFFTPlanHolder<T, NDim>> make_plans(const MPICartesianGroup &group,
                                                              const FFTLayoutStruct<NDim> &layout)
     {
       device::array<int, NDim> configStarts;
@@ -73,18 +73,18 @@ namespace TempLat
 
       complex<T> *dummy_f = nullptr;
       auto fourier_view = device::apply(
-          [&](auto &&...args) { return device::memory::NDViewUnmanaged<NDim, complex<T>>(dummy_f, args...); },
+          [&](auto &&...args) { return device::memory::NDViewUnmanaged<complex<T>, NDim>(dummy_f, args...); },
           fourierSizes);
       T *dummy_c = nullptr;
       auto config_view = device::apply(
-          [&](auto &&...args) { return device::memory::NDViewUnmanaged<NDim, T>(dummy_c, args...); }, configSizes);
+          [&](auto &&...args) { return device::memory::NDViewUnmanaged<T, NDim>(dummy_c, args...); }, configSizes);
 
-      typename KokkosFFTPlanHolder<NDim, T>::Plans plans;
+      typename KokkosFFTPlanHolder<T, NDim>::Plans plans;
       plans.configSizes = configSizes;
       plans.fourierSizes = fourierSizes;
 
-      using c2rType = typename KokkosFFTPlanHolder<NDim, T>::PlanType_c2r;
-      using r2cType = typename KokkosFFTPlanHolder<NDim, T>::PlanType_r2c;
+      using c2rType = typename KokkosFFTPlanHolder<T, NDim>::PlanType_c2r;
+      using r2cType = typename KokkosFFTPlanHolder<T, NDim>::PlanType_r2c;
 
       auto axes = KokkosFFT::axis_type<NDim>{};
       for (size_t i = 0; i < NDim; ++i)
@@ -95,7 +95,7 @@ namespace TempLat
       plans.r2cPlan = std::shared_ptr<r2cType>(
           new r2cType(Kokkos::DefaultExecutionSpace(), config_view, fourier_view, KokkosFFT::Direction::forward, axes));
 
-      return std::make_shared<KokkosFFTPlanHolder<NDim, T>>(group, plans);
+      return std::make_shared<KokkosFFTPlanHolder<T, NDim>>(group, plans);
     }
   };
 

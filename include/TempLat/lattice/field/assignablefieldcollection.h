@@ -77,11 +77,11 @@ namespace TempLat
     static constexpr size_t size = 0;
   };
 
-  template <class Q, size_t NDim, typename T, CANONICALTYPE ISMOMENTUM, int... I>
-  class CollectionBase : public AssignableCollectionBase<Q, Field<NDim, T>>
+  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int... I>
+  class CollectionBase : public AssignableCollectionBase<Q, Field<T, NDim>>
   {
   public:
-    using AssignableCollectionBase<Q, Field<NDim, T>>::operator=;
+    using AssignableCollectionBase<Q, Field<T, NDim>>::operator=;
 
     // Put public methods here. These should change very little over time.
     template <class... Args>
@@ -103,10 +103,10 @@ namespace TempLat
     /* Put all member variables and private methods here. These may change arbitrarily. */
   };
 
-  template <class Q, size_t NDim, typename T,
+  template <class Q, typename T, size_t NDim,
             CANONICALTYPE ISMOMENTUM> // Specialise to empty field collection, that does nothing. Useful to define
                                       // general models for example, which may have some empty collections.
-  class CollectionBase<Q, NDim, T, ISMOMENTUM> : public AssignableCollectionBase<Q>
+  class CollectionBase<Q, T, NDim, ISMOMENTUM> : public AssignableCollectionBase<Q>
   {
   public:
     // Put public methods here. These should change very little over time.
@@ -120,28 +120,28 @@ namespace TempLat
   // This comes from  http://spraetor.github.io/2016/01/02/template-integer-sequence.html
   // Unpack the FieldCollection<T,N> in CollectionBase<T,0,1,2,...> in Olog(N) compile time.
 
-  template <class Q, size_t NDim, typename T, CANONICALTYPE ISMOMENTUM, int Start, int End> struct CollectionHelper;
+  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int Start, int End> struct CollectionHelper;
 
-  template <class Q, size_t NDim, typename T, CANONICALTYPE ISMOMENTUM, int Start, int End>
-  using MakeSeqImpl_t = typename CollectionHelper<Q, NDim, T, ISMOMENTUM, Start, End>::type;
+  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int Start, int End>
+  using MakeSeqImpl_t = typename CollectionHelper<Q, T, NDim, ISMOMENTUM, Start, End>::type;
 
-  template <class Q, size_t NDim, typename T, CANONICALTYPE ISMOMENTUM, int N>
-  using MakeSeq_t = typename CollectionHelper<Q, NDim, T, ISMOMENTUM, 0, N - 1>::type;
+  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int N>
+  using MakeSeq_t = typename CollectionHelper<Q, T, NDim, ISMOMENTUM, 0, N - 1>::type;
 
-  template <class Q, size_t NDim, typename T, CANONICALTYPE ISMOMENTUM, int... I1s, int... I2s>
-  struct Concat<CollectionBase<Q, NDim, T, ISMOMENTUM, I1s...>, CollectionBase<Q, NDim, T, ISMOMENTUM, I2s...>> {
-    using type = CollectionBase<Q, NDim, T, ISMOMENTUM, I1s..., I2s...>;
+  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int... I1s, int... I2s>
+  struct Concat<CollectionBase<Q, T, NDim, ISMOMENTUM, I1s...>, CollectionBase<Q, T, NDim, ISMOMENTUM, I2s...>> {
+    using type = CollectionBase<Q, T, NDim, ISMOMENTUM, I1s..., I2s...>;
   };
 
-  template <class Q, size_t NDim, typename T, CANONICALTYPE ISMOMENTUM, int Start, int End> struct CollectionHelper {
-    using type = Concat_t<MakeSeqImpl_t<Q, NDim, T, ISMOMENTUM, Start, (Start + End) / 2>,
-                          MakeSeqImpl_t<Q, NDim, T, ISMOMENTUM, (Start + End) / 2 + 1, End>>;
+  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int Start, int End> struct CollectionHelper {
+    using type = Concat_t<MakeSeqImpl_t<Q, T, NDim, ISMOMENTUM, Start, (Start + End) / 2>,
+                          MakeSeqImpl_t<Q, T, NDim, ISMOMENTUM, (Start + End) / 2 + 1, End>>;
   };
 
   // break condition:
-  template <class Q, size_t NDim, typename T, CANONICALTYPE ISMOMENTUM, int I>
-  struct CollectionHelper<Q, NDim, T, ISMOMENTUM, I, I> {
-    using type = CollectionBase<Q, NDim, T, ISMOMENTUM, I>;
+  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int I>
+  struct CollectionHelper<Q, T, NDim, ISMOMENTUM, I, I> {
+    using type = CollectionBase<Q, T, NDim, ISMOMENTUM, I>;
   };
 
   // template <typename T, CANONICALTYPE ISMOMENTUM, int N, int SHIFT = 0>
@@ -149,17 +149,17 @@ namespace TempLat
 
   // This allows to switch between empty and non empty field collection.
 
-  template <class Q, size_t NDim, typename T, CANONICALTYPE ISMOMENTUM, int N, int SHIFT, bool ENABLE>
+  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int N, int SHIFT, bool ENABLE>
   struct CollectionSelector {
-    using type = CollectionBase<Q, NDim, T, ISMOMENTUM>;
+    using type = CollectionBase<Q, T, NDim, ISMOMENTUM>;
   };
-  template <class Q, size_t NDim, typename T, CANONICALTYPE ISMOMENTUM, int N, int SHIFT>
-  struct CollectionSelector<Q, NDim, T, ISMOMENTUM, N, SHIFT, false> {
-    using type = typename CollectionHelper<Q, NDim, T, ISMOMENTUM, SHIFT, N + SHIFT - 1>::type;
+  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int N, int SHIFT>
+  struct CollectionSelector<Q, T, NDim, ISMOMENTUM, N, SHIFT, false> {
+    using type = typename CollectionHelper<Q, T, NDim, ISMOMENTUM, SHIFT, N + SHIFT - 1>::type;
   };
 
-  template <class Q, size_t NDim, typename T, CANONICALTYPE ISMOMENTUM, int N, int SHIFT>
-  using Collection = typename CollectionSelector<Q, NDim, T, ISMOMENTUM, N, SHIFT, N == 0>::type;
+  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int N, int SHIFT>
+  using Collection = typename CollectionSelector<Q, T, NDim, ISMOMENTUM, N, SHIFT, N == 0>::type;
 } // namespace TempLat
 
 #endif

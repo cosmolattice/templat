@@ -28,7 +28,7 @@ namespace TempLat
 
     auto toolbox = MemoryToolBox<3>::makeShared(16, 0);
 
-    SU2Field<3, double> f1("f", toolbox);
+    SU2Field<double, 3> f1("f", toolbox);
     f1 = w2;
 
     // First one will be off, because the SU2Get(0_c) is not used in the assignment, but the others should be correct.

@@ -22,12 +22,12 @@ namespace TempLat
    * Unit test: ctest -R test-toolwithownmemory
    **/
 
-  template <size_t NDim, typename T> class ToolWithOwnMemory
+  template <typename T, size_t NDim> class ToolWithOwnMemory
   {
   public:
     typedef typename GetGetReturnType<T>::type SV;
     typedef typename GetFloatType<SV>::type S;
-    typedef Field<NDim, S> fieldType;
+    typedef Field<S, NDim> fieldType;
 
     // Put public methods here. These should change very little over time.
     ToolWithOwnMemory(T instance) : mInstance(instance), usePersistentField(false), allocatedPersistentField(false) {}

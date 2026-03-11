@@ -25,7 +25,7 @@ namespace TempLat
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
     // Create fields for each spatial coordinate component
-    std::vector<Field<NDim, double>> phi_components;
+    std::vector<Field<double, NDim>> phi_components;
     phi_components.reserve(NDim);
     for (size_t d = 0; d < NDim; ++d) {
       phi_components.emplace_back("phi_" + std::to_string(d), toolBox);

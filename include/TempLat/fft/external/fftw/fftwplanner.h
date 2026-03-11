@@ -51,16 +51,16 @@ namespace TempLat
 
     /** @brief Create fully working plans, which must self-destruct in the PlanInterface's destructor. Use shared_ptr's.
      */
-    virtual std::shared_ptr<FFTPlanInterface<NDim, float>> getPlans_float(const MPICartesianGroup &group,
+    virtual std::shared_ptr<FFTPlanInterface<float, NDim>> getPlans_float(const MPICartesianGroup &group,
                                                                           const FFTLayoutStruct<NDim> &layout)
     {
 #ifndef HAVE_FFTFLOAT
       throw FFTWCompiledWithoutSinglePrecisionSupport();
-      return std::shared_ptr<FFTPlanInterface<NDim, float>>();
+      return std::shared_ptr<FFTPlanInterface<float, NDim>>();
 #else
       FFTWTranspositionFlags trFlags(layout);
 
-      MemoryBlock<NDim, float> temp(layout.getMinimalMemorySize());
+      MemoryBlock<float, NDim> temp(layout.getMinimalMemorySize());
       std::vector<int> globalSizes_INT(layout.configurationSpace.getGlobalSizes().begin(),
                                        layout.configurationSpace.getGlobalSizes().end());
       std::vector<ptrdiff_t> globalSizes_PTRDIFF(layout.configurationSpace.getGlobalSizes().begin(),
@@ -100,19 +100,19 @@ namespace TempLat
 #endif
               patienceFlag | trFlags.r2c());
 
-      return std::make_shared<FFTWPlanHolder<float>>(group, r2c, c2r);
+      return std::make_shared<FFTWPlanHolder<float, NDim>>(group, r2c, c2r);
 #endif
     };
     /** @brief Create fully working plans, which must self-destruct in the PlanInterface's destructor. Use shared_ptr's.
      */
     /** @brief Create fully working plans, which must self-destruct in the PlanInterface's destructor. Use shared_ptr's.
      */
-    virtual std::shared_ptr<FFTPlanInterface<NDim, double>> getPlans_double(const MPICartesianGroup &group,
+    virtual std::shared_ptr<FFTPlanInterface<double, NDim>> getPlans_double(const MPICartesianGroup &group,
                                                                             const FFTLayoutStruct<NDim> &layout)
     {
       FFTWTranspositionFlags trFlags(layout);
 
-      MemoryBlock<NDim, double> temp(layout.getMinimalMemorySize());
+      MemoryBlock<double, NDim> temp(layout.getMinimalMemorySize());
 
       std::vector<int> globalSizes_INT(layout.configurationSpace.getGlobalSizes().size());
       for (size_t i = 0; i < layout.configurationSpace.getGlobalSizes().size(); ++i)
@@ -158,7 +158,7 @@ namespace TempLat
 
       /* damned, get the order of the plans right here! Perhaps should have use structs in order to make the compiler
        * throw an error when these are swapped... */
-      return std::make_shared<FFTWPlanHolder<NDim, double>>(group, r2c, c2r);
+      return std::make_shared<FFTWPlanHolder<double, NDim>>(group, r2c, c2r);
     };
 
   private:

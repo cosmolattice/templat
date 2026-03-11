@@ -24,12 +24,12 @@ namespace TempLat
     auto toolBox = MemoryToolBox<NDim>::makeShared(16, 1);
     LatticeParameters<double> latPar;
 
-    SU2LieAlgebraField<NDim, double> algebra("test_alg", toolBox, latPar);
+    SU2LieAlgebraField<double, NDim> algebra("test_alg", toolBox, latPar);
     algebra(1_c) = 1.0;
     algebra(2_c) = 2.0;
     algebra(3_c) = 3.0;
 
-    SU2Field<NDim, double> result("test_res", toolBox, latPar);
+    SU2Field<double, NDim> result("test_res", toolBox, latPar);
     result = exp(algebra);
 
     auto f0view = result(0_c).getLocalNDHostView();

@@ -23,7 +23,7 @@ namespace TempLat
    *
    * Unit test: ctest -R test-memorymanager
    **/
-  template <size_t NDim, typename T> class MemoryManager
+  template <typename T, size_t NDim> class MemoryManager
   {
   public:
     // Put public methods here. These should change very little over time.
@@ -243,7 +243,7 @@ namespace TempLat
     device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
     std::string mName;
     bool mAllocated;
-    MemoryBlock<NDim, T> mBlock;
+    MemoryBlock<T, NDim> mBlock;
 
     MemoryLayoutState mLayoutState;
     GhostStateKeeper mGhostStateKeeper;

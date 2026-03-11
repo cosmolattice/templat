@@ -25,7 +25,7 @@ namespace TempLat
    *
    * Unit test: ctest -R test-memoryblock
    **/
-  template <size_t NDim, typename T> class MemoryBlock
+  template <typename T, size_t NDim> class MemoryBlock
   {
   public:
     // Put public methods here. These should change very little over time.
@@ -36,14 +36,14 @@ namespace TempLat
     /** @brief Constructor with a size to allocate. */
     MemoryBlock(size_t size) : mSize(size), mHostMirrorOutdated(true)
     {
-      mData = device::memory::NDView<1, T>("MemoryBlock", mSize);
+      mData = device::memory::NDView<T, 1>("MemoryBlock", mSize);
       zero();
     }
 
     void allocate(size_t size)
     {
       this->mSize = size;
-      if (mData.size() != size) mData = device::memory::NDView<1, T>("MemoryBlock", mSize);
+      if (mData.size() != size) mData = device::memory::NDView<T, 1>("MemoryBlock", mSize);
       zero();
     }
 
@@ -84,7 +84,7 @@ namespace TempLat
 
       return device::apply(
           [&](auto &&...args) {
-            return device::memory::NDViewUnmanaged<NDim, R>(reinterpret_cast<R *>(mData.data()), args...);
+            return device::memory::NDViewUnmanaged<R, NDim>(reinterpret_cast<R *>(mData.data()), args...);
           },
           localSizes);
     }
@@ -103,7 +103,7 @@ namespace TempLat
 
       return device::apply(
           [&](auto &&...args) {
-            return device::memory::NDViewUnmanagedHost<NDim, R>(reinterpret_cast<R *>(mHostMirror.data()), args...);
+            return device::memory::NDViewUnmanagedHost<R, NDim>(reinterpret_cast<R *>(mHostMirror.data()), args...);
           },
           localSizes);
     }
@@ -142,7 +142,7 @@ namespace TempLat
         return mData;
       else {
         const size_t size = mSize * sizeof(T) / sizeof(R);
-        return device::memory::NDViewUnmanaged<1, R>(reinterpret_cast<R *>(mData.data()), size);
+        return device::memory::NDViewUnmanaged<R, 1>(reinterpret_cast<R *>(mData.data()), size);
       }
     }
 
@@ -153,7 +153,7 @@ namespace TempLat
         return mHostMirror;
       else {
         const size_t size = mSize * sizeof(T) / sizeof(R);
-        return device::memory::NDViewUnmanagedHost<1, R>(reinterpret_cast<R *>(mHostMirror.data()), size);
+        return device::memory::NDViewUnmanagedHost<R, 1>(reinterpret_cast<R *>(mHostMirror.data()), size);
       }
     }
 
@@ -192,7 +192,7 @@ namespace TempLat
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
     size_t mSize;
-    using DeviceView = device::memory::NDView<1, T>;
+    using DeviceView = device::memory::NDView<T, 1>;
     using HostView = typename DeviceView::host_mirror_type;
     DeviceView mData;
     mutable HostView mHostMirror;

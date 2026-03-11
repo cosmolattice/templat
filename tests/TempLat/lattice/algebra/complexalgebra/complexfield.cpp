@@ -14,11 +14,11 @@
 namespace TempLat
 {
 
-  template <size_t NDim, typename T> struct ComplexFieldTester {
+  template <typename T, size_t NDim> struct ComplexFieldTester {
     static void Test(TDDAssertion &tdd);
   };
 
-  template <size_t NDim, typename T> inline void ComplexFieldTester<NDim, T>::Test(TDDAssertion &tdd)
+  template <typename T, size_t NDim> inline void ComplexFieldTester<T, NDim>::Test(TDDAssertion &tdd)
   {
     ptrdiff_t nGrid = 16, nGhost = 2;
 
@@ -28,13 +28,13 @@ namespace TempLat
 
     // Test whether a transformation of the field forward and backward works.
     {
-      ComplexField<NDim, T> original("original", toolBox);
+      ComplexField<T, NDim> original("original", toolBox);
       SpatialCoordinate x(toolBox);
       original.ComplexFieldGet(Tag<0>()) = getVectorComponent(x, Tag<0>());
       original.ComplexFieldGet(Tag<1>()) = getVectorComponent(x, Tag<1>());
       original.updateGhosts();
 
-      ComplexField<NDim, T> copy("copy", toolBox);
+      ComplexField<T, NDim> copy("copy", toolBox);
       copy = original;
 
       // force fourier transformation on copy
@@ -63,10 +63,10 @@ namespace TempLat
     // ------------------------------------------------------------------------------------------
 
     {
-      ComplexField<NDim, T> phi("phi", toolBox);
-      ComplexField<NDim, T> chi("chi", toolBox);
+      ComplexField<T, NDim> phi("phi", toolBox);
+      ComplexField<T, NDim> chi("chi", toolBox);
 
-      auto field_tester = [&](ComplexField<NDim, T> &f, auto op, complex<double> expected) {
+      auto field_tester = [&](ComplexField<T, NDim> &f, auto op, complex<double> expected) {
         f = op;
         auto viewRe = f.ComplexFieldGet(0_c).getLocalNDHostView();
         auto viewIm = f.ComplexFieldGet(1_c).getLocalNDHostView();
@@ -106,9 +106,9 @@ namespace TempLat
     // ------------------------------------------------------------------------------------------
 
     {
-      Field<NDim, T> phi("phi", toolBox);
-      Field<NDim, T> chi("chi", toolBox);
-      Field<NDim, T> psi("psi", toolBox);
+      Field<T, NDim> phi("phi", toolBox);
+      Field<T, NDim> chi("chi", toolBox);
+      Field<T, NDim> psi("psi", toolBox);
 
       std::cout << "Layout info: " << toolBox->mLayouts.getConfigSpaceLayout() << "\n";
 
@@ -116,7 +116,7 @@ namespace TempLat
       tdd.verify(phi.mManager->isFourierSpace());
 
       WaveNumber k(toolBox);
-      phi.inFourierSpace() = k.norm2() * RandomGaussianField<NDim, T>("Hoi", toolBox);
+      phi.inFourierSpace() = k.norm2() * RandomGaussianField<T, NDim>("Hoi", toolBox);
 
       // just manipulated phi(k), so it must still be in Fourier space, and ghosts are stale.
       tdd.verify(phi.mManager->isFourierSpace());
@@ -150,5 +150,5 @@ namespace TempLat
 
 namespace
 {
-  TempLat::TDDContainer<TempLat::ComplexFieldTester<3, double>> test;
+  TempLat::TDDContainer<TempLat::ComplexFieldTester<double, 3>> test;
 }
