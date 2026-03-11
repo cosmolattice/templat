@@ -25,25 +25,39 @@ namespace TempLat
 
     template <int I> constexpr DEVICE_FORCEINLINE_FUNCTION auto delta(Tag<I>, Tag<I>) { return OneType(); }
 
-    template <int I, int J, int K> constexpr DEVICE_FORCEINLINE_FUNCTION auto epsilon(Tag<I>, Tag<J>, Tag<K>)
+    // Helper to check for repeated indices
+    template <std::size_t N> constexpr bool has_repeats(const std::array<int, N> &arr)
     {
-      return ZeroType();
+      for (std::size_t i = 0; i < N; ++i)
+        for (std::size_t j = i + 1; j < N; ++j)
+          if (arr[i] == arr[j]) return true;
+      return false;
     }
 
-    constexpr DEVICE_FORCEINLINE_FUNCTION auto epsilon(Tag<1>, Tag<2>, Tag<3>) { return OneType(); }
+    // Helper to compute permutation parity (sign)
+    template <std::size_t N> consteval int permutation_sign(const std::array<int, N> &arr)
+    {
+      int sign = 1;
+      for (std::size_t i = 0; i < N; ++i)
+        for (std::size_t j = i + 1; j < N; ++j)
+          if (arr[i] > arr[j]) sign = -sign;
+      return sign;
+    }
 
-    DEVICE_FORCEINLINE_FUNCTION auto epsilon(Tag<1>, Tag<3>, Tag<2>) { return -OneType(); }
-
-    constexpr DEVICE_FORCEINLINE_FUNCTION auto epsilon(Tag<3>, Tag<1>, Tag<2>) { return OneType(); }
-
-    DEVICE_FORCEINLINE_FUNCTION auto epsilon(Tag<3>, Tag<2>, Tag<1>) { return -OneType(); }
-
-    constexpr DEVICE_FORCEINLINE_FUNCTION auto epsilon(Tag<2>, Tag<3>, Tag<1>) { return OneType(); }
-
-    DEVICE_FORCEINLINE_FUNCTION auto epsilon(Tag<2>, Tag<1>, Tag<3>) { return -OneType(); }
-
+    // Generalized epsilon for arbitrary dimensions
+    template <typename... Tags> constexpr DEVICE_FORCEINLINE_FUNCTION auto epsilon(Tags... tags)
+    {
+      constexpr std::size_t N = sizeof...(Tags);
+      constexpr std::array<int, N> idx = {tag_value(tags)...};
+      constexpr int sign = permutation_sign(idx);
+      if constexpr (has_repeats(idx))
+        return ZeroType();
+      else if constexpr (sign == 1)
+        return OneType();
+      else
+        return -OneType();
+    }
   }; // namespace Symbols
-
 } // namespace TempLat
 
 #endif
