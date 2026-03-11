@@ -104,6 +104,8 @@ namespace TempLat
   consteval bool IsLessOrEqual(auto i, auto j) { return decltype(i)::value <= decltype(j)::value; }
   consteval bool IsMoreOrEqual(auto i, auto j) { return decltype(i)::value >= decltype(j)::value; }
   consteval bool IsEqual(auto i, auto j) { return std::is_same_v<decltype(i), decltype(j)>; }
+
+  template <int N> consteval int tag_value(Tag<N>) { return N; }
 } // namespace TempLat
 
 #endif
