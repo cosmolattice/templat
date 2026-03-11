@@ -102,7 +102,6 @@ namespace TempLat
   }
 
   template <class R> auto sh1(const R &pR) { return pR; }
-
   template <int I, int... J, class R> auto sh1(const R &pR) { return shift<I>(sh1<J...>(pR)); }
 } // namespace TempLat
 

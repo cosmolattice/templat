@@ -80,6 +80,9 @@ namespace TempLat
     DEVICE_FORCEINLINE_FUNCTION
     auto getKIR() const { return latPar.getKIR(); }
 
+    DEVICE_FORCEINLINE_FUNCTION
+    auto getLatParams() const { return latPar; }
+
   protected:
     /* Put all member variables and private methods here. These may change arbitrarily. */
 

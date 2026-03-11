@@ -30,7 +30,6 @@ namespace TempLat
    *
    * Unit test: ctest -R test-su2expmapinv
    **/
-
   template <typename R> class SU2ExpMapInv : public SU2UnaryOperator<R>
   {
   public:
@@ -45,7 +44,7 @@ namespace TempLat
       requires(N >= 1 && N <= 3)
     DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
     {
-      auto a = acos(mR.SU2Get(0_c));
+      const auto a = acos(mR.SU2Get(0_c));
       return mR.SU2Get(t) * a / sin(a);
     }
 
@@ -72,18 +71,17 @@ namespace TempLat
     {
       auto c = DoEval::eval(mR, idx...);
 
-      auto a = device::acos(c[0]);
-      auto sina = device::sin(a);
-
+      const auto a = device::acos(c[0]);
+      const auto sina = device::sin(a);
       // Safe-divide guard: a/sin(a) → 1 as a → 0
-      auto ratio = (sina * sina > SV(1e-30)) ? a / sina : SV(0);
+      const auto ratio = (sina * sina > SV(1e-30)) ? a / sina : SV(0);
 
-      device::array<SV, 4> result;
-      result[0] = SV(0);
-      result[1] = c[1] * ratio;
-      result[2] = c[2] * ratio;
-      result[3] = c[3] * ratio;
-      return result;
+      // We can work in-place on c.
+      c[0] = SV(0);
+      c[1] = c[1] * ratio;
+      c[2] = c[2] * ratio;
+      c[3] = c[3] * ratio;
+      return c;
     }
 
     std::string toString() const { return "expinv(" + GetString::get(mR) + ")"; }

@@ -169,15 +169,15 @@ namespace TempLat
 
     static_assert(
         HasSU2DoubletGet<SU2SU2DoubletMultiplication<
-            SU2FieldBase<3, double>,
+            SU2Field<3, double>,
             ComplexFieldSU2DoubletMultiplication<U1Exponential<Operators::Multiplication<double, Field<3, double>>>,
                                                  SU2DoubletShifterByOne<SU2DoubletBase<3, double>, 1>>>>);
 
     static_assert(HasSU2DoubletGet<SU2DoubletSubtract<SU2DoubletBase<3, double>, SU2DoubletBase<3, double>>>);
 
-    static_assert(HasSU2DoubletGet<
-                  SU2DoubletSubtract<SU2DoubletBase<3, double>,
-                                     SU2SU2DoubletMultiplication<SU2FieldBase<3, double>, SU2DoubletBase<3, double>>>>);
+    static_assert(
+        HasSU2DoubletGet<SU2DoubletSubtract<
+            SU2DoubletBase<3, double>, SU2SU2DoubletMultiplication<SU2Field<3, double>, SU2DoubletBase<3, double>>>>);
 
     static_assert(
         HasSU2DoubletGet<SU2DoubletSubtract<

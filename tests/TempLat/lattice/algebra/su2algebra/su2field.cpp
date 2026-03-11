@@ -10,12 +10,11 @@
 
 namespace TempLat
 {
-
-  template <size_t NDim, typename T> struct SU2FieldBaseTester {
+  template <size_t NDim, typename T> struct SU2FieldTester {
     static void Test(TDDAssertion &tdd);
   };
 
-  template <size_t NDim, typename T> void SU2FieldBaseTester<NDim, T>::Test(TDDAssertion &tdd)
+  template <size_t NDim, typename T> void SU2FieldTester<NDim, T>::Test(TDDAssertion &tdd)
   {
     const device::Idx nGrid = 8, nGhost = 1;
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
@@ -84,9 +83,7 @@ namespace TempLat
       auto c0_view = c0.getLocalNDHostView();
       bool all_close = true;
       double expected = sqrt(1.0 - 0.75);
-      NDLoop<NDim>(c0_view, [&](const auto... idx) {
-        all_close &= (std::abs(c0_view(idx...) - expected) < 1e-14);
-      });
+      NDLoop<NDim>(c0_view, [&](const auto... idx) { all_close &= (std::abs(c0_view(idx...) - expected) < 1e-14); });
       tdd.verify(all_close);
     }
   }
@@ -95,8 +92,8 @@ namespace TempLat
 
 namespace
 {
-  TempLat::TDDContainer<TempLat::SU2FieldBaseTester<1, double>> test5;
-  TempLat::TDDContainer<TempLat::SU2FieldBaseTester<2, double>> test6;
-  TempLat::TDDContainer<TempLat::SU2FieldBaseTester<3, double>> test7;
-  TempLat::TDDContainer<TempLat::SU2FieldBaseTester<4, double>> test8;
+  TempLat::TDDContainer<TempLat::SU2FieldTester<1, double>> test5;
+  TempLat::TDDContainer<TempLat::SU2FieldTester<2, double>> test6;
+  TempLat::TDDContainer<TempLat::SU2FieldTester<3, double>> test7;
+  TempLat::TDDContainer<TempLat::SU2FieldTester<4, double>> test8;
 } // namespace

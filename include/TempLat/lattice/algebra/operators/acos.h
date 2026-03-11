@@ -58,7 +58,7 @@ namespace TempLat
     };
   } // namespace Operators
 
-  /** @brief Exposing our newly define acos operation to the world. */
+  /** @brief Exposing our newly defined acos operation to the world. */
   template <typename T>
     requires ConditionalUnaryGetter<T>
   DEVICE_FORCEINLINE_FUNCTION auto acos(T a)

@@ -47,7 +47,7 @@ namespace TempLat
       requires(N >= 1 && N <= 3)
     DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
     {
-      auto a = sqrt(pow<2>(mR.SU2Get(1_c)) + pow<2>(mR.SU2Get(2_c)) + pow<2>(mR.SU2Get(3_c)));
+      const auto a = sqrt(pow<2>(mR.SU2Get(1_c)) + pow<2>(mR.SU2Get(2_c)) + pow<2>(mR.SU2Get(3_c)));
       return mR.SU2Get(t) / a * sin(a);
     }
 
@@ -65,11 +65,9 @@ namespace TempLat
       }
     DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
     {
-      auto c = DoEval::eval(mR, idx...);
-      device::array<SV, 3> cL = {c[1], c[2], c[3]};
-      device::array<SV, 4> result;
-      PauliVectorsAlgebra::expmap_inplace(result, cL);
-      return result;
+      device::array<SV, 4> cL = DoEval::eval(mR, idx...);
+      PauliVectorsAlgebra::expmap_inplace(cL);
+      return cL;
     }
 
     std::string toString() const { return "exp(" + GetString::get(mR) + ")"; }

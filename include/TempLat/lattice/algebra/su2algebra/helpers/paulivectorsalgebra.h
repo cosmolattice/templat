@@ -22,6 +22,13 @@ namespace TempLat
   public:
     /* Put public methods here. These should change very little over time. */
 
+    /**
+     * @brief Multiplies two SU(2) elements
+     *
+     * @param res The result of the multiplication, which is modified in place. Must be an array of size 4.
+     * @param cL The left element of the multiplication. Must be an array of size 4.
+     * @param cR The right element of the multiplication. Must be an array of size 4.
+     */
     template <typename Array>
       requires requires(Array a) {
         a[0];
@@ -37,6 +44,12 @@ namespace TempLat
       res[3] = cL[0] * cR[3] + cL[3] * cR[0] + cL[2] * cR[1] - cL[1] * cR[2];
     }
 
+    /**
+     * @brief Computes the exponential map for a given SU(2) algebra element.
+     *
+     * @param res The result array, which is modified in place. Must be an array of size 4.
+     * @param alg The algebra array. Must be an array of size 4.
+     */
     template <typename ResArray, typename AlgArray>
       requires requires(ResArray r, AlgArray a) {
         r[0];
@@ -49,12 +62,12 @@ namespace TempLat
       }
     DEVICE_FORCEINLINE_FUNCTION static void expmap_inplace(ResArray &res, const AlgArray &alg)
     {
-      auto a = device::sqrt(alg[0] * alg[0] + alg[1] * alg[1] + alg[2] * alg[2]);
+      const auto a = device::sqrt(alg[0] * alg[0] + alg[1] * alg[1] + alg[2] * alg[2]);
       res[0] = device::cos(a);
-      auto sina = device::sin(a);
+      const auto sina = device::sin(a);
       // Guard: sin(a)/a → 1 as a → 0. Use direct comparison (device-compatible).
       if (a > decltype(a)(1e-15)) {
-        auto ratio = sina / a;
+        const auto ratio = sina / a;
         res[1] = alg[0] * ratio;
         res[2] = alg[1] * ratio;
         res[3] = alg[2] * ratio;
@@ -62,6 +75,37 @@ namespace TempLat
         res[1] = alg[0];
         res[2] = alg[1];
         res[3] = alg[2];
+      }
+    }
+
+    /**
+     * @brief Computes the exponential map for a given SU(2) algebra element, working in-place on the result array.
+     *
+     * @param res The result array, which is modified in place. Must be an array of size 4.
+     * @param alg The algebra array. Must be an array of size 4.
+     */
+    template <typename ResArray>
+      requires requires(ResArray r) {
+        r[0];
+        r[1];
+        r[2];
+        r[3];
+      }
+    DEVICE_FORCEINLINE_FUNCTION static void expmap_inplace(ResArray &res)
+    {
+      const auto a = device::sqrt(res[1] * res[1] + res[2] * res[2] + res[3] * res[3]);
+      res[0] = device::cos(a);
+      const auto sina = device::sin(a);
+      // Guard: sin(a)/a → 1 as a → 0. Use direct comparison (device-compatible).
+      if (a > decltype(a)(1e-15)) {
+        const auto ratio = sina / a;
+        res[1] = res[1] * ratio;
+        res[2] = res[2] * ratio;
+        res[3] = res[3] * ratio;
+      } else {
+        res[1] = res[1];
+        res[2] = res[2];
+        res[3] = res[3];
       }
     }
   };

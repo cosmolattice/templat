@@ -6,5 +6,6 @@
 #include "TempLat/lattice/algebra/gaugealgebra/forwardcovariantderivative.h"
 #include "TempLat/lattice/algebra/gaugealgebra/plaquette.h"
 #include "TempLat/lattice/algebra/gaugealgebra/plaquetteback.h"
+#include "TempLat/lattice/algebra/gaugealgebra/nonabelianclover.h"
 
 #endif // TempLat_LATTICE_GAUGEALGEBRA_GAUGEALGEBRA_H

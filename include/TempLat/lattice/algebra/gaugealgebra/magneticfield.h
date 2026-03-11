@@ -13,18 +13,22 @@
 
 namespace TempLat
 {
-  /** @brief A class which return the magnetic field from the gauge potential. Specialise to 3D.
-   *
-   *
-   * Unit test: ctest -R test-magneticfield
+  /** @brief A function to return the magnetic field from the gauge potential. Specialised to 3D.
+   * TODO: ND?
    **/
-  template <typename R> auto magneticField(R As, Tag<1> t) { return fieldStrength(As, 2_c, 3_c); }
-
+  template <typename R> auto magneticField(R &&As, Tag<1> t) { return fieldStrength(As, 2_c, 3_c); }
   template <typename R> auto magneticField(R &&As, Tag<2> t) { return fieldStrength(As, 3_c, 1_c); }
-
   template <typename R> auto magneticField(R &&As, Tag<3> t) { return fieldStrength(As, 1_c, 2_c); }
-
   template <typename R> auto magneticField(R &&As) { return MakeVector(i, 1, 3, magneticField(As, i)); }
+
+  /** @brief A function to return the magnetic field from the gauge potential using centered finite derivatives.
+   * Specialised to 3D.
+   * TODO: ND?
+   **/
+  template <typename R> auto magneticFieldCtr(R &&As, Tag<1> t) { return fieldStrengthCtr(As, 2_c, 3_c); }
+  template <typename R> auto magneticFieldCtr(R &&As, Tag<2> t) { return fieldStrengthCtr(As, 3_c, 1_c); }
+  template <typename R> auto magneticFieldCtr(R &&As, Tag<3> t) { return fieldStrengthCtr(As, 1_c, 2_c); }
+  template <typename R> auto magneticFieldCtr(R &&As) { return MakeVector(i, 1, 3, magneticFieldCtr(As, i)); }
 } // namespace TempLat
 
 #endif

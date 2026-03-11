@@ -9,18 +9,32 @@
 
 #include "TempLat/util/rangeiteration/tag.h"
 #include "TempLat/lattice/algebra/spatialderivatives/forwdiff.h"
+#include "TempLat/lattice/algebra/spatialderivatives/neutdiff.h"
 
 namespace TempLat
 {
-  /** @brief A class which implements fieldstrength tensor as finite differences. Useful for non-compact U(1) mostly.
+  /** @brief Returns the field strength tensor F_{mu,nu} = d_mu A_nu - d_nu A_mu, where A is a gauge field and d is a
+   * forward derivative, using a forward finite difference.
    *
-   *
-   * Unit test: ctest -R test-fieldstrength
+   * @param A The gauge field
+   * @param mu The first index of the field strength tensor.
+   * @param nu The second index of the field strength tensor.
    **/
-
   template <typename R, int Mu, int Nu> auto fieldStrength(R A, Tag<Mu> mu, Tag<Nu> nu)
   {
     return forwDiff(A(nu), mu) - forwDiff(A(mu), nu);
+  }
+
+  /** @brief Returns the field strength tensor F_{mu,nu} = d_mu A_nu - d_nu A_mu, where A is a gauge field and d is a
+   * forward derivative, using a central finite difference.
+   *
+   * @param A The gauge field
+   * @param mu The first index of the field strength tensor.
+   * @param nu The second index of the field strength tensor.
+   **/
+  template <typename R, int Mu, int Nu> auto fieldStrengthCtr(R A, Tag<Mu> mu, Tag<Nu> nu)
+  {
+    return neutDiff(A(nu), mu) - neutDiff(A(mu), nu);
   }
 } // namespace TempLat
 

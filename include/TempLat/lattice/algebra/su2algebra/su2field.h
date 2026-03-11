@@ -21,23 +21,27 @@
 namespace TempLat
 {
   /** @brief A class which implements a SU2 field (group).
-   *
+   * We choose a representation with 4 real numbers per lattice site, c0, c1, c2, c3.
+   * These are subject to the unitarity constraint c0^2 + c1^2 + c2^2 + c3^2 = 1, which can be enforced by the
+   * unitarize() method.
+   * A single link variable is then represented as U = c0 * I + i * (c1 * sigma1 + c2 * sigma2 + c3 * sigma3), where
+   * sigma1, sigma2, sigma3 are the Pauli matrices.
    *
    * Unit test: ctest -R test-su2field
    **/
-  template <size_t _NDim, typename T> class SU2FieldBase
+  template <size_t _NDim, typename T> class SU2Field
   {
   public:
     // Put public methods here. These should change very little over time.
     static constexpr size_t NDim = _NDim;
 
-    SU2FieldBase(Field<NDim, T> f0, Field<NDim, T> f1, Field<NDim, T> f2, Field<NDim, T> f3)
+    SU2Field(Field<NDim, T> f0, Field<NDim, T> f1, Field<NDim, T> f2, Field<NDim, T> f3)
         : fs{{f0, f1, f2, f3}}, mName("NoName"), mLayout(fs[0].getToolBox()->mLayouts.getConfigSpaceLayout())
     {
     }
 
-    SU2FieldBase(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox,
-                 LatticeParameters<T> pLatPar = LatticeParameters<T>())
+    SU2Field(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox,
+             LatticeParameters<T> pLatPar = LatticeParameters<T>())
         : fs{{
               Field<NDim, T>(name + "_0", toolBox, pLatPar), //
               Field<NDim, T>(name + "_1", toolBox, pLatPar), //
@@ -161,8 +165,6 @@ namespace TempLat
     const device::memory::host_string mName;
     LayoutStruct<NDim> mLayout;
   };
-
-  template <size_t NDim, typename T> using SU2Field = SU2FieldBase<NDim, T>;
 } // namespace TempLat
 
 #endif
