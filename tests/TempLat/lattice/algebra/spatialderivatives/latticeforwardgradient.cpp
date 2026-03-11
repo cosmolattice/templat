@@ -39,7 +39,7 @@ namespace TempLat
       sc.updateGhosts();
 
       Field<NDim, double> fgsc("fgSC_" + std::to_string(dir), toolBox);
-      fgsc = getVectorComponent(LatForwardGrad<NDim>(sc), dirTag - Tag<1>{});
+      fgsc = getVectorComponent(LatForwardGrad(sc), dirTag - Tag<1>{});
 
       bool OK = true;
       auto sc_view = sc.getFullNDHostView();

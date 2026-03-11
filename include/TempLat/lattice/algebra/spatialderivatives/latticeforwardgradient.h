@@ -20,6 +20,7 @@
 #include "TempLat/lattice/algebra/listoperators/vectordotter.h"
 #include "TempLat/util/tuple_tools.h"
 #include "TempLat/lattice/algebra/spatialderivatives/forwdiff.h"
+#include "TempLat/lattice/algebra/helpers/getndim.h"
 
 namespace TempLat
 {
@@ -29,7 +30,7 @@ namespace TempLat
    *
    * Unit test: ctest -R test-forwardgradientlocal
    **/
-  template <size_t _NDim, typename R> class LatticeForwardGradient : public UnaryOperator<R>
+  template <typename R> class LatticeForwardGradient : public UnaryOperator<R>
   {
   private:
     using UnaryOperator<R>::mR;
@@ -39,7 +40,7 @@ namespace TempLat
     using GetReturnType = typename GetGetReturnType<R>::type;
     using FloatType = typename GetFloatType<GetReturnType>::type;
 
-    static constexpr size_t NDim = _NDim;
+    static constexpr size_t NDim = GetNDim::get<R>();
 
     DEVICE_FUNCTION
     LatticeForwardGradient(const R &pR) : UnaryOperator<R>(pR), dx(GetDx::getDx(mR)) {}
@@ -107,7 +108,7 @@ namespace TempLat
 
     template <typename S> inline auto d(const S &other)
     {
-      return LatticeForwardGradient<NDim, R>(GetDeriv::get(mR, other));
+      return LatForwardGrad(GetDeriv::get(mR, other));
     }
 
   private:
@@ -115,10 +116,12 @@ namespace TempLat
     const FloatType dx;
   };
 
-  template <int nDimensions, typename R>
-  DEVICE_FORCEINLINE_FUNCTION LatticeForwardGradient<nDimensions, R> LatForwardGrad(R pR)
+  template <size_t NDim_ = 0, typename R>
+  DEVICE_FORCEINLINE_FUNCTION auto LatForwardGrad(R pR)
   {
-    return LatticeForwardGradient<nDimensions, R>(pR);
+    static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),
+      "Explicit NDim does not match the NDim deduced from expression type R.");
+    return LatticeForwardGradient<R>(pR);
   }
 
 } // namespace TempLat

@@ -37,7 +37,7 @@ namespace TempLat
       sc1.updateGhosts();
 
       Field<NDim, double> result_field("result1", toolBox);
-      result_field = LatLapl<NDim>(sc1);
+      result_field = LatLapl(sc1);
 
       auto sc1_view = sc1.getFullNDHostView();
       auto result_view = result_field.getLocalNDHostView();
@@ -91,7 +91,7 @@ namespace TempLat
       sc1_sq.updateGhosts();
 
       Field<NDim, double> result_field("result2", toolBox);
-      result_field = LatLapl<NDim>(sc1 * sc1);
+      result_field = LatLapl(sc1 * sc1);
 
       auto sc1_sq_view = sc1_sq.getFullNDHostView();
       auto result_view = result_field.getLocalNDHostView();
@@ -148,7 +148,7 @@ namespace TempLat
       sc1_sc2.updateGhosts();
 
       Field<NDim, double> result_field("result3", toolBox);
-      result_field = LatLapl<NDim>(sc1 * sc2);
+      result_field = LatLapl(sc1 * sc2);
 
       auto sc1_sc2_view = sc1_sc2.getFullNDHostView();
       auto result_view = result_field.getLocalNDHostView();
@@ -203,7 +203,7 @@ namespace TempLat
       sc_sum_sq.updateGhosts();
 
       Field<NDim, double> result_field("result4", toolBox);
-      result_field = LatLapl<NDim>(pow<2>(sc1 + sc2));
+      result_field = LatLapl(pow<2>(sc1 + sc2));
 
       auto sc_sum_sq_view = sc_sum_sq.getFullNDHostView();
       auto result_view = result_field.getLocalNDHostView();

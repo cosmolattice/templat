@@ -30,9 +30,9 @@ namespace TempLat
     gaussian += 0;
 
     Field<NDim, double> normGradSq("normGradSq", toolBox);
-    normGradSq = Grad2<NDim>(gaussian);
+    normGradSq = Grad2(gaussian);
     Field<NDim, double> LatForwardGradNorm2("LatForwardGradNorm2", toolBox);
-    LatForwardGradNorm2 = LatForwardGrad<NDim>(gaussian).norm2();
+    LatForwardGradNorm2 = LatForwardGrad(gaussian).norm2();
 
     bool allGood = true;
 

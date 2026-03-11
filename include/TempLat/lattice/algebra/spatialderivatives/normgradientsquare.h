@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Adrien Florio, Franz R. Sattler  Year: 2025
 
 #include "TempLat/lattice/algebra/spatialderivatives/latticeforwardgradient.h"
+#include "TempLat/lattice/algebra/helpers/getndim.h"
 #include "TempLat/lattice/algebra/operators/unaryoperator.h"
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/algebra/helpers/haseval.h"
@@ -23,12 +24,13 @@ namespace TempLat
    *
    * Unit test: ctest -R test-normgradientsquare
    **/
-  template <size_t NDim, typename R> class NormGradientSquare : public UnaryOperator<R>
+  template <typename R> class NormGradientSquare : public UnaryOperator<R>
   {
   public:
     // Put public methods here. These should change very little over time.
     using GetReturnType = typename GetGetReturnType<R>::type;
     using FloatType = typename GetFloatType<GetReturnType>::type;
+    static constexpr size_t NDim = GetNDim::get<R>();
 
     using UnaryOperator<R>::mR;
 
@@ -71,14 +73,16 @@ namespace TempLat
     FloatType dx2;
   };
 
-  template <int nDimensions, typename R>
+  template <size_t NDim_ = 0, typename R>
     requires HasEvalMethod<R>
   DEVICE_FORCEINLINE_FUNCTION auto Grad2(R pR)
   {
-    return NormGradientSquare<nDimensions, R>(pR);
+    static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),
+      "Explicit NDim does not match the NDim deduced from expression type R.");
+    return NormGradientSquare<R>(pR);
   }
 
-  template <int nDimensions, typename R>
+  template <size_t NDim_ = 0, typename R>
     requires(!HasEvalMethod<R>)
   DEVICE_FORCEINLINE_FUNCTION auto Grad2(R pR)
   {

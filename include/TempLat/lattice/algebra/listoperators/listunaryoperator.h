@@ -15,6 +15,7 @@
 #include "TempLat/lattice/algebra/helpers/confirmspace.h"
 #include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 #include "TempLat/lattice/algebra/helpers/getcomponent.h"
+#include "TempLat/lattice/algebra/helpers/getndim.h"
 
 namespace TempLat
 {
@@ -27,6 +28,8 @@ namespace TempLat
   template <typename R> class ListUnaryOperator
   {
   public:
+    static consteval size_t getNDim() { return GetNDim::get<R>(); }
+
     ListUnaryOperator(const R &pR) : mR(pR) {}
 
     DEVICE_FUNCTION

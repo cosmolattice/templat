@@ -13,6 +13,7 @@
 #include "listunaryoperator.h"
 #include "TempLat/lattice/algebra/conditional/conditionallistunarygetter.h"
 #include "TempLat/lattice/algebra/spatialderivatives/latticelaplacian.h"
+#include "TempLat/lattice/algebra/helpers/getndim.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
 
 namespace TempLat
@@ -23,13 +24,15 @@ namespace TempLat
    *
    * Unit test: ctest -R test-multiply
    **/
-  template <int NDim, typename R> class ListLaplacian : public ListUnaryOperator<R>
+  template <typename R> class ListLaplacian : public ListUnaryOperator<R>
   {
   public:
     using ListUnaryOperator<R>::mR;
+    static constexpr size_t NDim = GetNDim::get<R>();
+
     ListLaplacian(const R &pR) : ListUnaryOperator<R>(pR) {}
 
-    template <int N> auto getComp(Tag<N> t) { return LatLapl<NDim>(GetComponent::get(mR, t)); }
+    template <int N> auto getComp(Tag<N> t) { return LatLapl(GetComponent::get(mR, t)); }
 
     virtual std::string operatorString() const { return "lapl"; }
     template <int N> void doWeNeedGhosts(Tag<N> i) { GetComponent::get(mR, i).confirmGhostsUpToDate(); }
@@ -37,13 +40,13 @@ namespace TempLat
     static const size_t size = tuple_size<R>::value;
   };
 
-  template <class T> using LapList3D = ListLaplacian<3, T>;
-
-  template <int NDim, typename R>
+  template <size_t NDim_ = 0, typename R>
     requires(IsSTDGettable<0, R> || IsTempLatGettable<0, R>)
   auto LatLapl(const R &r)
   {
-    return ListLaplacian<NDim, R>(r);
+    static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),
+      "Explicit NDim does not match the NDim deduced from expression type R.");
+    return ListLaplacian<R>(r);
   }
 } // namespace TempLat
 
