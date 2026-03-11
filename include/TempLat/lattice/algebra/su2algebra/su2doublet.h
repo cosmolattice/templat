@@ -24,18 +24,18 @@ namespace TempLat
    *
    * Unit test: ctest -R test-su2doublet
    **/
-  template <size_t _NDim, typename T> class SU2DoubletBase
+  template <size_t _NDim, typename T> class SU2Doublet
   {
   public:
     // Put public methods here. These should change very little over time.
     static constexpr size_t NDim = _NDim;
 
-    SU2DoubletBase(Field<NDim, T> f1, Field<NDim, T> f2, Field<NDim, T> f3, Field<NDim, T> f4)
+    SU2Doublet(Field<NDim, T> f1, Field<NDim, T> f2, Field<NDim, T> f3, Field<NDim, T> f4)
         : fs{{f1, f2, f3, f4}}, mName("NoName"), mLayout(f1.getToolBox()->mLayouts.getConfigSpaceLayout())
     {
     }
-    SU2DoubletBase(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox,
-                   LatticeParameters<T> pLatPar = LatticeParameters<T>())
+    SU2Doublet(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox,
+               LatticeParameters<T> pLatPar = LatticeParameters<T>())
         : mName(name), fs{{
                            Field<NDim, T>(name + "_0", toolBox, pLatPar), //
                            Field<NDim, T>(name + "_1", toolBox, pLatPar), //
@@ -130,8 +130,6 @@ namespace TempLat
 
     LayoutStruct<NDim> mLayout;
   };
-
-  template <size_t NDim, typename T> using SU2Doublet = SU2DoubletBase<NDim, T>;
 } // namespace TempLat
 
 #endif
