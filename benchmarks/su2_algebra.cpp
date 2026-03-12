@@ -24,8 +24,8 @@ int main(int argc, char **argv)
 
   toolBox->unsetVerbose();
 
-  FieldCollection<SU2Field<NDim, T>, T, NDim> U1("SU2Field1", toolBox);
-  SU2Field<NDim, T> result("SU2Field2", toolBox);
+  FieldCollection<SU2Field<T, NDim>, NDim> U1("SU2Field1", toolBox);
+  SU2Field<T, NDim> result("SU2Field2", toolBox);
 
   U1(0_c)(1_c).inFourierSpace() = RandomGaussianField<NDim, T>("H1", toolBox);
   U1(0_c)(2_c).inFourierSpace() = RandomGaussianField<NDim, T>("H2", toolBox);
