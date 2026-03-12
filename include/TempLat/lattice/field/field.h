@@ -24,15 +24,13 @@ namespace TempLat
    *
    * Unit test: ctest -R test-field
    **/
-  template <size_t NDimCheck>
-  struct FieldNDimCheck {
+  template <size_t NDimCheck> struct FieldNDimCheck {
     static_assert(NDimCheck > 0, "NDim template parameter is required. Use e.g. Field<double, 3>.");
   };
 
   template <typename T, size_t _NDim = 0> class Field : private FieldNDimCheck<_NDim>, public ConfigView<T, _NDim>
   {
   public:
-
     static constexpr size_t NDim = _NDim;
     using value_type = T;
 

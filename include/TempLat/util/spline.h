@@ -313,10 +313,10 @@ namespace TempLat
       const T eps = get_eps<T>();
       T p_err = eps * (std::fabs(b) + (T(4) / T(9)) * (c * c) + std::fabs(p));
       T r_err = eps * (T(6) * (c * c) + T(18) * std::fabs(b) + std::fabs(r));
-      T q_err =
-          T(0.5) * std::fabs(a) * eps + (T(1) / T(54)) * std::fabs(c) * (r_err + std::fabs(r) * T(3) * eps) + std::fabs(q) * eps;
-      T discr_err =
-          (p * p) * (T(3) * p_err + std::fabs(p) * T(2) * eps) + std::fabs(q) * (T(2) * q_err + std::fabs(q) * eps) + std::fabs(discr) * eps;
+      T q_err = T(0.5) * std::fabs(a) * eps + (T(1) / T(54)) * std::fabs(c) * (r_err + std::fabs(r) * T(3) * eps) +
+                std::fabs(q) * eps;
+      T discr_err = (p * p) * (T(3) * p_err + std::fabs(p) * T(2) * eps) +
+                    std::fabs(q) * (T(2) * q_err + std::fabs(q) * eps) + std::fabs(discr) * eps;
 
       if (std::fabs(discr) <= discr_err) {
         if (std::fabs(p) <= p_err) {
@@ -380,9 +380,8 @@ namespace TempLat
     {
     }
 
-    Spline(const std::vector<T> &X, const std::vector<T> &Y, SplineType type = cspline,
-           bool make_monotonic = false, BdType left = second_deriv, T left_value = T(0),
-           BdType right = second_deriv, T right_value = T(0))
+    Spline(const std::vector<T> &X, const std::vector<T> &Y, SplineType type = cspline, bool make_monotonic = false,
+           BdType left = second_deriv, T left_value = T(0), BdType right = second_deriv, T right_value = T(0))
         : m_type(type), m_left(left), m_right(right), m_left_value(left_value), m_right_value(right_value),
           m_made_monotonic(false)
     {

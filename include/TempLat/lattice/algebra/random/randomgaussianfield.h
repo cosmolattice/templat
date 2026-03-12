@@ -149,7 +149,8 @@ namespace TempLat
 
   template <typename T, size_t NDim = 0> using RandomRayleighField = RandomGaussianFieldHelper<T, NDim, true, false>;
 
-  template <typename T, size_t NDim = 0> using RandomUniformUnitaryField = RandomGaussianFieldHelper<T, NDim, false, true>;
+  template <typename T, size_t NDim = 0>
+  using RandomUniformUnitaryField = RandomGaussianFieldHelper<T, NDim, false, true>;
 
 } // namespace TempLat
 

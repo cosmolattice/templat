@@ -36,8 +36,9 @@ namespace TempLat::device_kokkos::iteration
   void foreach (const std::string &name, const CheckerboardLayout<NDim> &cb, const Functor &functor)
   {
     CheckerboardForEachWrapper<NDim, Functor> wrapped{cb, functor};
-    Kokkos::parallel_for(name, getLocalKokkosPolicy(cb.getStarts(), cb.getStops()),
-                         device_kokkos::KokkosNDLambdaWrapper<NDim, CheckerboardForEachWrapper<NDim, Functor>>(wrapped));
+    Kokkos::parallel_for(
+        name, getLocalKokkosPolicy(cb.getStarts(), cb.getStops()),
+        device_kokkos::KokkosNDLambdaWrapper<NDim, CheckerboardForEachWrapper<NDim, Functor>>(wrapped));
   }
 
   // ===== REDUCE =====
@@ -85,8 +86,9 @@ namespace TempLat::device_kokkos::iteration
   void reduce(const std::string &name, const CheckerboardLayout<NDim> &cb, const Functor &functor, T &result)
   {
     CheckerboardReduceWrapper<NDim, Functor> wrapped{cb, functor};
-    Kokkos::parallel_reduce(name, getLocalKokkosPolicy(cb.getStarts(), cb.getStops()),
-                            device_kokkos::KokkosNDLambdaWrapperReduction<NDim, CheckerboardReduceWrapper<NDim, Functor>>(wrapped), result);
+    Kokkos::parallel_reduce(
+        name, getLocalKokkosPolicy(cb.getStarts(), cb.getStops()),
+        device_kokkos::KokkosNDLambdaWrapperReduction<NDim, CheckerboardReduceWrapper<NDim, Functor>>(wrapped), result);
   }
   // 7. reduce: CheckerboardLayout -> View or Reduction
   template <size_t NDim, typename Functor, typename View>
@@ -96,8 +98,9 @@ namespace TempLat::device_kokkos::iteration
   void reduce(const std::string &name, const CheckerboardLayout<NDim> &cb, const Functor &functor, View view)
   {
     CheckerboardReduceWrapper<NDim, Functor> wrapped{cb, functor};
-    Kokkos::parallel_reduce(name, getLocalKokkosPolicy(cb.getStarts(), cb.getStops()),
-                            device_kokkos::KokkosNDLambdaWrapperReduction<NDim, CheckerboardReduceWrapper<NDim, Functor>>(wrapped), view);
+    Kokkos::parallel_reduce(
+        name, getLocalKokkosPolicy(cb.getStarts(), cb.getStops()),
+        device_kokkos::KokkosNDLambdaWrapperReduction<NDim, CheckerboardReduceWrapper<NDim, Functor>>(wrapped), view);
   }
 
   // ===== REDUCERS =====

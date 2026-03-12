@@ -106,21 +106,17 @@ namespace TempLat
     /** For measurement objects. */
     inline device::memory::host_ptr<MemoryToolBox<NDim>> getToolBox() const { return GetToolBox::get(mR); }
 
-    template <typename S> inline auto d(const S &other)
-    {
-      return LatForwardGrad(GetDeriv::get(mR, other));
-    }
+    template <typename S> inline auto d(const S &other) { return LatForwardGrad(GetDeriv::get(mR, other)); }
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
     const FloatType dx;
   };
 
-  template <size_t NDim_ = 0, typename R>
-  DEVICE_FORCEINLINE_FUNCTION auto LatForwardGrad(R pR)
+  template <size_t NDim_ = 0, typename R> DEVICE_FORCEINLINE_FUNCTION auto LatForwardGrad(R pR)
   {
     static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),
-      "Explicit NDim does not match the NDim deduced from expression type R.");
+                  "Explicit NDim does not match the NDim deduced from expression type R.");
     return LatticeForwardGradient<R>(pR);
   }
 

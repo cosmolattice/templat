@@ -45,7 +45,7 @@ namespace TempLat
   auto LatLapl(const R &r)
   {
     static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),
-      "Explicit NDim does not match the NDim deduced from expression type R.");
+                  "Explicit NDim does not match the NDim deduced from expression type R.");
     return ListLaplacian<R>(r);
   }
 } // namespace TempLat

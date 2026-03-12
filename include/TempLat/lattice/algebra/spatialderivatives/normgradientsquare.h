@@ -78,7 +78,7 @@ namespace TempLat
   DEVICE_FORCEINLINE_FUNCTION auto Grad2(R pR)
   {
     static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),
-      "Explicit NDim does not match the NDim deduced from expression type R.");
+                  "Explicit NDim does not match the NDim deduced from expression type R.");
     return NormGradientSquare<R>(pR);
   }
 

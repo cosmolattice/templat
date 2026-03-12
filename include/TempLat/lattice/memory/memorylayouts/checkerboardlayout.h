@@ -44,8 +44,9 @@ namespace TempLat
       for (size_t g = 0; g < NDim; ++g)
         sumLocalStarts += localStarts[g];
 
-      mParityBase = ((static_cast<device::Idx>(parity) + sumLocalStarts +
-                      static_cast<device::Idx>(NDim - 1) * nGhosts) % 2 + 2) % 2;
+      mParityBase =
+          ((static_cast<device::Idx>(parity) + sumLocalStarts + static_cast<device::Idx>(NDim - 1) * nGhosts) % 2 + 2) %
+          2;
 
       mNGhosts = nGhosts;
       mFullSize = sizesInMemory[NDim - 1];
@@ -79,10 +80,7 @@ namespace TempLat
      *  the split dimension is odd.
      */
     DEVICE_FORCEINLINE_FUNCTION
-    bool isInBounds(const device::IdxArray<NDim> &fullIdx) const
-    {
-      return fullIdx[NDim - 1] < mNGhosts + mFullSize;
-    }
+    bool isInBounds(const device::IdxArray<NDim> &fullIdx) const { return fullIdx[NDim - 1] < mNGhosts + mFullSize; }
 
   private:
     device::IdxArray<NDim> mStarts;
@@ -95,8 +93,7 @@ namespace TempLat
   // ---- Device-side functor wrappers for foreach/reduce ----
 
   /** @brief Wraps a foreach functor to apply checkerboard reconstruction. */
-  template <size_t NDim, typename Functor>
-  struct CheckerboardForEachWrapper {
+  template <size_t NDim, typename Functor> struct CheckerboardForEachWrapper {
     CheckerboardLayout<NDim> mCB;
     Functor mFunctor;
 
@@ -104,24 +101,20 @@ namespace TempLat
     void operator()(const device::IdxArray<NDim> &halfIdx) const
     {
       const auto fullIdx = mCB.reconstruct(halfIdx);
-      if (mCB.isInBounds(fullIdx))
-        mFunctor(fullIdx);
+      if (mCB.isInBounds(fullIdx)) mFunctor(fullIdx);
     }
   };
 
   /** @brief Wraps a reduce functor to apply checkerboard reconstruction. */
-  template <size_t NDim, typename Functor>
-  struct CheckerboardReduceWrapper {
+  template <size_t NDim, typename Functor> struct CheckerboardReduceWrapper {
     CheckerboardLayout<NDim> mCB;
     Functor mFunctor;
 
     template <typename T>
-    DEVICE_FORCEINLINE_FUNCTION
-    void operator()(const device::IdxArray<NDim> &halfIdx, T &update) const
+    DEVICE_FORCEINLINE_FUNCTION void operator()(const device::IdxArray<NDim> &halfIdx, T &update) const
     {
       const auto fullIdx = mCB.reconstruct(halfIdx);
-      if (mCB.isInBounds(fullIdx))
-        mFunctor(fullIdx, update);
+      if (mCB.isInBounds(fullIdx)) mFunctor(fullIdx, update);
     }
   };
 
