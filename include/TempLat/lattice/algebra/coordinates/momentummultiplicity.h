@@ -5,7 +5,7 @@
    Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Nicolas Loayza, Franz R. Sattler,  Year: 2025
 
 #include <vector>
 #include <cmath>
@@ -29,15 +29,14 @@ namespace TempLat
      *        bin counts with symmetry factors.
      */
     template <size_t Dim, size_t NDim, typename T>
-    void iterateOctant(const ptrdiff_t Nh, const ptrdiff_t N, std::vector<int> &binP, const std::vector<int> &sq,
-                       ptrdiff_t n2, int nEdge)
+    void iterateOctant(const ptrdiff_t Nh, const ptrdiff_t N, std::vector<int> &binP, ptrdiff_t n2, int nEdge)
     {
       for (ptrdiff_t a = 0; a <= Nh; ++a) {
-        const ptrdiff_t newN2 = n2 + sq[a];
+        const ptrdiff_t newN2 = n2 + a * a;
         const int newNEdge = nEdge + ((a == 0 || a == Nh) ? 1 : 0);
 
         if constexpr (Dim + 1 < NDim) {
-          iterateOctant<Dim + 1, NDim, T>(Nh, N, binP, sq, newN2, newNEdge);
+          iterateOctant<Dim + 1, NDim, T>(Nh, N, binP, newN2, newNEdge);
         } else {
           // Innermost dimension: compute bin and accumulate
           if (newN2 == 0) continue; // skip the all-zero mode
@@ -57,11 +56,7 @@ namespace TempLat
     const int maxBin = static_cast<int>(std::sqrt(double(NDim)) * double(Nh)) + 1;
     std::vector<int> binP(maxBin, 0);
 
-    std::vector<int> sq(Nh + 1);
-    for (int a = 0; a <= Nh; ++a)
-      sq[a] = a * a;
-
-    detail::iterateOctant<0, NDim, double>(Nh, N, binP, sq, 0, 0);
+    detail::iterateOctant<0, NDim, double>(Nh, N, binP, 0, 0);
 
     return binP;
   }
