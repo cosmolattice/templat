@@ -8,7 +8,7 @@
 #include "TempLat/lattice/algebra/coordinates/wavenumber.h"  // WaveNumber + FourierSite alias
 #include "TempLat/lattice/memory/memorytoolbox.h"            // MemoryToolBox<NDim>
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h" // IsVariadicNDIndex
-#include "TempLat/util/spline.h"                              // spline
+#include "TempLat/util/spline.h"                             // spline
 
 namespace TempLat
 {
@@ -28,8 +28,8 @@ namespace TempLat
       requires IsVariadicNDIndex<NDim, IDX...>
     DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
     {
-      const auto kSite = ntilde_norm.eval(idx...) * kIR; // k = |ntilde| * kIR
-      return spline(clampK(static_cast<T>(kSite)));
+      const T kSite = ntilde_norm.eval(idx...) * kIR; // k = |ntilde| * kIR
+      return spline(clampK(kSite));
     }
 
     ToolBoxPtr getToolBox() const { return mToolBox; }
