@@ -33,6 +33,7 @@ namespace TempLat
 
     template <int M> DEVICE_FORCEINLINE_FUNCTION auto SU2DoubletGet(Tag<M> t) const
     {
+      static_assert(M >= 0 && M <= 3, "SU2DoubletGet: M must be between 0 and 3 for SU2DoubletDagger");
       if constexpr (M % 2 == 0)
         return mR.SU2DoubletGet(t);
       else

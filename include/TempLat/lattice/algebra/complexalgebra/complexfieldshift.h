@@ -36,6 +36,7 @@ namespace TempLat
 
     template <int M> DEVICE_FORCEINLINE_FUNCTION auto ComplexFieldGet(Tag<M> t) const
     {
+      static_assert(M >= 0 && M <= 1, "ComplexFieldGet: M must be 0 or 1 for ComplexFieldShifter");
       return shift<N...>(mR.ComplexFieldGet(t));
     }
 
@@ -76,6 +77,7 @@ namespace TempLat
 
     template <int M> DEVICE_FORCEINLINE_FUNCTION auto ComplexFieldGet(Tag<M> t) const
     {
+      static_assert(M >= 0 && M <= 1, "ComplexFieldGet: M must be 0 or 1 for ComplexFieldShifterByOne");
       return shift<_N>(mR.ComplexFieldGet(t));
     }
 

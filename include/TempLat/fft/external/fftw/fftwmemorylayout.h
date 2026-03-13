@@ -58,12 +58,15 @@ namespace TempLat
       device::Idx fftwRequiredMemory = 0;
 
 #ifdef HAVE_MPI
-      if (NDim > 1) {
+      if constexpr (NDim > 1) {
         std::vector<ptrdiff_t> globalLayout(NDim);
         for (size_t i = 0; i < NDim; ++i)
           globalLayout[i] = result.fourierSpace.getLocalSizes()[i];
 
-        bool doTranspose = NDim > 2 && group.size() > 1;
+        bool doTranspose = false;
+        if constexpr (NDim > 2) {
+          doTranspose = group.size() > 1;
+        }
 
         doTranspose = doTranspose && !forbidTransposition;
 

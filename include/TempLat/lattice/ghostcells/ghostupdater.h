@@ -61,8 +61,12 @@ namespace TempLat
 #ifdef HAVE_MPI
       // There is no MPI splitting in one dimension. Also, when we have only a single node, there is no need to do MPI
       // communication.
-      if (mExchange.getMPICartesianGroup().size() > 1 && NDim > 1) {
-        pUpdate(block);
+      if constexpr (NDim > 1) {
+        if (mExchange.getMPICartesianGroup().size() > 1) {
+          pUpdate(block);
+        } else {
+          pUpdate_NOMPI(block);
+        }
       } else
 #endif
       {

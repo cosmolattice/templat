@@ -63,8 +63,16 @@ namespace TempLat
     DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<1> t) const { return mI; }
 
-    template <int N> auto &operator()(Tag<N> t) { return ComplexFieldGet(t); }
-    template <int N> const auto &operator()(Tag<N> t) const { return ComplexFieldGet(t); }
+    template <int N> auto &operator()(Tag<N> t)
+    {
+      static_assert(N >= 0 && N <= 1, "Operator(): N must be 0 or 1 for ComplexField");
+      return ComplexFieldGet(t);
+    }
+    template <int N> const auto &operator()(Tag<N> t) const
+    {
+      static_assert(N >= 0 && N <= 1, "Operator(): N must be 0 or 1 for ComplexField");
+      return ComplexFieldGet(t);
+    }
 
     template <typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>

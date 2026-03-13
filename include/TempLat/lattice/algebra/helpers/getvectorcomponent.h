@@ -21,6 +21,8 @@ namespace TempLat
    **/
   template <int N, typename R> class GetVectorComponentHelper
   {
+    static_assert(N >= 0, "GetVectorComponentHelper: N must be non-negative");
+
   public:
     // Put public methods here. These should change very little over time.
     GetVectorComponentHelper(const R &pR) : mR(pR) {}

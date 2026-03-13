@@ -48,7 +48,11 @@ namespace TempLat
     {
     }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION const Field<T, NDim> &SU2DoubletGet(Tag<N> t) const { return fs[t]; }
+    template <int N> DEVICE_FORCEINLINE_FUNCTION const Field<T, NDim> &SU2DoubletGet(Tag<N> t) const
+    {
+      static_assert(N >= 0 && N <= 3, "SU2DoubletGet: N must be between 0 and 3 for SU2Doublet");
+      return fs[t];
+    }
 
     template <typename... IDX>
       requires requires(Field<T, NDim> f, IDX... idx) {
@@ -65,7 +69,11 @@ namespace TempLat
       return result;
     }
 
-    template <int M> DEVICE_FORCEINLINE_FUNCTION auto &operator()(Tag<M> t) { return fs[t]; }
+    template <int M> DEVICE_FORCEINLINE_FUNCTION auto &operator()(Tag<M> t)
+    {
+      static_assert(M >= 0 && M <= 3, "Operator(): M must be between 0 and 3 for SU2Doublet");
+      return fs[t];
+    }
 
     template <typename R> void operator=(R &&r)
     {

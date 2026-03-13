@@ -31,6 +31,7 @@ namespace TempLat
 
     template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2DoubletGet(Tag<N> t) const
     {
+      static_assert(N >= 0 && N <= 3, "SU2DoubletGet: N must be between 0 and 3 for SU2DoubletSubtraction");
       return mR.SU2DoubletGet(t) - mT.SU2DoubletGet(t);
     }
 

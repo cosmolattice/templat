@@ -226,9 +226,9 @@ namespace TempLat
 
     template <typename T> bool initializeFFT() //(JBB, Sep 2023)
     {
-      if (std::is_same<T, float>::value)
+      if constexpr (std::is_same_v<T, float>)
         mFFTLibrary.getPlans_float();
-      else if (std::is_same<T, double>::value)
+      else if constexpr (std::is_same_v<T, double>)
         mFFTLibrary.getPlans_double();
       return true;
     }

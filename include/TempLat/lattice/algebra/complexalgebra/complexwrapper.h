@@ -42,7 +42,11 @@ namespace TempLat
     DEVICE_FORCEINLINE_FUNCTION
     auto ComplexFieldGet(Tag<1> t) const { return mT; }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const { return ComplexFieldGet(t); }
+    template <int N> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const
+    {
+      static_assert(N >= 0 && N <= 1, "Operator(): N must be 0 or 1 for ComplexFieldWrapper");
+      return ComplexFieldGet(t);
+    }
 
     template <typename... IDX>
       requires requires(std::decay_t<R> r, std::decay_t<T> t, IDX... idx) {
