@@ -24,6 +24,8 @@ namespace TempLat
     {
       return 0.5f;
     }
+    inline explicit operator double() const { return value; }
+    inline explicit operator float() const { return value; }
     static constexpr float value = 0.5f;
   };
 } // namespace TempLat

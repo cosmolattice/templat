@@ -77,7 +77,7 @@ namespace TempLat
 
     {
       WaveNumber<NDim> k(toolBox);
-      auto op = pow<2>(Tag<1>() - k.norm2());
+      [[maybe_unused]] auto op = pow<2>(Tag<1>() - k.norm2());
     }
 
     // ------------------------------------------------------------------------------------------

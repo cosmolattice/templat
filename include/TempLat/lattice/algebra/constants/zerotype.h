@@ -32,6 +32,8 @@ namespace TempLat
       return 0;
     }
     template <int N> constexpr auto operator()(const Tag<N> t) const { return ZeroType(); }
+    inline explicit operator double() const { return value; }
+    inline explicit operator float() const { return value; }
     static constexpr int value = 0;
   };
 } // namespace TempLat
