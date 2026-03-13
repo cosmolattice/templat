@@ -41,14 +41,26 @@ namespace TempLat
     {
     }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const { return operator()(t); }
+    template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
+    {
+      static_assert(N >= 0 && N <= 3, "SU2Get: N must be between 0 and 3 for SU2LieAlgebraField");
+      return operator()(t);
+    }
 
     template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2LieAlgebraGet(Tag<N> t) const { return 2 * SU2Get(t); }
 
     DEVICE_FORCEINLINE_FUNCTION ZeroType operator()(Tag<0> t) const { return {}; }
 
-    template <int M> auto &operator()(Tag<M> t) { return fs[M - 1]; }
-    template <int M> DEVICE_FORCEINLINE_FUNCTION const auto &operator()(Tag<M> t) const { return fs[M - 1]; }
+    template <int M> auto &operator()(Tag<M> t)
+    {
+      static_assert(M >= 1 && M <= 3, "Operator(): M must be between 0 and 3 for SU2LieAlgebraField");
+      return fs[M - 1];
+    }
+    template <int M> DEVICE_FORCEINLINE_FUNCTION const auto &operator()(Tag<M> t) const
+    {
+      static_assert(M >= 1 && M <= 3, "Operator(): M must be between 0 and 3 for SU2LieAlgebraField");
+      return fs[M - 1];
+    }
 
     template <typename R> void operator=(R &&r)
     {

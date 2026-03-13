@@ -56,11 +56,23 @@ namespace TempLat
       fs[0].updateGhosts();
     }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION const auto &SU2Get(Tag<N> t) const { return fs[N]; }
+    template <int N> DEVICE_FORCEINLINE_FUNCTION const auto &SU2Get(Tag<N> t) const
+    {
+      static_assert(N >= 0 && N <= 3, "SU2Get: N must be between 0 and 3 for SU2Field");
+      return fs[N];
+    }
 
-    template <int M> DEVICE_FORCEINLINE_FUNCTION auto &operator()(Tag<M> t) { return fs[M]; }
+    template <int M> DEVICE_FORCEINLINE_FUNCTION auto &operator()(Tag<M> t)
+    {
+      static_assert(M >= 0 && M <= 3, "Operator(): M must be between 0 and 3 for SU2Field");
+      return fs[M];
+    }
 
-    template <int M> DEVICE_FORCEINLINE_FUNCTION const auto &operator()(Tag<M> t) const { return fs[M]; }
+    template <int M> DEVICE_FORCEINLINE_FUNCTION const auto &operator()(Tag<M> t) const
+    {
+      static_assert(M >= 0 && M <= 3, "Operator(): M must be between 0 and 3 for SU2Field");
+      return fs[M];
+    }
 
     template <typename R> void operator=(R &&r)
     {
