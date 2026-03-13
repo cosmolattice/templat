@@ -38,10 +38,9 @@ namespace TempLat
 
     using SV = typename SU2GetGetReturnType<T>::type;
 
-    template <int N>
-      requires(N >= 0 && N <= 3)
-    DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
+    template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
     {
+      static_assert(N >= 0 && N <= 3, "SU2Get: N must be between 0 and 3 for ScalarSU2Multiplication");
       return mR * mT.SU2Get(t);
     }
 

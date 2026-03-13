@@ -38,27 +38,27 @@ namespace TempLat
 
     SU2ExpMapInv(const R &pR) : SU2UnaryOperator<R>(pR) {}
 
-    DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<0> t) const { return ZeroType(); }
-
-    template <int N>
-      requires(N >= 1 && N <= 3)
-    DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
+    template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
     {
-      const auto a = acos(mR.SU2Get(0_c));
-      return mR.SU2Get(t) * a / sin(a);
+      static_assert(N >= 0 && N <= 3, "SU2Get: N must be between 0 and 3 for SU2ExpMapInv");
+
+      if constexpr (N == 0) {
+        return ZeroType();
+      } else {
+        const auto a = acos(mR.SU2Get(0_c));
+        return mR.SU2Get(t) * a / sin(a);
+      }
     }
 
-    template <int N>
-      requires(N >= 1 && N <= 3)
-    DEVICE_FORCEINLINE_FUNCTION auto SU2LieAlgebraGet(Tag<N> t) const
+    template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2LieAlgebraGet(Tag<N> t) const
     {
+      static_assert(N >= 1 && N <= 3, "SU2LieAlgebraGet: N must be between 1 and 3 for SU2ExpMapInv");
       return 2 * SU2Get(t);
     }
 
-    template <int N>
-      requires(N >= 0 && N <= 3)
-    DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const
+    template <int N> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const
     {
+      static_assert(N >= 0 && N <= 3, "Operator(): N must be between 0 and 3 for SU2ExpMapInv");
       return SU2Get(t);
     }
 

@@ -38,23 +38,23 @@ namespace TempLat
 
     SU2ExpMap(const R &pR) : SU2UnaryOperator<R>(pR) {}
 
-    DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<0> t) const
+    DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<0> t) const {}
+
+    template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
     {
-      return cos(sqrt(pow<2>(mR.SU2Get(1_c)) + pow<2>(mR.SU2Get(2_c)) + pow<2>(mR.SU2Get(3_c))));
+      static_assert(N >= 0 && N <= 3, "SU2Get: N must be between 0 and 3 for SU2ExpMap");
+
+      if constexpr (N == 0) {
+        return cos(sqrt(pow<2>(mR.SU2Get(1_c)) + pow<2>(mR.SU2Get(2_c)) + pow<2>(mR.SU2Get(3_c))));
+      } else {
+        const auto a = sqrt(pow<2>(mR.SU2Get(1_c)) + pow<2>(mR.SU2Get(2_c)) + pow<2>(mR.SU2Get(3_c)));
+        return mR.SU2Get(t) / a * sin(a);
+      }
     }
 
-    template <int N>
-      requires(N >= 1 && N <= 3)
-    DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
+    template <int N> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const
     {
-      const auto a = sqrt(pow<2>(mR.SU2Get(1_c)) + pow<2>(mR.SU2Get(2_c)) + pow<2>(mR.SU2Get(3_c)));
-      return mR.SU2Get(t) / a * sin(a);
-    }
-
-    template <int N>
-      requires(N >= 0 && N <= 3)
-    DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const
-    {
+      static_assert(N >= 0 && N <= 3, "Operator(): N must be between 0 and 3 for SU2ExpMap");
       return SU2Get(t);
     }
 

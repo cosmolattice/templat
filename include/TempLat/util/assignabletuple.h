@@ -31,10 +31,9 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     AssignableTuple(Args... args) : AssignableCollectionBase<AssignableTuple<Shift, Args...>, Args...>(args...) {}
 
-    template <int N>
-      requires(N >= 0 && N < size)
-    auto &getComp(Tag<N> t)
+    template <int N> auto &getComp(Tag<N> t)
     {
+      static_assert(N >= 0 && N < size, "getComp: N must be between 0 and size-1 for AssignableTuple");
       return (*this)(t + Tag<Shift>()); // get component runs from 0 to N-1 always. (internal getter).
     }
 

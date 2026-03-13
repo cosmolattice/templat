@@ -48,17 +48,15 @@ namespace TempLat
       return result;
     }
 
-    template <int N>
-      requires(N > 0)
-    auto vectorGet(Tag<N> t) const
+    template <int N> auto vectorGet(Tag<N> t) const
     {
+      static_assert(N > 0 && N <= NDim, "VectorGet: N must be between 1 and NDim for WaveNumber");
       return getVectorComponent(*this, Tag<N - 1>());
     }
 
-    template <int N>
-      requires(N > 0)
-    auto operator()(Tag<N> t) const
+    template <int N> auto operator()(Tag<N> t) const
     {
+      static_assert(N > 0 && N <= NDim, "Operator(): N must be between 1 and NDim for WaveNumber");
       return vectorGet(t);
     }
 

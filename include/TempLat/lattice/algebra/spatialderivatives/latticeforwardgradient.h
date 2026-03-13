@@ -68,17 +68,15 @@ namespace TempLat
       }
     }
 
-    template <int N>
-      requires(N > 0)
-    auto vectorGet(Tag<N> t) const
+    template <int N> auto vectorGet(Tag<N> t) const
     {
+      static_assert(N > 0 && N <= NDim, "VectorGet: N must be between 1 and NDim for LatticeForwardGradient");
       return ForwDiff<N, R>(mR);
     }
 
-    template <int N>
-      requires(N > 0)
-    auto operator()(Tag<N> t) const
+    template <int N> auto operator()(Tag<N> t) const
     {
+      static_assert(N > 0 && N <= NDim, "Operator(): N must be between 1 and NDim for LatticeForwardGradient");
       return vectorGet(t);
     }
 
