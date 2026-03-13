@@ -37,6 +37,7 @@ namespace TempLat
 
     template <int N> DEVICE_FORCEINLINE_FUNCTION const auto &SU2DoubletGet(Tag<N> t) const
     {
+      static_assert(N >= 0 && N <= 3, "SU2DoubletGet: N must be between 0 and 3 for SU2DoubletWrapper");
       return device::get<N>(mData);
     }
 

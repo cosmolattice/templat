@@ -37,14 +37,16 @@ namespace TempLat
     DEVICE_FUNCTION
     SU2GroupWrapper(const SU2GroupWrapper &) = default;
 
-    DEVICE_FORCEINLINE_FUNCTION
-    auto SU2Get(Tag<0> t) const { return sqrt(1.0 - pow<2>(mA) - pow<2>(mB) - pow<2>(mC)); }
-
     template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
     {
       static_assert(N > 0 && N <= 3,
                     "SU2Get: N must be greater than 0 and less than or equal to 3 for SU2GroupWrapper");
-      return device::get<N - 1>(device::tie(mA, mB, mC));
+
+      if constexpr (N == 0) {
+        return sqrt(1.0 - pow<2>(mA) - pow<2>(mB) - pow<2>(mC));
+      } else {
+        return device::get<N - 1>(device::tie(mA, mB, mC));
+      }
     }
 
     template <typename... IDX>
