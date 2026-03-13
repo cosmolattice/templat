@@ -39,7 +39,7 @@ namespace TempLat
 
     template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
     {
-      static_assert(N > 0 && N <= 3,
+      static_assert(N >= 0 && N <= 3,
                     "SU2Get: N must be greater than 0 and less than or equal to 3 for SU2GroupWrapper");
 
       if constexpr (N == 0) {
