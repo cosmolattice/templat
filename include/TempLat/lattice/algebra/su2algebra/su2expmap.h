@@ -38,8 +38,6 @@ namespace TempLat
 
     SU2ExpMap(const R &pR) : SU2UnaryOperator<R>(pR) {}
 
-    DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<0> t) const {}
-
     template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3, "SU2Get: N must be between 0 and 3 for SU2ExpMap");
