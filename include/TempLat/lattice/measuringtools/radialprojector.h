@@ -16,6 +16,7 @@
 #include "TempLat/lattice/measuringtools/projectionhelpers/radialbincomputer.h"
 #include "TempLat/lattice/algebra/operators/squareroot.h"
 
+#include "TempLat/lattice/measuringtools/projectionhelpers/radialprojector_scratch.h"
 #include "TempLat/lattice/algebra/helpers/getgetreturntype.h"
 #include "TempLat/lattice/algebra/helpers/getndim.h"
 #include "TempLat/lattice/algebra/helpers/getfloattype.h"
@@ -101,14 +102,104 @@ namespace TempLat
     {
       confirmGetterSpace();
 
+#ifdef DEVICE_KOKKOS
+      // --- TeamPolicy path: team-local scratch bins ---
+
+      const auto memSizes = mLayout.getSizesInMemory();
+      const auto nGhosts = static_cast<device::Idx>(mLayout.getNGhosts());
+      ptrdiff_t totalSites = 1;
+      for (size_t d = 0; d < NDim; ++d)
+        totalSites *= memSizes[d];
+
+      const ptrdiff_t nBins = baseWorkSpace.getNBins();
+
+      const size_t scratchBytes = ScratchBinLayout<sType>::bytesNeeded(nBins);
+      constexpr size_t kMaxLevel0Bytes = 48u * 1024u;
+      const int scratchLevel = (scratchBytes <= kMaxLevel0Bytes) ? 0 : 1;
+
+      using ExecutionSpace = device_kokkos::DefaultExecutionSpace;
+      using TeamPolicy = Kokkos::TeamPolicy<ExecutionSpace>;
+      using MemberType = typename TeamPolicy::member_type;
+
+      constexpr ptrdiff_t kTargetSitesPerTeam = 1024;
+      ptrdiff_t leagueSize = (totalSites + kTargetSitesPerTeam - 1) / kTargetSitesPerTeam;
+      if (leagueSize < 1) leagueSize = 1;
+
+      TeamPolicy teamPolicy(leagueSize, Kokkos::AUTO);
+      teamPolicy.set_scratch_size(scratchLevel, Kokkos::PerTeam(scratchBytes));
+
+      const auto gVAvg = baseWorkSpace.valuesQuantity().averagesDevice();
+      const auto gVVar = baseWorkSpace.valuesQuantity().variancesDevice();
+      const auto gVMin = baseWorkSpace.valuesQuantity().minsDevice();
+      const auto gVMax = baseWorkSpace.valuesQuantity().maxsDevice();
+      const auto gBAvg = baseWorkSpace.binBoundsQuantity().averagesDevice();
+      const auto gBVar = baseWorkSpace.binBoundsQuantity().variancesDevice();
+      const auto gBMin = baseWorkSpace.binBoundsQuantity().minsDevice();
+      const auto gBMax = baseWorkSpace.binBoundsQuantity().maxsDevice();
+      const auto gMult = baseWorkSpace.multiplicitiesDevice();
+
+      Kokkos::parallel_for("RadialProjectorConfiguration", teamPolicy,
+          DEVICE_CLASS_LAMBDA(const MemberType& team) {
+
+          ScratchBinLayout<sType> scratch(team.team_scratch(scratchLevel), nBins);
+
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nBins), [&](ptrdiff_t b) {
+            scratch.init(b);
+          });
+          team.team_barrier();
+
+          const ptrdiff_t sitesPerTeam = (totalSites + leagueSize - 1) / leagueSize;
+          const ptrdiff_t teamStart = team.league_rank() * sitesPerTeam;
+          const ptrdiff_t teamEnd = (teamStart + sitesPerTeam < totalSites)
+                                        ? teamStart + sitesPerTeam
+                                        : totalSites;
+
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, teamEnd - teamStart),
+              [&](ptrdiff_t localIdx) {
+            const ptrdiff_t flatIdx = teamStart + localIdx;
+            const auto idx = flatToMemoryIndex<NDim>(flatIdx, memSizes, nGhosts);
+
+            device::IdxArray<NDim> global_coords;
+            device::apply([&](auto&&... args) {
+              mLayout.putSpatialLocationFromMemoryIndexInto(global_coords, args...);
+            }, idx);
+
+            // Origin check (no Hermitian check in configuration space)
+            bool isAtOrigin = true;
+            for (auto&& it : global_coords)
+              if (it != 0) { isAtOrigin = false; break; }
+            if (excludeOrigin && isAtOrigin) return;
+
+            sType r{};
+            for (size_t i = 0; i < NDim; ++i)
+              r += global_coords[i] * global_coords[i];
+            r = device::sqrt(r);
+
+            const ptrdiff_t bin = binComputer(r);
+
+            const sType value = device::apply([&](auto&&... args) {
+              return DoEval::eval(mInstance, args...);
+            }, idx);
+
+            scratch.accumulate(bin, value, r, sType(1));  // weight = 1 always
+          });
+          team.team_barrier();
+
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nBins), [&](ptrdiff_t b) {
+            scratch.mergeTo(gVAvg, gVVar, gVMin, gVMax,
+                            gBAvg, gBVar, gBMin, gBMax,
+                            gMult, b);
+          });
+      });
+
+#else
+      // --- Original path for DEVICE_STD ---
       auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
       {
-        // Get the global coordinates of this index.
         device::IdxArray<NDim> global_coords;
         device::apply([&](auto &&...args) { mLayout.putSpatialLocationFromMemoryIndexInto(global_coords, args...); },
                       idx);
 
-        // Check if we are at the origin.
         bool isAtOrigin = true;
         for (auto &&it : global_coords)
           if (it != 0) {
@@ -118,21 +209,19 @@ namespace TempLat
         if (excludeOrigin && isAtOrigin) [[unlikely]]
           return;
 
-        // get the radius
         sType r{};
         for (size_t i = 0; i < NDim; ++i)
           r += global_coords[i] * global_coords[i];
         r = device::sqrt(r);
 
-        // Map the radius to a bin
         const ptrdiff_t bin = binComputer(r);
 
-        // Add the bin contribution to the workspace.
         device::apply([&](auto &&...args) { baseWorkSpace.add_device(bin, DoEval::eval(mInstance, args...), r, 1.); },
                       idx);
       };
 
       device::iteration::foreach ("RadialProjectorConfiguration", mLayout, functor);
+#endif
 
       baseWorkSpace.pull();
       binComputer.setCentralBinBounds(baseWorkSpace.getCentralBinBounds());
@@ -146,14 +235,126 @@ namespace TempLat
     {
       confirmGetterSpace();
 
+#ifdef DEVICE_KOKKOS
+      // --- TeamPolicy path: team-local scratch bins ---
+
+      // 1. Compute flat iteration range
+      const auto memSizes = mLayout.getSizesInMemory();
+      const auto nGhosts = static_cast<device::Idx>(mLayout.getNGhosts());
+      ptrdiff_t totalSites = 1;
+      for (size_t d = 0; d < NDim; ++d)
+        totalSites *= memSizes[d];
+
+      const ptrdiff_t nBins = baseWorkSpace.getNBins();
+
+      // 2. Determine scratch level: Level 0 (shared memory) if bins fit, else Level 1 (global memory)
+      const size_t scratchBytes = ScratchBinLayout<sType>::bytesNeeded(nBins);
+      constexpr size_t kMaxLevel0Bytes = 48u * 1024u;
+      const int scratchLevel = (scratchBytes <= kMaxLevel0Bytes) ? 0 : 1;
+
+      // 3. Configure TeamPolicy
+      using ExecutionSpace = device_kokkos::DefaultExecutionSpace;
+      using TeamPolicy = Kokkos::TeamPolicy<ExecutionSpace>;
+      using MemberType = typename TeamPolicy::member_type;
+
+      constexpr ptrdiff_t kTargetSitesPerTeam = 1024;
+      ptrdiff_t leagueSize = (totalSites + kTargetSitesPerTeam - 1) / kTargetSitesPerTeam;
+      if (leagueSize < 1) leagueSize = 1;
+
+      TeamPolicy teamPolicy(leagueSize, Kokkos::AUTO);
+      teamPolicy.set_scratch_size(scratchLevel, Kokkos::PerTeam(scratchBytes));
+
+      // 4. Extract device view handles for the merge step
+      const auto gVAvg = baseWorkSpace.valuesQuantity().averagesDevice();
+      const auto gVVar = baseWorkSpace.valuesQuantity().variancesDevice();
+      const auto gVMin = baseWorkSpace.valuesQuantity().minsDevice();
+      const auto gVMax = baseWorkSpace.valuesQuantity().maxsDevice();
+      const auto gBAvg = baseWorkSpace.binBoundsQuantity().averagesDevice();
+      const auto gBVar = baseWorkSpace.binBoundsQuantity().variancesDevice();
+      const auto gBMin = baseWorkSpace.binBoundsQuantity().minsDevice();
+      const auto gBMax = baseWorkSpace.binBoundsQuantity().maxsDevice();
+      const auto gMult = baseWorkSpace.multiplicitiesDevice();
+
+      Kokkos::parallel_for("RadialProjectorFourier", teamPolicy,
+          DEVICE_CLASS_LAMBDA(const MemberType& team) {
+
+          // --- Step A: Allocate scratch bins ---
+          ScratchBinLayout<sType> scratch(team.team_scratch(scratchLevel), nBins);
+
+          // --- Step B: Initialize scratch to identity values ---
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nBins), [&](ptrdiff_t b) {
+            scratch.init(b);
+          });
+          team.team_barrier();
+
+          // --- Step C: Accumulate lattice sites into scratch bins ---
+          const ptrdiff_t sitesPerTeam = (totalSites + leagueSize - 1) / leagueSize;
+          const ptrdiff_t teamStart = team.league_rank() * sitesPerTeam;
+          const ptrdiff_t teamEnd = (teamStart + sitesPerTeam < totalSites)
+                                        ? teamStart + sitesPerTeam
+                                        : totalSites;
+
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, teamEnd - teamStart),
+              [&](ptrdiff_t localIdx) {
+            const ptrdiff_t flatIdx = teamStart + localIdx;
+
+            // Flat → ND memory indices (with ghost offset)
+            const auto idx = flatToMemoryIndex<NDim>(flatIdx, memSizes, nGhosts);
+
+            // Get global spatial coordinates
+            device::IdxArray<NDim> global_coords;
+            device::apply([&](auto&&... args) {
+              mLayout.putSpatialLocationFromMemoryIndexInto(global_coords, args...);
+            }, idx);
+
+            // Origin check
+            bool isAtOrigin = true;
+            for (auto&& it : global_coords)
+              if (it != 0) { isAtOrigin = false; break; }
+            if (excludeOrigin && isAtOrigin) return;
+
+            // Hermitian partner check
+            const HermitianRedundancy quality = mLayout.getHermitianPartners().qualify(global_coords);
+            if (quality == HermitianRedundancy::negativePartner) return;
+
+            // Compute radius
+            sType r{};
+            for (size_t i = 0; i < NDim; ++i)
+              r += global_coords[i] * global_coords[i];
+            r = device::sqrt(r);
+
+            // Map radius to bin
+            const ptrdiff_t bin = binComputer(r);
+
+            // Weight: 0.5 for real-valued entries, 1.0 otherwise
+            const sType weight = (quality == HermitianRedundancy::realValued) ? sType(0.5) : sType(1);
+
+            // Evaluate the field expression at this site
+            const sType value = device::apply([&](auto&&... args) {
+              return DoEval::eval(mInstance, args...);
+            }, idx);
+
+            // Accumulate into team-local scratch
+            scratch.accumulate(bin, value, r, weight);
+          });
+          team.team_barrier();
+
+          // --- Step D: Merge scratch into global arrays ---
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nBins), [&](ptrdiff_t b) {
+            scratch.mergeTo(gVAvg, gVVar, gVMin, gVMax,
+                            gBAvg, gBVar, gBMin, gBMax,
+                            gMult, b);
+          });
+      });
+
+#else
+      // --- Original path for DEVICE_STD (serial, no Kokkos) ---
       auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
       {
-        // Get the global coordinates of this index.
         device::IdxArray<NDim> global_coords;
         device::apply([&](auto &&...args) { mLayout.putSpatialLocationFromMemoryIndexInto(global_coords, args...); },
                       idx);
 
-        // Check if we are at the origin.
         bool isAtOrigin = true;
         for (auto &&it : global_coords)
           if (it != 0) {
@@ -165,24 +366,21 @@ namespace TempLat
 
         const HermitianRedundancy quality = mLayout.getHermitianPartners().qualify(global_coords);
         if (quality != HermitianRedundancy::negativePartner) {
-          // get the radius
           sType r{};
           for (size_t i = 0; i < NDim; ++i)
             r += global_coords[i] * global_coords[i];
           r = device::sqrt(r);
 
-          // Map the radius to a bin
           const ptrdiff_t bin = binComputer(r);
-
-          // don't over-weight the real-valued entries: only one float value, only half the weight.
           floatType weight = quality == HermitianRedundancy::realValued ? 0.5 : 1;
 
-          // Add the bin contribution to the workspace.
           device::apply(
               [&](auto &&...args) { baseWorkSpace.add_device(bin, DoEval::eval(mInstance, args...), r, weight); }, idx);
         }
       };
       device::iteration::foreach ("RadialProjectorFourier", mLayout, functor);
+#endif
+
       baseWorkSpace.pull();
       binComputer.setCentralBinBounds(baseWorkSpace.getCentralBinBounds());
 

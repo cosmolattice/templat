@@ -42,6 +42,10 @@ namespace TempLat
   {
   public:
     using floatType = typename GetFloatType<T>::type;
+  private:
+    using DeviceView = device::memory::NDView<floatType, 1>;
+    using HostMirror = typename DeviceView::host_mirror_type;
+  public:
 
     // Put public methods here. These should change very little over time.
     RadialProjectionResult(ptrdiff_t nBins, bool pUseBinCentralValues = false, bool pIsInFourier = false)
@@ -175,6 +179,14 @@ namespace TempLat
     template <typename S>
     friend RadialProjectionResult<S> operator+(const RadialProjectionResult<S> &a, const RadialProjectionResult<S> &b);
 
+#ifdef DEVICE_KOKKOS
+    // Public accessors for TeamPolicy merge step
+    ptrdiff_t getNBins() const { return mNBins; }
+    DEVICE_FORCEINLINE_FUNCTION const RadialProjectionSingleQuantity<T>& valuesQuantity() const { return mValues; }
+    DEVICE_FORCEINLINE_FUNCTION const RadialProjectionSingleQuantity<T>& binBoundsQuantity() const { return mBinBounds; }
+    DEVICE_FORCEINLINE_FUNCTION const DeviceView& multiplicitiesDevice() const { return mMultiplicitiesDevice; }
+#endif
+
     DEVICE_FORCEINLINE_FUNCTION
     void add_device(ptrdiff_t i, const T &value, const T &position, const T &weight = (T)1) const
     {
@@ -219,9 +231,6 @@ namespace TempLat
     ptrdiff_t mNBins;
     RadialProjectionSingleQuantity<T> mValues, mBinBounds;
     std::vector<T> centralBinBounds; // Naive central values of the bin. Does not need to be set.
-
-    using DeviceView = device::memory::NDView<floatType, 1>;
-    using HostMirror = typename DeviceView::host_mirror_type;
 
     HostMirror mMultiplicities;
     DeviceView mMultiplicitiesDevice;

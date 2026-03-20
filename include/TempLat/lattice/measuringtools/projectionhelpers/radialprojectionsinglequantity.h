@@ -29,6 +29,8 @@ namespace TempLat
    **/
   template <typename T> class RadialProjectionSingleQuantity
   {
+    using DeviceView = device::memory::NDView<T, 1>;
+    using HostMirror = typename DeviceView::host_mirror_type;
 
   public:
     RadialProjectionSingleQuantity(ptrdiff_t size)
@@ -106,10 +108,15 @@ namespace TempLat
 
     template <typename S> friend class RadialProjectionResult;
 
-  private:
-    using DeviceView = device::memory::NDView<T, 1>;
-    using HostMirror = typename DeviceView::host_mirror_type;
+#ifdef DEVICE_KOKKOS
+    // Public accessors for device views (used by TeamPolicy merge step)
+    DEVICE_FORCEINLINE_FUNCTION const DeviceView& averagesDevice() const { return mAveragesDevice; }
+    DEVICE_FORCEINLINE_FUNCTION const DeviceView& variancesDevice() const { return mVariancesDevice; }
+    DEVICE_FORCEINLINE_FUNCTION const DeviceView& minsDevice() const { return mMinsDevice; }
+    DEVICE_FORCEINLINE_FUNCTION const DeviceView& maxsDevice() const { return mMaxsDevice; }
+#endif
 
+  private:
     DeviceView mAveragesDevice;
     DeviceView mVariancesDevice;
     DeviceView mMinsDevice;
