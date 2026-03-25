@@ -18,9 +18,11 @@ namespace TempLat
 
   void RandomUniformTester::Test(TDDAssertion &tdd)
   {
+    using T = double;
     {
       constexpr size_t N = 1000000;
-      RandomUniform prng("Hello CosmoLattice world!");
+
+      RandomUniform<T> prng("Hello CosmoLattice world!");
 
       double x = 0;
 
@@ -64,7 +66,7 @@ namespace TempLat
     }
     {
       // Test saveState/loadState round-trip
-      RandomUniform<> rng("serialization_test");
+      RandomUniform<T> rng("serialization_test");
       std::string savedState = rng.saveState();
 
       // Generate 1000 values after saving state
