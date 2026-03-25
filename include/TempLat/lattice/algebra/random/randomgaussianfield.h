@@ -99,7 +99,7 @@ namespace TempLat
     }
 
     DEVICE_FORCEINLINE_FUNCTION
-    complex<T> to_complex(const device::array<double, 2> &pair) const { return complex<T>(pair[0], pair[1]); }
+    complex<T> to_complex(const device::array<T, 2> &pair) const { return complex<T>(pair[0], pair[1]); }
 
     template <typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
@@ -120,11 +120,11 @@ namespace TempLat
 
       if (hermitianType == HermitianRedundancy::none) {
         const auto [r, c] = gidx_to_idx2(global_coord);
-        const auto val = to_complex(prng.getPair(r, c, generation, Real, Unitary));
+        const complex<T> val = to_complex(prng.getPair(r, c, generation, Real, Unitary));
         return val;
       } else {
         const auto [r, c] = gidx_to_idx2(hermitianPartner);
-        const auto val = to_complex(prng.getPair(r, c, generation, Real, Unitary));
+        const complex<T> val = to_complex(prng.getPair(r, c, generation, Real, Unitary));
         return (hermitianType == HermitianRedundancy::positivePartner)   ? val
                : (hermitianType == HermitianRedundancy::negativePartner) ? device::conj(val)
                : (hermitianType == HermitianRedundancy::realValued)      ? complex<T>(device::real(val))

@@ -29,9 +29,9 @@ namespace TempLat
 
     template <typename U>
       requires(!HasDx<U>)
-    DEVICE_FORCEINLINE_FUNCTION static constexpr double getDx(U &obj)
+    DEVICE_FORCEINLINE_FUNCTION static constexpr int getDx(U &obj)
     {
-      return 1.f;
+      return 1;
     }
   };
 } // namespace TempLat

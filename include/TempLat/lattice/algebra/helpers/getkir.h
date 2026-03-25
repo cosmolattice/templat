@@ -32,7 +32,7 @@ namespace TempLat
 
     template <typename U>
       requires(!HasKIR<U>)
-    DEVICE_FORCEINLINE_FUNCTION static constexpr double getKIR(U &obj)
+    DEVICE_FORCEINLINE_FUNCTION static constexpr int getKIR(U &obj)
     {
       return 1;
     }

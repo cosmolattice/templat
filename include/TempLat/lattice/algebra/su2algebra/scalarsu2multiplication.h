@@ -15,6 +15,7 @@
 #include "TempLat/lattice/algebra/su2algebra/su2binaryoperator.h"
 #include "TempLat/parallel/device.h"
 #include "TempLat/lattice/algebra/helpers/haseval.h"
+#include <type_traits>
 
 namespace TempLat
 {
@@ -25,6 +26,8 @@ namespace TempLat
    **/
   template <typename R, typename T> class ScalarSU2Multiplication : public SU2BinaryOperator<R, T>
   {
+    static_assert(std::is_arithmetic_v<R>, "ScalarSU2Multiplication: R must be an arithmetic type.");
+
   public:
     // Put public methods here. These should change very little over time.
     using SU2BinaryOperator<R, T>::mR;
@@ -73,16 +76,9 @@ namespace TempLat
     return ScalarSU2Multiplication{r, t};
   }
 
-  template <typename T>
-    requires HasSU2Get<T>
-  auto operator*(double r, const T &t)
-  {
-    return ScalarSU2Multiplication{r, t};
-  }
-
-  template <typename T>
-    requires HasSU2Get<T>
-  auto operator*(float r, const T &t)
+  template <typename R, typename T>
+    requires(HasSU2Get<T> && std::is_arithmetic_v<R>)
+  auto operator*(R r, const T &t)
   {
     return ScalarSU2Multiplication{r, t};
   }

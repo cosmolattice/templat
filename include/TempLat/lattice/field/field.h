@@ -16,6 +16,10 @@
 
 namespace TempLat
 {
+  template <size_t NDimCheck> struct FieldNDimCheck {
+    static_assert(NDimCheck > 0, "NDim template parameter is required. Use e.g. Field<double, 3>.");
+  };
+
   /** @brief A class which is a classical field on your n-dimensional equisized grid.
    * You use it as a scalar field, a vector component, whatever.
    * Template parameter is your type of floating point precision: float or double. Default: double.
@@ -24,10 +28,6 @@ namespace TempLat
    *
    * Unit test: ctest -R test-field
    **/
-  template <size_t NDimCheck> struct FieldNDimCheck {
-    static_assert(NDimCheck > 0, "NDim template parameter is required. Use e.g. Field<double, 3>.");
-  };
-
   template <typename T, size_t _NDim = 0> class Field : private FieldNDimCheck<_NDim>, public ConfigView<T, _NDim>
   {
   public:
