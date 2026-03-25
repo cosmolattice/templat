@@ -98,8 +98,10 @@ namespace TempLat
       return result;
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
-    complex<T> to_complex(const device::array<T, 2> &pair) const { return complex<T>(pair[0], pair[1]); }
+    template <typename R> DEVICE_FORCEINLINE_FUNCTION complex<T> to_complex(const device::array<R, 2> &pair) const
+    {
+      return complex<T>(static_cast<T>(pair[0]), static_cast<T>(pair[1]));
+    }
 
     template <typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
