@@ -28,7 +28,7 @@ namespace TempLat
   template <typename T, size_t NDim, bool Real, bool Unitary>
   class RandomGaussianFieldHelper : public DimensionCountRecorder<NDim>
   {
-    using RNGInteger = typename RandomGaussian::IntegerType;
+    using RNGInteger = typename RandomGaussian<T>::IntegerType;
     static_assert(NDim != 0, "NDim template parameter is required.");
 
   public:
@@ -140,7 +140,7 @@ namespace TempLat
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
-    RandomGaussian prng;
+    RandomGaussian<T> prng;
     device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
     LayoutStruct<NDim> mLayout;
     RNGInteger generation;

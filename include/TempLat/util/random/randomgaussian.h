@@ -20,14 +20,14 @@ namespace TempLat
    *
    * Unit test: ctest -R test-randomgaussian
    **/
-  class RandomGaussian
+  template <typename T> class RandomGaussian
   {
-    using INT2 = typename RandomUniform<>::IntegerType;
+    using INT = typename RandomUniform<T>::IntegerType;
 
   public:
     // Put public methods here. These should change very little over time.
 
-    using IntegerType = INT2;
+    using IntegerType = INT;
 
     RandomGaussian(const std::string &seed) : mRandomUniform(seed) {}
 
@@ -35,14 +35,14 @@ namespace TempLat
     auto getSeedString() const { return mRandomUniform.getSeedString(); }
 
     DEVICE_FORCEINLINE_FUNCTION
-    auto getPair(INT2 r, INT2 c, INT2 g, bool real = false, bool unitary = false) const
+    auto getPair(INT r, INT c, INT g, bool real = false, bool unitary = false) const
     { // Even if this is not completely consistent with the name, it is convenient to be able to use this class to
       // generate numbers with a real gaussian distribution or uniformly on the unit disk.
       return getNextGaussianPair(r, c, g, real, unitary);
     }
 
     DEVICE_FORCEINLINE_FUNCTION
-    double get(INT2 r, INT2 c, INT2 g) const { return getPair(r, c, g, false, false)[0]; }
+    T get(INT r, INT c, INT g) const { return getPair(r, c, g, false, false)[0]; }
 
     friend std::ostream &operator<<(std::ostream &ostream, const RandomGaussian &pr)
     {
@@ -65,27 +65,25 @@ namespace TempLat
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
-    RandomUniform<> mRandomUniform;
+    RandomUniform<T> mRandomUniform;
 
-    static constexpr double cTwoPi =
+    static constexpr T cTwoPi =
         6.2831853071795864769252867665590057683943387987502116419498891846156328125724179972560696506842341359642961730265646132941876892;
 
     DEVICE_FORCEINLINE_FUNCTION
-    device::array<double, 2u> getNextGaussianPair(INT2 r, INT2 c, INT2 g, bool real = false, bool unitary = false) const
+    device::array<T, 2u> getNextGaussianPair(INT r, INT c, INT g, bool real = false, bool unitary = false) const
     { // Even if this is not completely consistent with the name, it is convenient to be able to use this class to
       // generate numbers with a real gaussian distribution or uniformly on the unit disk.
 
       const auto result = mRandomUniform.getPair(r, c, g);
 
-      const double &r0 = result[0];
-      const double &r1 = result[1];
+      const T &r0 = result[0];
+      const T &r1 = result[1];
 
-      const double boxMullerR =
-          unitary ? 1 : (r0 == 0 ? std::numeric_limits<double>::max() : device::sqrt(-2 * device::log(r0)));
-      const double boxMullerTheta = real ? 0 : cTwoPi * r1;
+      const T boxMullerR = unitary ? 1 : (r0 == 0 ? std::numeric_limits<T>::max() : device::sqrt(-2 * device::log(r0)));
+      const T boxMullerTheta = real ? 0 : cTwoPi * r1;
 
-      return device::array<double, 2u>{boxMullerR * device::cos(boxMullerTheta),
-                                       boxMullerR * device::sin(boxMullerTheta)};
+      return device::array<T, 2u>{boxMullerR * device::cos(boxMullerTheta), boxMullerR * device::sin(boxMullerTheta)};
     }
   };
 } // namespace TempLat

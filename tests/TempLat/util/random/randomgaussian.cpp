@@ -22,7 +22,9 @@ namespace TempLat
   void RandomGaussianTester::Test(TDDAssertion &tdd)
   {
     constexpr size_t N = 1e8;
-    RandomGaussian prng("Hello CosmoLattice world!");
+    using T = double;
+
+    RandomGaussian<T> prng("Hello CosmoLattice world!");
     say << prng << "\n";
 
     static constexpr ptrdiff_t measure_center = 10;
@@ -44,7 +46,7 @@ namespace TempLat
     tdd.verify(AlmostEqual(x, -10356.9192464654188));
 
     // Test saveState/loadState round-trip
-    RandomGaussian rng("serialization_test");
+    RandomGaussian<T> rng("serialization_test");
     std::string savedState = rng.saveState();
 
     // Generate 1000 values after saving state

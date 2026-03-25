@@ -38,7 +38,7 @@ namespace TempLat
    * Unit test: ctest -R test-radialprojectionresult
    **/
 
-  template <typename T = double> class RadialProjectionResult : public std::vector<RadialProjectionSingleBinAndValue<T>>
+  template <typename T> class RadialProjectionResult : public std::vector<RadialProjectionSingleBinAndValue<T>>
   {
   public:
     using floatType = typename GetFloatType<T>::type;

@@ -19,25 +19,24 @@
 
 namespace TempLat
 {
-  /** @brief A class which gives pseudo random sequences, based on a string random seed, stable across platforms.
-   * Implementation note: the C++14 standard guarantees cross-platform stability of Mersenne-Twister std::mt19937_64.
-   * So we use that. Note: not sure about the other random generator.
+  /** @brief A class which gives pseudo random counter-based rng, based on a string random seed, stable across
+   * platforms.
+   *
    *
    * Unit test: ctest -R test-randomuniform
    **/
-  template <typename dummy = void> class RandomUniform
+  template <typename T, typename RNG = r123::Philox2x64> class RandomUniform
   {
-    using RNG2 = r123::Philox2x64;
-    using INT2 = typename RNG2::ctr_type::value_type;
+    using INT = typename RNG::ctr_type::value_type;
 
   public:
     // Put public methods here. These should change very little over time.
 
-    using IntegerType = INT2;
+    using IntegerType = INT;
 
     RandomUniform(const std::string &stringSeed)
         : mStringSeed(stringSeed), mHashSeed(KeccakHash::compute(stringSeed)),
-          mSeed(static_cast<INT2>((uint64_t)mHashSeed))
+          mSeed(static_cast<INT>((uint64_t)mHashSeed))
     {
     }
 
@@ -61,7 +60,7 @@ namespace TempLat
       std::istringstream iss(state);
       iss >> *mStringSeed;
       mHashSeed = KeccakHash::compute(*mStringSeed);
-      mSeed = static_cast<INT2>((uint64_t)mHashSeed);
+      mSeed = static_cast<INT>((uint64_t)mHashSeed);
     }
 
     auto getSeed() const { return mSeed; }
@@ -69,26 +68,26 @@ namespace TempLat
     const std::string &getSeedString() const { return *mStringSeed; }
 
     DEVICE_FORCEINLINE_FUNCTION
-    double get(INT2 r, INT2 c, INT2 gen) const { return getPair(r, c, gen)[0]; }
+    T get(INT r, INT c, INT gen) const { return getPair(r, c, gen)[0]; }
 
     DEVICE_FORCEINLINE_FUNCTION
-    device::array<double, 2> getPair(INT2 r, INT2 c, INT2 gen) const
+    device::array<T, 2> getPair(INT r, INT c, INT gen) const
     {
-      const RNG2 rng;
+      const RNG rng;
 
       // create a counter and key for the generator
-      const RNG2::ctr_type counter = {{r, c}};
-      const RNG2::key_type key = {{mSeed + gen}};
+      const typename RNG::ctr_type counter = {{r, c}};
+      const typename RNG::key_type key = {{mSeed + gen}};
       // draw a pair of numbers
-      const RNG2::ctr_type result = rng(counter, key);
+      const typename RNG::ctr_type result = rng(counter, key);
 
-      return {{integer_to_double(result[0]), integer_to_double(result[1])}};
+      return {{integer_to_float(result[0]), integer_to_float(result[1])}};
     }
 
-    template <typename T> DEVICE_FORCEINLINE_FUNCTION double integer_to_double(T value) const
+    template <typename R> DEVICE_FORCEINLINE_FUNCTION T integer_to_float(R value) const
     {
-      return (static_cast<double>(value) - static_cast<double>(std::numeric_limits<T>::min())) /
-             static_cast<double>(std::numeric_limits<T>::max());
+      return (static_cast<T>(value) - static_cast<T>(std::numeric_limits<R>::min())) /
+             static_cast<T>(std::numeric_limits<R>::max());
     }
 
     /** @brief For testing purposes, we need to compare prng's, specifically their seeds. */
@@ -104,7 +103,7 @@ namespace TempLat
     /* Put all member variables and private methods here. These may change arbitrarily. */
     device::memory::host_string mStringSeed;
     KeccakHash::ResultType mHashSeed;
-    INT2 mSeed;
+    INT mSeed;
   };
 } // namespace TempLat
 
