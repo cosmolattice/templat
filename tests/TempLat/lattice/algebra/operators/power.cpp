@@ -40,11 +40,7 @@ namespace TempLat
 
     tdd.verify(pow(a, b).eval(0) == 81);
     tdd.verify(pow<3>(a).eval(0) == 27);
-
-    /* Default is to fail: to remind yourself to implement something here. */
-    //    tdd.verify( false );
   }
-
 } // namespace TempLat
 
 namespace

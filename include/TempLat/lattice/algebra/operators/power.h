@@ -47,7 +47,10 @@ namespace TempLat
         }
       DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
       {
-        return pow(DoEval::eval(mR, idx...), DoEval::eval(mT, idx...));
+        using NT1 = std::decay_t<decltype(DoEval::eval(mR, idx...))>;
+        using NT2 = std::decay_t<decltype(DoEval::eval(mT, idx...))>;
+        using NT = decltype(NT1{} * NT2{});
+        return pow(static_cast<NT>(DoEval::eval(mR, idx...)), static_cast<NT>(DoEval::eval(mT, idx...)));
       }
 
       virtual std::string operatorString() const override { return "^"; }
