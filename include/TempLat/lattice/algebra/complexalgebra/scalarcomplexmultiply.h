@@ -14,6 +14,7 @@
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/hassu2get.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/hassu2doubletget.h"
+#include "TempLat/lattice/algebra/helpers/isscalartype.h"
 #include <type_traits>
 
 namespace TempLat
@@ -58,10 +59,6 @@ namespace TempLat
 
     virtual std::string operatorString() const override { return "*"; }
   };
-
-  template <typename T>
-  concept IsScalarType =
-      (std::is_arithmetic_v<T> || HasEvalMethod<T>) && !HasComplexFieldGet<T> && !HasSU2Get<T> && !HasSU2DoubletGet<T>;
 
   template <typename R, typename T>
     requires(IsScalarType<R> && HasComplexFieldGet<T> && !HasSU2Get<T> && !HasSU2DoubletGet<T>)

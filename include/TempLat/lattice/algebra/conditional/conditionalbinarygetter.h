@@ -8,6 +8,10 @@
 // File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
 
 #include "TempLat/lattice/algebra/complexalgebra/helpers/hascomplexfieldget.h"
+#include "TempLat/lattice/algebra/matrix3x3algebra/helpers/hassymtracelessget.h"
+#include "TempLat/lattice/algebra/matrix3x3algebra/helpers/hassymget.h"
+#include "TempLat/lattice/algebra/matrix3x3algebra/helpers/hashermget.h"
+#include "TempLat/lattice/algebra/matrix3x3algebra/helpers/hasmatrixget.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/hassu2get.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/hassu2doubletget.h"
 #include "TempLat/lattice/algebra/helpers/haseval.h"
@@ -19,6 +23,10 @@ namespace TempLat
   concept ConditionalBinaryGetter = requires {
     requires HasEvalMethod<S> || HasEvalMethod<T>;
     requires !HasComplexFieldGet<S> && !HasComplexFieldGet<T>;
+    requires !HasSymTracelessGet<S> && !HasSymTracelessGet<T>;
+    requires !HasMatrixGet<S> && !HasMatrixGet<T>;
+    requires !HasSymGet<S> && !HasSymGet<T>;
+    requires !HasHermGet<S> && !HasHermGet<T>;
     requires !HasSU2Get<S> && !HasSU2Get<T>;
     requires !HasSU2DoubletGet<S> && !HasSU2DoubletGet<T>;
     requires !HasVectorGetMethod<S>;
