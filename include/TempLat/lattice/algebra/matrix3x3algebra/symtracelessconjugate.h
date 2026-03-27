@@ -75,7 +75,7 @@ namespace TempLat
     DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto cL = DoEval::eval(mR, idx...);
-      device::array<decltype(conj(cL[0]))>, 5> result; //TODE: Jorge: For now this assummes cL[0] is already a complex. I only plan to use this in Fourier space, where i know it is, but this should no taken for granted.
+      device::array<decltype(conj(cL[0])), 5> result; //TODE: Jorge: For now this assummes cL[0] is already a complex. I only plan to use this in Fourier space, where i know it is, but this should no taken for granted.
       result[0] = conj(cL[0]);
       result[1] = conj(cL[1]);
       result[2] = conj(cL[2]);
