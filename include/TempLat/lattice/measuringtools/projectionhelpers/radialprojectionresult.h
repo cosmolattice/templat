@@ -95,26 +95,17 @@ namespace TempLat
       return *this;
     }
 
-    auto energy(int PSVersion)
+    auto integrate(bool useCentralBin)
     {
-      auto energy = 0.;
+      auto total = 0.;
       auto kIR = (*this).getCentralBinBounds()[0];
-      switch (PSVersion) {
-      case 1:
-        for (size_t i = 0; i < this->size(); ++i) {
-          energy += (*this)[i].getValue().average / (i + 1);
-        }
-        break;
-      case 2:
-      case 3:
-        for (auto &&it : *this) {
-          energy += it.getValue().average * kIR / it.getBin().average;
-        }
-        break;
-      default:
-        energy = -1.;
+      if (useCentralBin) {
+        for (size_t i = 0; i < this->size(); ++i) total += (*this)[i].getValue().average / (i + 1);
       }
-      return energy;
+      else {
+        for (auto &&it : *this) total += it.getValue().average * kIR / it.getBin().average;
+      }
+      return total;
     }
 
     /** @brief Rescale the bin positions with a normalization (for example dimensionful).
