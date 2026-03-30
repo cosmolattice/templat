@@ -36,7 +36,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       const auto result = DoEval::eval(mR, idx...);
       return complex<mRType>(result[0], result[1]);

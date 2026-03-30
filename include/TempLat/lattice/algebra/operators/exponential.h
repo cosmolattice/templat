@@ -42,16 +42,13 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(t, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return exp(DoEval::eval(mR, idx...));
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_FORCEINLINE_FUNCTION auto d(const U &other)
-      {
-        return GetDeriv::get(mR, other) * *this;
-      }
+      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other) { return GetDeriv::get(mR, other) * *this; }
 
       virtual std::string operatorString() const override { return "exp"; }
     };
@@ -60,13 +57,13 @@ namespace TempLat
   /** @brief Exposing our newly define exp operation to the world. */
   template <typename T>
     requires(ConditionalUnaryGetter<T> && !HasSU2Get<T>)
-  DEVICE_FORCEINLINE_FUNCTION auto exp(T a)
+  DEVICE_INLINE_FUNCTION auto exp(T a)
   {
     return Operators::Exponential<T>(a);
   }
 
   /** @brief Specialize for possible zero input! */
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   OneType exp(ZeroType a) { return {}; }
 } // namespace TempLat
 

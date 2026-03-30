@@ -73,8 +73,7 @@ namespace TempLat
       iss >> generation;
     }
 
-    DEVICE_FORCEINLINE_FUNCTION std::tuple<RNGInteger, RNGInteger>
-    gidx_to_idx2(const device::IdxArray<NDim> &gidx) const
+    DEVICE_INLINE_FUNCTION std::tuple<RNGInteger, RNGInteger> gidx_to_idx2(const device::IdxArray<NDim> &gidx) const
     {
       constexpr size_t nd1 = NDim / 2;
 
@@ -98,14 +97,14 @@ namespace TempLat
       return result;
     }
 
-    template <typename R> DEVICE_FORCEINLINE_FUNCTION complex<T> to_complex(const device::array<R, 2> &pair) const
+    template <typename R> DEVICE_INLINE_FUNCTION complex<T> to_complex(const device::array<R, 2> &pair) const
     {
       return complex<T>(static_cast<T>(pair[0]), static_cast<T>(pair[1]));
     }
 
     template <typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
-    DEVICE_FORCEINLINE_FUNCTION complex<T> eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION complex<T> eval(const IDX &...idx) const
     {
       device::IdxArray<NDim> global_coord;
       mLayout.putSpatialLocationFromMemoryIndexInto(global_coord, idx...);

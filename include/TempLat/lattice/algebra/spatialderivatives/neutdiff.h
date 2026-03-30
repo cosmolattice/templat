@@ -45,7 +45,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       if constexpr (UnaryOperator<R>::getNDim() == 0)
         return ZeroType();
@@ -68,14 +68,14 @@ namespace TempLat
 
   template <class R, int N>
     requires HasEvalMethod<R>
-  DEVICE_FORCEINLINE_FUNCTION auto neutDiff(R pR, Tag<N> t)
+  DEVICE_INLINE_FUNCTION auto neutDiff(R pR, Tag<N> t)
   {
     return NeutDiff<N, R>(pR);
   }
 
   template <int NDim, typename R>
     requires(!HasEvalMethod<R>)
-  DEVICE_FORCEINLINE_FUNCTION auto neutDiff(R pR)
+  DEVICE_INLINE_FUNCTION auto neutDiff(R pR)
   {
     return ZeroType();
   }

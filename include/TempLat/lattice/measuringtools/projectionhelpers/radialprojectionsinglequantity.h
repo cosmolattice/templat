@@ -120,7 +120,7 @@ namespace TempLat
     HostMirror mMins;
     HostMirror mMaxs;
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     void checkBounds(ptrdiff_t i) const
     {
 #ifdef CHECKBOUNDS

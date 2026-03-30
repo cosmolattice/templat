@@ -72,10 +72,10 @@ namespace TempLat
 
     ptrdiff_t confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mT); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getDx() const { return HasDx<R> ? GetDx::getDx(mR) : (HasDx<T> ? GetDx::getDx(mT) : 1.); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return HasKIR<R> ? GetKIR::getKIR(mR) : (HasKIR<T> ? GetKIR::getKIR(mT) : 1.); }
 
     /** @brief Override this method in your derived class, to have an easy implementation of your toString method. */

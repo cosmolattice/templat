@@ -38,15 +38,12 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(t, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return sin(DoEval::eval(mR, idx...));
       }
 
-      template <typename U> DEVICE_FORCEINLINE_FUNCTION auto d(const U &other)
-      {
-        return GetDeriv::get(mR, other) * cos(mR);
-      }
+      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other) { return GetDeriv::get(mR, other) * cos(mR); }
 
       virtual std::string operatorString() const override { return "sin"; }
     };
@@ -55,13 +52,13 @@ namespace TempLat
   /** @brief Exposing our newly define exp operation to the world. */
   template <typename T>
     requires ConditionalUnaryGetter<T>
-  DEVICE_FORCEINLINE_FUNCTION auto sin(T a)
+  DEVICE_INLINE_FUNCTION auto sin(T a)
   {
     return Operators::Sine<T>(a);
   }
 
   /** @brief Specialize for possible zero input! */
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   ZeroType sin(ZeroType a) { return {}; }
 } // namespace TempLat
 

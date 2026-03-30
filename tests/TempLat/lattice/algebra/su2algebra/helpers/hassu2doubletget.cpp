@@ -17,11 +17,11 @@ namespace TempLat
   void HasSU2DoubletGetTester::Test(TDDAssertion &tdd)
   {
     struct MyStruct {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double SU2DoubletGet(Tag<0> t) const { return 87; };
     };
     struct MyStruct2 {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double SU2Get(Tag<0> t) const { return 87; };
     };
 

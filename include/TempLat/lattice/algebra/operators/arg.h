@@ -47,7 +47,7 @@ namespace TempLat
           DoEval::eval(r, idx...);
           DoEval::eval(t, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         const auto res = atan2(DoEval::eval(mR, idx...), DoEval::eval(mT, idx...));
         using NT = std::decay_t<decltype(res)>;
@@ -63,7 +63,7 @@ namespace TempLat
 
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
-  DEVICE_FORCEINLINE_FUNCTION auto arg(R r, T t)
+  DEVICE_INLINE_FUNCTION auto arg(R r, T t)
   {
     return Operators::Arg<R, T>{r, t};
   }

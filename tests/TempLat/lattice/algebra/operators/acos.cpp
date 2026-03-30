@@ -24,7 +24,7 @@ namespace TempLat
     {
     public:
       DEVICE_FUNCTION myClass(double b) : a(b) {}
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const int &i) const { return a; }
+      DEVICE_INLINE_FUNCTION auto eval(const int &i) const { return a; }
 
     private:
       double a;

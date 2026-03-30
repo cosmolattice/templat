@@ -53,10 +53,10 @@ namespace TempLat
       return this->operatorString() + result;
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getDx() const { return GetDx::getDx(mR); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
     void preGet() { PreGet::apply(mR); }
@@ -70,7 +70,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       return DoEval::eval(mR, idx...);
     }

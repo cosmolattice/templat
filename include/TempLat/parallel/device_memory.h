@@ -26,8 +26,8 @@ static_assert(false, "No device memory backend selected.");
 #ifndef DEVICE_FUNCTION
 static_assert(false, "No DEVICE_FUNCTION defined.");
 #endif
-#ifndef DEVICE_FORCEINLINE_FUNCTION
-static_assert(false, "No DEVICE_FORCEINLINE_FUNCTION defined.");
+#ifndef DEVICE_INLINE_FUNCTION
+static_assert(false, "No DEVICE_INLINE_FUNCTION defined.");
 #endif
 #ifndef DEVICE_INLINE_FUNCTION
 static_assert(false, "No DEVICE_INLINE_FUNCTION defined.");

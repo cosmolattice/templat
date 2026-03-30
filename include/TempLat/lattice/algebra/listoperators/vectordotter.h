@@ -45,7 +45,7 @@ namespace TempLat
         DoEval::eval(r, idx...);
         DoEval::eval(t, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       /* sorry, an if-statement inside a getter function: if T and S are the same thing, let's not call its getter twice
        * (it might be an expensive algebraic operation. */

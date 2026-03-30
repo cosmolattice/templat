@@ -21,16 +21,16 @@ namespace TempLat
     struct MySU2Doublet {
       MySU2Doublet(double i, double j, double k, double l) : arr{i, j, k, l} {}
 
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       int SU2DoubletGet(Tag<0> t) const { return arr[0]; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       int SU2DoubletGet(Tag<1> t) const { return arr[1]; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       int SU2DoubletGet(Tag<2> t) const { return arr[2]; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       int SU2DoubletGet(Tag<3> t) const { return arr[3]; }
 
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       device::array<int, 4> eval(ptrdiff_t) const { return {int(arr[0]), int(arr[1]), int(arr[2]), int(arr[3])}; }
 
       std::string toString() const { return "test"; }

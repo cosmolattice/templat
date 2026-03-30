@@ -32,13 +32,13 @@ namespace TempLat
 
     SU2DoubletDotter(const R &pR, const T &pT) : ComplexFieldBinaryOperator<R, T>(pR, pT) {}
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<0> t) const
     {
       return mR.SU2DoubletGet(0_c) * mT.SU2DoubletGet(0_c) + mR.SU2DoubletGet(1_c) * mT.SU2DoubletGet(1_c) +
              mR.SU2DoubletGet(2_c) * mT.SU2DoubletGet(2_c) + mR.SU2DoubletGet(3_c) * mT.SU2DoubletGet(3_c);
     }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<1> t) const
     {
       return mR.SU2DoubletGet(0_c) * mT.SU2DoubletGet(1_c) - mR.SU2DoubletGet(1_c) * mT.SU2DoubletGet(0_c) +
@@ -51,7 +51,7 @@ namespace TempLat
         DoEval::eval(r, idx...);
         DoEval::eval(t, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       const auto rr = DoEval::eval(mR, idx...);
       const auto tt = DoEval::eval(mT, idx...);

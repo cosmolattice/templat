@@ -50,7 +50,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       if constexpr (UnaryOperator<R>::getNDim() == 0)
         return ZeroType();
@@ -89,9 +89,9 @@ namespace TempLat
 
     void doWeNeedGhosts() const { mR.confirmGhostsUpToDate(); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getDx() const { return dx; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
     void confirmSpace(ptrdiff_t i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
@@ -111,7 +111,7 @@ namespace TempLat
     const FloatType dx;
   };
 
-  template <size_t NDim_ = 0, typename R> DEVICE_FORCEINLINE_FUNCTION auto LatForwardGrad(R pR)
+  template <size_t NDim_ = 0, typename R> DEVICE_INLINE_FUNCTION auto LatForwardGrad(R pR)
   {
     static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),
                   "Explicit NDim does not match the NDim deduced from expression type R.");

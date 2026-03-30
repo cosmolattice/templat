@@ -38,13 +38,13 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(r, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return conj(DoEval::eval(mR, idx...));
       }
 
       /** @brief Complex conjugation and copmlex differentiation aren't friends. */
-      template <typename U> DEVICE_FORCEINLINE_FUNCTION auto d(const U &other) = delete;
+      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other) = delete;
     };
   } // namespace Operators
 
@@ -52,7 +52,7 @@ namespace TempLat
    *  Excluded for complex field types (HasComplexFieldGet) which have their own conj overload. */
   template <typename T>
     requires(ConditionalUnaryGetter<T> && !HasComplexFieldGet<T>)
-  DEVICE_FORCEINLINE_FUNCTION auto conj(const T &a)
+  DEVICE_INLINE_FUNCTION auto conj(const T &a)
   {
     return Operators::ComplexConjugate<T>(a);
   }

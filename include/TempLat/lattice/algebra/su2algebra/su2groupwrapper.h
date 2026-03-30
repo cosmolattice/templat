@@ -37,7 +37,7 @@ namespace TempLat
     DEVICE_FUNCTION
     SU2GroupWrapper(const SU2GroupWrapper &) = default;
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
+    template <int N> DEVICE_INLINE_FUNCTION auto SU2Get(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3,
                     "SU2Get: N must be greater than 0 and less than or equal to 3 for SU2GroupWrapper");
@@ -56,7 +56,7 @@ namespace TempLat
         DoEval::eval(b, idx...);
         DoEval::eval(c, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       device::array<SV, 4> result;
       result[1] = DoEval::eval(mA, idx...);

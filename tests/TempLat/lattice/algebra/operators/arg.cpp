@@ -18,9 +18,9 @@ namespace TempLat
   {
 
     struct MyStructR {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double get(int i) const { return (double)i / 4.0; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double eval(int i) const { return (double)i / 4.0; }
     };
 

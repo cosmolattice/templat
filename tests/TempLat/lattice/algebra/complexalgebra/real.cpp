@@ -18,9 +18,9 @@ namespace TempLat
   void RealTester::Test(TDDAssertion &tdd)
   {
     struct MyStruct {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       int ComplexFieldGet(Tag<0> t) { return 87; };
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double ComplexFieldGet(Tag<1> t) { return 870; };
     };
 

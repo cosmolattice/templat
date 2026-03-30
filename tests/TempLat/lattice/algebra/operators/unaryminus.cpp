@@ -20,7 +20,7 @@ namespace TempLat
   public:
     myClass(int b) : a(b) {}
 
-    template <std::integral... IDX> DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...i) const { return a; }
+    template <std::integral... IDX> DEVICE_INLINE_FUNCTION auto eval(const IDX &...i) const { return a; }
 
   private:
     double a;

@@ -32,9 +32,9 @@ namespace TempLat
 
     static constexpr size_t size() { return NDim; }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     device::Idx getForward(device::Idx index) const { return mFromAtoB[index]; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     device::Idx getInverse(device::Idx index) const { return mFromBtoA[index]; }
 
     /** @brief Provide your forward mapping, which will be the new output of getForward. */
@@ -50,7 +50,7 @@ namespace TempLat
       }
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     bool isUntransposed() const
     {
       bool untransposed = true;
@@ -60,7 +60,7 @@ namespace TempLat
       return untransposed;
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     bool isTransposed() const { return !isUntransposed(); }
 
     friend bool operator==(const TranspositionMap &a, const TranspositionMap &b)

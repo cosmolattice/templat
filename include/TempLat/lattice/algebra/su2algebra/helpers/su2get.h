@@ -19,7 +19,7 @@ namespace TempLat
   class SU2Getter
   {
   public:
-    template <typename R, int N> DEVICE_FORCEINLINE_FUNCTION static auto get(R &&r, Tag<N> t) { return r.SU2Get(t); }
+    template <typename R, int N> DEVICE_INLINE_FUNCTION static auto get(R &&r, Tag<N> t) { return r.SU2Get(t); }
   };
 } // namespace TempLat
 

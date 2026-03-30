@@ -17,12 +17,12 @@ namespace TempLat
   void GetGetReturnTypeTester::Test(TDDAssertion &tdd)
   {
     struct tmp {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double eval(const ptrdiff_t &) const { return 0.; }
     };
 
     struct tmp2 {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       complex<double> eval(const ptrdiff_t &) const { return complex<double>(0., 0.); }
     };
 

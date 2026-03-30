@@ -27,9 +27,9 @@ namespace TempLat
 
     U1Exponential(const R &pR) : ComplexFieldUnaryOperator<R>(pR) {}
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<0> t) const { return cos(mR); }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<1> t) const { return sin(mR); }
 
     template <typename... IDX>
@@ -37,7 +37,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       const auto val = DoEval::eval(mR, idx...);
       return device::array<decltype(val), 2>{cos(val), sin(val)};

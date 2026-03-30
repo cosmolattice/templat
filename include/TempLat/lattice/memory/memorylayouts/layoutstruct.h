@@ -51,12 +51,12 @@ namespace TempLat
       return result;
     }
 
-    template <typename T = double> DEVICE_FORCEINLINE_FUNCTION T getMaxRadius() const
+    template <typename T = double> DEVICE_INLINE_FUNCTION T getMaxRadius() const
     {
       return getGlobal().template getMaxRadius<T>();
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     bool isTransposed() const { return getTransposed().isTransposed(); }
 
     /** @brief local index in some dimension of the memory layout, goes into its corresponding spatial dimension
@@ -64,7 +64,7 @@ namespace TempLat
      */
     template <typename Container, typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
-    DEVICE_FORCEINLINE_FUNCTION void putSpatialLocationFromMemoryIndexInto(Container &target, const IDX... idx) const
+    DEVICE_INLINE_FUNCTION void putSpatialLocationFromMemoryIndexInto(Container &target, const IDX... idx) const
     {
       const auto indices = device::tie(idx...);
       constexpr_for<0, NDim>([&](const auto _d) {
@@ -76,7 +76,7 @@ namespace TempLat
 
     template <typename Container, typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
-    DEVICE_FORCEINLINE_FUNCTION void putSpatialLocationFromMemoryIndexInto0N(Container &target, const IDX... idx)
+    DEVICE_INLINE_FUNCTION void putSpatialLocationFromMemoryIndexInto0N(Container &target, const IDX... idx)
         const // Brings back the coordinates between 0 and N-1. Useful for saving and loading for example
     {
       putSpatialLocationFromMemoryIndexInto(target, idx...);
@@ -90,7 +90,7 @@ namespace TempLat
      */
     template <typename Container, typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
-    DEVICE_FORCEINLINE_FUNCTION bool putMemoryIndexFromSpatialLocationInto(Container &target, const IDX... pos) const
+    DEVICE_INLINE_FUNCTION bool putMemoryIndexFromSpatialLocationInto(Container &target, const IDX... pos) const
     {
       const auto positions = device::tie(pos...);
       bool owned = true;
@@ -103,7 +103,7 @@ namespace TempLat
       return owned;
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const device::IdxArray<NDim> &getGlobalSizes() const { return getGlobal().getGlobalSizes(); }
 
     void setLocalSizes(const device::IdxArray<NDim> &input) { getTransposed().setLocalSizes(input); }
@@ -121,21 +121,21 @@ namespace TempLat
     device::Idx getNGhosts() const { return getLocal().getNGhosts(); }
 
     device::IdxArray<NDim> &getLocalSizes() { return getLocal().getLocalSizes(); }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const device::IdxArray<NDim> &getLocalSizes() const { return getLocal().getLocalSizes(); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const device::IdxArray<NDim> &getSizesInMemory() const { return getTransposed().getSizesInMemory(); }
 
     void setLocalStarts(const device::IdxArray<NDim> &input) { getLocal().setLocalStarts(input); }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const device::IdxArray<NDim> &getLocalStarts() const { return getLocal().getLocalStarts(); }
 
     void setTranspositionMap_memoryToGlobalSpace(const device::IdxArray<NDim> &input)
     {
       getTransposed().setTranspositionMap_memoryToGlobalSpace(input);
     }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const auto &getTranspositionMap_memoryToGlobalSpace() const
     {
       return getTransposed().getTranspositionMap_memoryToGlobalSpace();
@@ -147,7 +147,7 @@ namespace TempLat
 
     void setHermitianPartners(HermitianPartners<NDim> &&newInstance) { mHermitianPartners = std::move(newInstance); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const auto &getHermitianPartners() const { return mHermitianPartners; }
 
     template <size_t d2> friend bool operator==(const LayoutStruct<NDim> &a, const LayoutStruct<d2> &b)
@@ -173,18 +173,18 @@ namespace TempLat
      * dimensions. */
     HermitianPartners<NDim> mHermitianPartners;
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     LayoutStructLocalTransposed<NDim> &getTransposed() { return mTransposed; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     LayoutStructLocal<NDim> &getLocal() { return getTransposed().getLocal(); }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     LayoutStructGlobal<NDim> &getGlobal() { return getLocal().getGlobal(); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const LayoutStructLocalTransposed<NDim> &getTransposed() const { return mTransposed; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const LayoutStructLocal<NDim> &getLocal() const { return getTransposed().getLocal(); }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const LayoutStructGlobal<NDim> &getGlobal() const { return getLocal().getGlobal(); }
   };
 

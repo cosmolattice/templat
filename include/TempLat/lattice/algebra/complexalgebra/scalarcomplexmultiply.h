@@ -34,10 +34,10 @@ namespace TempLat
     DEVICE_FUNCTION
     ScalarComplexFieldMultiply(const R &pR, const T &pT) : ComplexFieldBinaryOperator<R, T>(pR, pT) {}
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<0> t) const { return mR * Real(mT); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<1> t) const { return mR * Imag(mT); }
 
     template <typename... IDX>
@@ -46,7 +46,7 @@ namespace TempLat
         DoEval::eval(r, idx...);
         DoEval::eval(t, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       const auto cmplx = DoEval::eval(mT, idx...);
       const auto scalar = DoEval::eval(mR, idx...);
@@ -65,21 +65,21 @@ namespace TempLat
 
   template <typename R, typename T>
     requires(IsScalarType<R> && HasComplexFieldGet<T> && !HasSU2Get<T> && !HasSU2DoubletGet<T>)
-  DEVICE_FORCEINLINE_FUNCTION auto operator*(const R &r, const T &t)
+  DEVICE_INLINE_FUNCTION auto operator*(const R &r, const T &t)
   {
     return ScalarComplexFieldMultiply<R, T>(r, t);
   }
 
   template <typename R, typename T>
     requires(HasComplexFieldGet<R> && IsScalarType<T> && !HasSU2Get<R> && !HasSU2DoubletGet<R>)
-  DEVICE_FORCEINLINE_FUNCTION auto operator*(const R &r, const T &t)
+  DEVICE_INLINE_FUNCTION auto operator*(const R &r, const T &t)
   {
     return ScalarComplexFieldMultiply<T, R>(t, r);
   }
 
   template <typename R, typename T>
     requires(HasComplexFieldGet<R> && IsScalarType<T> && !HasSU2Get<R> && !HasSU2DoubletGet<R>)
-  DEVICE_FORCEINLINE_FUNCTION auto operator/(const R &r, const T &t)
+  DEVICE_INLINE_FUNCTION auto operator/(const R &r, const T &t)
   {
     return ScalarComplexFieldMultiply(1_c / t, r);
   }

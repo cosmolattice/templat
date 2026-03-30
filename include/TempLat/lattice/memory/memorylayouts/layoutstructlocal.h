@@ -34,9 +34,9 @@ namespace TempLat
         mLocalSizes[i] = initNGrid[i];
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     LayoutStructGlobal<NDim> &getGlobal() { return mGlobal; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const LayoutStructGlobal<NDim> &getGlobal() const { return mGlobal; }
 
     void setLocalSizes(const device::IdxArray<NDim> &input)
@@ -60,9 +60,9 @@ namespace TempLat
     }
     const device::array<device::IdxArray<2>, NDim> &getPadding() const { return mPadding; }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     device::IdxArray<NDim> &getLocalSizes() { return mLocalSizes; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const device::IdxArray<NDim> &getLocalSizes() const { return mLocalSizes; }
 
     void setLocalStarts(const device::IdxArray<NDim> &input)
@@ -70,23 +70,23 @@ namespace TempLat
       for (size_t i = 0; i < NDim; ++i)
         mLocalStarts[i] = input[i];
     }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     device::IdxArray<NDim> &getLocalStarts() { return mLocalStarts; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const device::IdxArray<NDim> &getLocalStarts() const { return mLocalStarts; }
 
     /** @brief For both configuration and fourier space, the index values are not the same as coordinate
      *  values. Assuming periodic boundary conditions, we get that always c = i > half ? i - N : i;
      *  Don't mix up the arguments! Does not do transposition, so input pre-transposed dimension!
      */
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     device::Idx memoryIndexToSpatialCoordinate(device::Idx index, device::Idx dimension) const
     {
       return mGlobal.memoryIndexToSpatialCoordinate(index + mLocalStarts[dimension] - mNGhosts, dimension);
     }
 
     /** @brief Inverse of memoryIndexToSpatialCoordinate: get memory from position. */
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     device::Idx spatialCoordinateToMemoryIndex(device::Idx position, device::Idx dimension) const
     {
       return mGlobal.spatialCoordinateToMemoryIndex(position, dimension) - mLocalStarts[dimension] + mNGhosts;

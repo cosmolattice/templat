@@ -67,10 +67,10 @@ namespace TempLat
 
     const std::string &getSeedString() const { return *mStringSeed; }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     T get(INT r, INT c, INT gen) const { return getPair(r, c, gen)[0]; }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     device::array<T, 2> getPair(INT r, INT c, INT gen) const
     {
       const RNG rng;
@@ -84,7 +84,7 @@ namespace TempLat
       return {{integer_to_float(result[0]), integer_to_float(result[1])}};
     }
 
-    template <typename R> DEVICE_FORCEINLINE_FUNCTION T integer_to_float(R value) const
+    template <typename R> DEVICE_INLINE_FUNCTION T integer_to_float(R value) const
     {
       return (static_cast<T>(value) - static_cast<T>(std::numeric_limits<R>::min())) /
              static_cast<T>(std::numeric_limits<R>::max());

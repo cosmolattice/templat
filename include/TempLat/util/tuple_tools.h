@@ -19,7 +19,7 @@ namespace TempLat
    */
   template <size_t i, typename Head, typename... Tail>
     requires(i <= sizeof...(Tail))
-  DEVICE_FORCEINLINE_FUNCTION constexpr auto tuple_last(const device::tuple<Head, Tail...> &t)
+  DEVICE_INLINE_FUNCTION constexpr auto tuple_last(const device::tuple<Head, Tail...> &t)
   {
     static_assert(i <= sizeof...(Tail), "Cannot take a longer tail than the tuple.");
     if constexpr (sizeof...(Tail) + 1 == i)
@@ -38,7 +38,7 @@ namespace TempLat
    * @return auto a tied tuple of the first i elements
    */
   template <int i, typename Head, typename... Tail>
-  DEVICE_FORCEINLINE_FUNCTION constexpr auto tuple_first(const device::tuple<Head, Tail...> &t)
+  DEVICE_INLINE_FUNCTION constexpr auto tuple_first(const device::tuple<Head, Tail...> &t)
   {
     static_assert(i <= sizeof...(Tail), "Cannot take a longer sequence than the tuple.");
     static_assert(i >= 0, "Cannot take a longer sequence than the tuple.");
@@ -64,7 +64,7 @@ namespace TempLat
    * @return auto the modified tuple
    */
   template <size_t n, int add, typename... IDX>
-  DEVICE_FORCEINLINE_FUNCTION constexpr auto tuple_add_to_nth_mod(device::tuple<IDX...> &tt)
+  DEVICE_INLINE_FUNCTION constexpr auto tuple_add_to_nth_mod(device::tuple<IDX...> &tt)
   {
     static_assert(n < sizeof...(IDX));
     device::get<n>(tt) += add;
@@ -72,7 +72,7 @@ namespace TempLat
   }
 
   template <size_t n, int add, typename... IDX>
-  DEVICE_FORCEINLINE_FUNCTION constexpr auto tuple_add_to_nth(const device::tuple<IDX...> &tt)
+  DEVICE_INLINE_FUNCTION constexpr auto tuple_add_to_nth(const device::tuple<IDX...> &tt)
   {
     constexpr int len = sizeof...(IDX);
     if constexpr (n >= 1) {
@@ -84,23 +84,23 @@ namespace TempLat
   }
 
   template <typename... Args, std::size_t... Is>
-  DEVICE_FORCEINLINE_FUNCTION auto reverse_tuple(const device::tuple<Args...> &tuple, std::index_sequence<Is...>)
+  DEVICE_INLINE_FUNCTION auto reverse_tuple(const device::tuple<Args...> &tuple, std::index_sequence<Is...>)
   {
     return device::tie(device::get<sizeof...(Args) - 1 - Is>(tuple)...);
   }
 
-  template <typename... Args> DEVICE_FORCEINLINE_FUNCTION auto reverse_tuple(const device::tuple<Args...> &tuple)
+  template <typename... Args> DEVICE_INLINE_FUNCTION auto reverse_tuple(const device::tuple<Args...> &tuple)
   {
     return reverse_tuple(tuple, std::make_index_sequence<sizeof...(Args)>());
   }
 
   template <typename Arg, size_t N, std::size_t... Is>
-  DEVICE_FORCEINLINE_FUNCTION auto reverse_array(const device::array<Arg, N> &array, std::index_sequence<Is...>)
+  DEVICE_INLINE_FUNCTION auto reverse_array(const device::array<Arg, N> &array, std::index_sequence<Is...>)
   {
     return device::array<Arg, N>{{device::get<N - 1 - Is>(array)...}};
   }
 
-  template <typename Arg, size_t N> DEVICE_FORCEINLINE_FUNCTION auto reverse_array(const device::array<Arg, N> &array)
+  template <typename Arg, size_t N> DEVICE_INLINE_FUNCTION auto reverse_array(const device::array<Arg, N> &array)
   {
     return reverse_array(array, std::make_index_sequence<N>());
   }

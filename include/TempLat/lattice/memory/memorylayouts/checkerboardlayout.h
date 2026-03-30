@@ -52,14 +52,14 @@ namespace TempLat
       mFullSize = sizesInMemory[NDim - 1];
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const device::IdxArray<NDim> &getStarts() const { return mStarts; }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const device::IdxArray<NDim> &getStops() const { return mStops; }
 
     /** @brief Reconstruct the full memory index from a half-index. */
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     device::IdxArray<NDim> reconstruct(const device::IdxArray<NDim> &halfIdx) const
     {
       device::IdxArray<NDim> fullIdx = halfIdx;
@@ -79,7 +79,7 @@ namespace TempLat
      *  Out-of-bounds occurs at most once per row when the local size along
      *  the split dimension is odd.
      */
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     bool isInBounds(const device::IdxArray<NDim> &fullIdx) const { return fullIdx[NDim - 1] < mNGhosts + mFullSize; }
 
   private:
@@ -97,7 +97,7 @@ namespace TempLat
     CheckerboardLayout<NDim> mCB;
     Functor mFunctor;
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     void operator()(const device::IdxArray<NDim> &halfIdx) const
     {
       const auto fullIdx = mCB.reconstruct(halfIdx);
@@ -110,8 +110,7 @@ namespace TempLat
     CheckerboardLayout<NDim> mCB;
     Functor mFunctor;
 
-    template <typename T>
-    DEVICE_FORCEINLINE_FUNCTION void operator()(const device::IdxArray<NDim> &halfIdx, T &update) const
+    template <typename T> DEVICE_INLINE_FUNCTION void operator()(const device::IdxArray<NDim> &halfIdx, T &update) const
     {
       const auto fullIdx = mCB.reconstruct(halfIdx);
       if (mCB.isInBounds(fullIdx)) mFunctor(fullIdx, update);

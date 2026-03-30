@@ -39,16 +39,16 @@ namespace TempLat
         mSizesInMemory[i] = mLocal.getLocalSizes()[i];
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     LayoutStructLocal<NDim> &getLocal() { return mLocal; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const LayoutStructLocal<NDim> &getLocal() const { return mLocal; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     LayoutStructGlobal<NDim> &getGlobal() { return getLocal().getGlobal(); }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const LayoutStructGlobal<NDim> &getGlobal() const { return getLocal().getGlobal(); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     bool isTransposed() const { return mTranspositionMap_memoryToGlobalSpace.isTransposed(); }
 
     void setLocalSizes(const device::IdxArray<NDim> &input)
@@ -67,7 +67,7 @@ namespace TempLat
       mTranspositionMap_memoryToGlobalSpace.setMap(input);
       adaptMemorySizesFromTranspositionMap();
     }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const TranspositionMap<NDim> &getTranspositionMap_memoryToGlobalSpace() const
     {
       return mTranspositionMap_memoryToGlobalSpace;
@@ -92,7 +92,7 @@ namespace TempLat
      *
      * @return const ref to device::IdxArray<NDim> with the sizes.
      */
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const device::IdxArray<NDim> &getSizesInMemory() const { return mSizesInMemory; }
 
     /**
@@ -140,7 +140,7 @@ namespace TempLat
 
     /** @brief With transposition, go from actual memory index in memoryDimension to spatial coordinate value at spatial
      * dimension. */
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     CoordinateMapping getSpatialLocationFromMemoryIndex(device::Idx index, device::Idx memoryDimension) const
     {
       CoordinateMapping result;
@@ -154,7 +154,7 @@ namespace TempLat
 
     /** @brief With transposition, go from spatial coordinate value at spatial dimension to actual memory index in
      * memoryDimension. */
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     CoordinateMapping getMemoryIndexFromSpatialLocation(device::Idx position, device::Idx spatialDimension) const
     {
       CoordinateMapping result;

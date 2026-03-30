@@ -74,13 +74,13 @@ namespace TempLat
 
     device::memory::host_ptr<MemoryManager<T, NDim>> getMemoryManager() const { return mManager; }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getDx() const { return latPar.getDx(); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return latPar.getKIR(); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getLatParams() const { return latPar; }
 
   protected:

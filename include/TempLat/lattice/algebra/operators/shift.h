@@ -37,7 +37,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto tup = device::tie(idx...);
       constexpr_for<0, dim>([&](const auto _d) {
@@ -78,7 +78,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(mR, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       return device::apply([&](const auto &...shifted_idx) { return DoEval::eval(mR, shifted_idx...); },
                            tuple_add_to_nth<N - 1, dir>(device::tie(idx...)));
@@ -91,27 +91,27 @@ namespace TempLat
 
   template <int... shifts, class R>
     requires((sizeof...(shifts) > 1) && tuple_size<R>::value == 1)
-  DEVICE_FORCEINLINE_FUNCTION auto shift(const R &pR)
+  DEVICE_INLINE_FUNCTION auto shift(const R &pR)
   {
     return ExpressionShifter<R, shifts...>(pR);
   }
 
   template <int N, class R>
     requires(tuple_size<R>::value == 1)
-  DEVICE_FORCEINLINE_FUNCTION auto shift(const R &pR)
+  DEVICE_INLINE_FUNCTION auto shift(const R &pR)
   {
     return ExpressionShifterByOne<R, N>(pR);
   }
 
   template <class R, int N>
     requires(tuple_size<R>::value == 1)
-  DEVICE_FORCEINLINE_FUNCTION auto shift(const R &pR, Tag<N> t)
+  DEVICE_INLINE_FUNCTION auto shift(const R &pR, Tag<N> t)
   {
     return ExpressionShifterByOne<R, N>(pR);
   }
 
-  template <int N> DEVICE_FORCEINLINE_FUNCTION OneType shift(OneType) { return OneType(); }
-  template <int N> DEVICE_FORCEINLINE_FUNCTION OneType shift(OneType, Tag<N>) { return OneType(); }
+  template <int N> DEVICE_INLINE_FUNCTION OneType shift(OneType) { return OneType(); }
+  template <int N> DEVICE_INLINE_FUNCTION OneType shift(OneType, Tag<N>) { return OneType(); }
 
   template <int N> ZeroType shift(ZeroType) { return ZeroType(); }
   template <int N> ZeroType shift(ZeroType, Tag<N>) { return ZeroType(); }

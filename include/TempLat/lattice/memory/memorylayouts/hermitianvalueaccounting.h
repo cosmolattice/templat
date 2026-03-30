@@ -28,10 +28,10 @@ namespace TempLat
     {
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     ptrdiff_t getRealValueCount() const { return mRealCount; }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     ptrdiff_t getImaginaryValueCount() const { return mImaginaryCount; }
 
     friend std::ostream &operator<<(std::ostream &ostream, const HermitianValueAccounting &hva)

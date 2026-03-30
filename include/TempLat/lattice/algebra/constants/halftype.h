@@ -20,7 +20,7 @@ namespace TempLat
     static std::string toString() { return "(HalfType)1/2"; }
     template <typename... IDX>
       requires IsVariadicIndex<IDX...>
-    DEVICE_FORCEINLINE_FUNCTION static constexpr auto eval(const IDX &...i)
+    DEVICE_INLINE_FUNCTION static constexpr auto eval(const IDX &...i)
     {
       return 0.5f;
     }

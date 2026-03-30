@@ -50,13 +50,13 @@ namespace TempLat
       mCurrentLayout = newLayout;
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     static constexpr ptrdiff_t getNDimensions() { return NDim; }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     SpaceStateType getCurrentSpaceType() const { return mCurrentSpaceType; }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const LayoutStruct<NDim> &getCurrentLayout() const { return mCurrentLayout; }
 
     std::string toString() const

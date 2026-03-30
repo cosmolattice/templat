@@ -34,14 +34,14 @@ namespace TempLat
     auto getSeed() const { return mRandomUniform.getSeed(); }
     auto getSeedString() const { return mRandomUniform.getSeedString(); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getPair(INT r, INT c, INT g, bool real = false, bool unitary = false) const
     { // Even if this is not completely consistent with the name, it is convenient to be able to use this class to
       // generate numbers with a real gaussian distribution or uniformly on the unit disk.
       return getNextGaussianPair(r, c, g, real, unitary);
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     T get(INT r, INT c, INT g) const { return getPair(r, c, g, false, false)[0]; }
 
     friend std::ostream &operator<<(std::ostream &ostream, const RandomGaussian &pr)
@@ -70,7 +70,7 @@ namespace TempLat
     static constexpr T cTwoPi =
         6.2831853071795864769252867665590057683943387987502116419498891846156328125724179972560696506842341359642961730265646132941876892;
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     device::array<T, 2u> getNextGaussianPair(INT r, INT c, INT g, bool real = false, bool unitary = false) const
     { // Even if this is not completely consistent with the name, it is convenient to be able to use this class to
       // generate numbers with a real gaussian distribution or uniformly on the unit disk.

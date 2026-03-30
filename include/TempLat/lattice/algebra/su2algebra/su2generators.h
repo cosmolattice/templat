@@ -22,13 +22,13 @@ namespace TempLat
   namespace Constants
   {
     struct Sigma0 {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr OneType SU2Get(Tag<0> t) { return {}; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr ZeroType SU2Get(Tag<1> t) { return {}; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr ZeroType SU2Get(Tag<2> t) { return {}; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr ZeroType SU2Get(Tag<3> t) { return {}; }
 
       static std::string toString() { return "Id"; }
@@ -38,11 +38,11 @@ namespace TempLat
 
     struct Sigma1 {
       static constexpr ZeroType SU2Get(Tag<0> t) { return {}; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr OneType SU2Get(Tag<1> t) { return {}; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr ZeroType SU2Get(Tag<2> t) { return {}; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr ZeroType SU2Get(Tag<3> t) { return {}; }
 
       static std::string toString() { return "i\u03C3_1"; }
@@ -51,13 +51,13 @@ namespace TempLat
     constexpr Sigma1 sigma1;
 
     struct Sigma2 {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr ZeroType SU2Get(Tag<0> t) { return {}; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr ZeroType SU2Get(Tag<1> t) { return {}; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr OneType SU2Get(Tag<2> t) { return {}; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr ZeroType SU2Get(Tag<3> t) { return {}; }
 
       static std::string toString() { return "i\u03C3_2"; }
@@ -66,13 +66,13 @@ namespace TempLat
     constexpr Sigma2 sigma2;
 
     struct Sigma3 {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr ZeroType SU2Get(Tag<0> t) { return {}; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr ZeroType SU2Get(Tag<1> t) { return {}; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr ZeroType SU2Get(Tag<2> t) { return {}; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       static constexpr OneType SU2Get(Tag<3> t) { return {}; }
 
       static std::string toString() { return "i\u03C3_3"; }
@@ -80,13 +80,13 @@ namespace TempLat
     };
     constexpr Sigma3 sigma3;
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     constexpr Sigma0 i_sigma(Tag<0> t) { return sigma0; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     constexpr Sigma1 i_sigma(Tag<1> t) { return sigma1; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     constexpr Sigma2 i_sigma(Tag<2> t) { return sigma2; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     constexpr Sigma3 i_sigma(Tag<3> t) { return sigma3; }
   }; // namespace Constants
 } // namespace TempLat

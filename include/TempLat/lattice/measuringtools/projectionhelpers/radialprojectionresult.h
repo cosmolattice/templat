@@ -175,7 +175,7 @@ namespace TempLat
     template <typename S>
     friend RadialProjectionResult<S> operator+(const RadialProjectionResult<S> &a, const RadialProjectionResult<S> &b);
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     void add_device(ptrdiff_t i, const T &value, const T &position, const T &weight = (T)1) const
     {
       mValues.add_device(i, value, weight);

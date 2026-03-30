@@ -17,9 +17,9 @@ namespace TempLat
   namespace TestScratch
   {
     template <int RETURNVALUE> struct DiracTesterTemplate {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double get(ptrdiff_t i) const { return RETURNVALUE * std::numeric_limits<double>::epsilon(); }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double eval(ptrdiff_t i) const { return RETURNVALUE * std::numeric_limits<double>::epsilon(); }
     };
   } // namespace TestScratch

@@ -32,7 +32,7 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(r, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         using mType = typename GetGetReturnType<R>::type;
         const mType objValue = DoEval::eval(mR, idx...);
@@ -51,7 +51,7 @@ namespace TempLat
   } // namespace Operators
 
   /** @brief Exposing our newly define multiplication operation to the world. */
-  template <typename T> DEVICE_FORCEINLINE_FUNCTION Operators::DiracDeltaFunction<T> DiracDelta(const T &a)
+  template <typename T> DEVICE_INLINE_FUNCTION Operators::DiracDeltaFunction<T> DiracDelta(const T &a)
   {
     return Operators::DiracDeltaFunction<T>(a);
   }

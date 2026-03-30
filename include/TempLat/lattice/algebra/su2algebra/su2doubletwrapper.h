@@ -35,7 +35,7 @@ namespace TempLat
     DEVICE_FUNCTION
     SU2DoubletWrapper(const SU2DoubletWrapper &) = default;
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION const auto &SU2DoubletGet(Tag<N> t) const
+    template <int N> DEVICE_INLINE_FUNCTION const auto &SU2DoubletGet(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3, "SU2DoubletGet: N must be between 0 and 3 for SU2DoubletWrapper");
       return device::get<N>(mData);
@@ -49,7 +49,7 @@ namespace TempLat
         DoEval::eval(c, idx...);
         DoEval::eval(d, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       device::array<decltype(DoEval::eval(device::get<0>(mData), idx...)), 4> result;
       result[0] = DoEval::eval(device::get<0>(mData), idx...);
@@ -59,7 +59,7 @@ namespace TempLat
       return result;
     }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const { return SU2DoubletGet(t); }
+    template <int N> DEVICE_INLINE_FUNCTION auto operator()(Tag<N> t) const { return SU2DoubletGet(t); }
 
     std::string toString() const
     {

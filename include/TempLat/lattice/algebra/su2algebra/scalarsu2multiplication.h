@@ -39,7 +39,7 @@ namespace TempLat
 
     using SV = typename SU2GetGetReturnType<T>::type;
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
+    template <int N> DEVICE_INLINE_FUNCTION auto SU2Get(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3, "SU2Get: N must be between 0 and 3 for ScalarSU2Multiplication");
       return mR * mT.SU2Get(t);
@@ -51,7 +51,7 @@ namespace TempLat
         DoEval::eval(r, idx...);
         DoEval::eval(t, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto su2 = DoEval::eval(mT, idx...);
       const auto scalar = DoEval::eval(mR, idx...);
@@ -62,7 +62,7 @@ namespace TempLat
       return su2;
     }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const { return SU2Get(t); }
+    template <int N> DEVICE_INLINE_FUNCTION auto operator()(Tag<N> t) const { return SU2Get(t); }
 
     virtual std::string operatorString() const override { return "*"; }
   };
