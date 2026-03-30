@@ -26,8 +26,6 @@ namespace TempLat
    **/
   template <typename R, typename T> class ScalarSU2Multiplication : public SU2BinaryOperator<R, T>
   {
-    static_assert(std::is_arithmetic_v<R>, "ScalarSU2Multiplication: R must be an arithmetic type.");
-
   public:
     // Put public methods here. These should change very little over time.
     using SU2BinaryOperator<R, T>::mR;
