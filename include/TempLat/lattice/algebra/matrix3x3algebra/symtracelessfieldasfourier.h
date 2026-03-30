@@ -47,7 +47,7 @@ namespace TempLat
     R mR;
   };
 
-  template <typename R> SymTracelessFieldAsFourier<R> asFourier(R &&r)
+  template <typename R> SymTracelessFieldAsFourier<R> symTracelessFieldAsFourier(R &&r)
   {
     return SymTracelessFieldAsFourier<R>(std::forward<R>(r));
   }

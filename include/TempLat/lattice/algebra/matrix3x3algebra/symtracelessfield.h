@@ -46,11 +46,11 @@ namespace TempLat
 
     SymTracelessField(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox,
                  LatticeParameters<T> pLatPar = LatticeParameters<T>()):
-    m0("c11_" + name, toolBox, pLatPar),
-    m1("c12_" + name, toolBox, pLatPar),
-    m2("c13_" + name, toolBox, pLatPar),
-    m3("c22_" + name, toolBox, pLatPar),
-    m4("c23_" + name, toolBox, pLatPar),
+    m0(name+"_c11", toolBox, pLatPar),
+    m1(name+"_c12", toolBox, pLatPar),
+    m2(name+"_c13", toolBox, pLatPar),
+    m3(name+"_c22", toolBox, pLatPar),
+    m4(name+"_c23", toolBox, pLatPar),
     mName(name), mToolBox(toolBox),
     mLayout(mToolBox->mLayouts.getConfigSpaceLayout())
     {
