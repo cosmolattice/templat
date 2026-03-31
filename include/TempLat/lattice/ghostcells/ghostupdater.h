@@ -15,6 +15,7 @@
 
 #include "TempLat/parallel/device_iteration.h"
 #include "TempLat/parallel/device_memory.h"
+#include <vector>
 
 namespace TempLat
 {
@@ -107,6 +108,8 @@ namespace TempLat
       size_t total_size = 1;
       for (size_t i = 0; i < NDim; ++i)
         total_size *= slab_sizes[i];
+      std::vector<T> hostSendSlab(total_size);
+      std::vector<T> hostReceiveSlab(total_size);
 
       // We need two slabs of thickness ghostDepth
       auto sendSlab = device::apply(
@@ -141,10 +144,12 @@ namespace TempLat
         // Copy the data to the send slab
         device::memory::copyDeviceToDevice(sendSubView, sendSlab);
         device::iteration::fence();
+        device::memory::copyDeviceToHost(sendSlab, hostSendSlab.data());
 
         // Exchange the slabs
         MPI_Datatype dataType = MPITypeSelect<T>();
-        mExchange.exchangeUp(dataType, dimension, sendSlab.data(), receiveSlab.data(), total_size);
+        mExchange.exchangeUp(dataType, dimension, hostSendSlab.data(), hostReceiveSlab.data(), total_size);
+        device::memory::copyHostToDevice(hostReceiveSlab.data(), receiveSlab);
 
         // Copy the data from the receive slab
         device::memory::copyDeviceToDevice(receiveSlab, receiveSubView);
@@ -174,9 +179,11 @@ namespace TempLat
         // Copy the data to the send slab
         device::memory::copyDeviceToDevice(sendSubView, sendSlab);
         device::iteration::fence();
+        device::memory::copyDeviceToHost(sendSlab, hostSendSlab.data());
 
         // Exchange the slabs
-        mExchange.exchangeDown(MPITypeSelect<T>(), dimension, sendSlab.data(), receiveSlab.data(), total_size);
+        mExchange.exchangeDown(MPITypeSelect<T>(), dimension, hostSendSlab.data(), hostReceiveSlab.data(), total_size);
+        device::memory::copyHostToDevice(hostReceiveSlab.data(), receiveSlab);
 
         // Copy the data from the receive slab
         device::memory::copyDeviceToDevice(receiveSlab, receiveSubView);
