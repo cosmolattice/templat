@@ -61,8 +61,8 @@ namespace TempLat
 
     void clear()
     {
-      device::memory::fill(mAverages, 0);
-      device::memory::fill(mVariances, 0);
+      device::memory::fill(mAverages, 0.);
+      device::memory::fill(mVariances, 0.);
       device::memory::fill(mMins, std::numeric_limits<T>::max());
       device::memory::fill(mMaxs, -std::numeric_limits<T>::max());
       push();

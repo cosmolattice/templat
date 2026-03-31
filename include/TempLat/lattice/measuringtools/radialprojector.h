@@ -6,12 +6,14 @@
    Released under the MIT license, see LICENSE.md. */
 
 // File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+//            Modified by: Jorge Baeza-Ballesteros, Year: 2024
 
 #include <algorithm>
 #include <cstddef>
 
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/measuringtools/projectionhelpers/radialprojectionresult.h"
+#include "TempLat/lattice/measuringtools/projectionhelpers/unbinnedradialprojectionresult.h"
 #include "TempLat/lattice/measuringtools/projectionhelpers/radialprojectionsinglequantity.h"
 #include "TempLat/lattice/measuringtools/projectionhelpers/radialbincomputer.h"
 #include "TempLat/lattice/algebra/operators/squareroot.h"
@@ -22,6 +24,7 @@
 #include "TempLat/lattice/algebra/spacestateinterface.h"
 #include "TempLat/lattice/algebra/helpers/confirmspace.h"
 #include "TempLat/lattice/algebra/helpers/ghostshunter.h"
+#include "TempLat/lattice/algebra/helpers/getngrid.h"
 
 namespace TempLat
 {
@@ -63,23 +66,34 @@ namespace TempLat
      *  a large number of linear bins here, and do the logarithmic binning yourself.
      *  Default is nGrid ^ (nDimensions - 1).
      */
-    RadialProjectionResult<sType> measure(ptrdiff_t nLinearBins = -1, sType customRange = -1, bool excludeOrigin = true)
+    RadialProjectionResult<sType> measure(sType maxValue, double deltakBins = 1, bool excludeOrigin = true)
     {
-      if (nLinearBins < 0) {
-        ptrdiff_t nGrid = mLayout.getGlobalSizes()[0];
-        nLinearBins = std::pow(nGrid, std::max((size_t)1, NDim - 1));
-      }
+      sType minValue = !excludeOrigin ? 0.0 : deltakBins >= 1.0 ? 0.5 : 1.0 - deltakBins / 2.;
+      ptrdiff_t nLinearBins = ceil( (maxValue - minValue) / deltakBins );
 
       RadialProjectionResult<sType> baseWorkSpace(nLinearBins, mUseBinCentralValues,
                                                   mSpaceType == SpaceStateType::Fourier);
 
-      sType minValue = excludeOrigin ? 1.0 : 0.0;
-
       RadialProjectionResult<sType> myResult =
           mSpaceType == SpaceStateType::Configuration
-              ? computeConfigurationSpace(makeBinComputer(nLinearBins, minValue, customRange), baseWorkSpace,
+              ? computeConfigurationSpace(makeBinComputer(nLinearBins, minValue, maxValue, deltakBins), baseWorkSpace,
                                           excludeOrigin)
-              : computeFourierSpace(makeBinComputer(nLinearBins, minValue, customRange), baseWorkSpace, excludeOrigin);
+              : computeFourierSpace(makeBinComputer(nLinearBins, minValue, maxValue, deltakBins), baseWorkSpace, excludeOrigin);
+
+      myResult.finalize(mToolBox->mGroup.getBaseComm());
+
+      return myResult;
+    }
+
+    UnbinnedRadialProjectionResult<sType> measureUnbinned(bool excludeOrigin = true) {
+
+      ptrdiff_t nLinearBins = NDim * pow<2>(GetNGrid::get(mToolBox)) / 4 + 1;
+
+      UnbinnedRadialProjectionResult<sType> baseWorkSpace(nLinearBins,  mSpaceType == SpaceStateType::Fourier);
+
+      UnbinnedRadialProjectionResult<sType> myResult = mSpaceType == SpaceStateType::Configuration ?
+      computeConfigurationSpaceUnbinned(baseWorkSpace, excludeOrigin) :
+      computeFourierSpaceUnbinned(baseWorkSpace, excludeOrigin);
 
       myResult.finalize(mToolBox->mGroup.getBaseComm());
 
@@ -110,11 +124,12 @@ namespace TempLat
 
         // Check if we are at the origin.
         bool isAtOrigin = true;
-        for (auto &&it : global_coords)
+        for (auto &&it : global_coords) {
           if (it != 0) {
             isAtOrigin = false;
             break;
           }
+        }
         if (excludeOrigin && isAtOrigin) [[unlikely]]
           return;
 
@@ -139,7 +154,6 @@ namespace TempLat
       return baseWorkSpace;
     }
 
-  public:
     template <typename BINCOMPUTETYPE>
     RadialProjectionResult<sType> computeFourierSpace(BINCOMPUTETYPE binComputer,
                                                       RadialProjectionResult<sType> baseWorkSpace, bool excludeOrigin)
@@ -155,11 +169,12 @@ namespace TempLat
 
         // Check if we are at the origin.
         bool isAtOrigin = true;
-        for (auto &&it : global_coords)
+        for (auto &&it : global_coords) {
           if (it != 0) {
             isAtOrigin = false;
             break;
           }
+        }
         if (excludeOrigin && isAtOrigin) [[unlikely]]
           return;
 
@@ -189,6 +204,88 @@ namespace TempLat
       return baseWorkSpace;
     }
 
+
+    UnbinnedRadialProjectionResult<sType> computeConfigurationSpaceUnbinned(UnbinnedRadialProjectionResult<sType> baseWorkSpace, bool excludeOrigin)
+    {
+      confirmGetterSpace();
+
+      auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
+      {
+        // Get the global coordinates of this index.
+        device::IdxArray<NDim> global_coords;
+        device::apply([&](auto &&...args) { mLayout.putSpatialLocationFromMemoryIndexInto(global_coords, args...); },
+                      idx);
+
+        // Check if we are at the origin.
+        bool isAtOrigin = true;
+        for (auto &&it : global_coords) {
+          if (it != 0) {
+            isAtOrigin = false;
+            break;
+          }
+        }
+        if (excludeOrigin && isAtOrigin) [[unlikely]]
+          return;
+
+        // get the radius
+        sType r2{};
+        for (size_t i = 0; i < NDim; ++i)
+          r2 += global_coords[i] * global_coords[i];
+
+        // Add the bin contribution to the workspace.
+        device::apply([&](auto &&...args) { baseWorkSpace.add_device(r2, DoEval::eval(mInstance, args...), 1.); },
+                      idx);
+      };
+
+      device::iteration::foreach ("UnbinnedRadialProjectorConfiguration", mLayout, functor);
+
+      baseWorkSpace.pull();
+      return baseWorkSpace;
+    }
+
+    UnbinnedRadialProjectionResult<sType> computeFourierSpaceUnbinned(UnbinnedRadialProjectionResult<sType> baseWorkSpace, bool excludeOrigin)
+    {
+      confirmGetterSpace();
+
+      auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
+      {
+        // Get the global coordinates of this index.
+        device::IdxArray<NDim> global_coords;
+        device::apply([&](auto &&...args) { mLayout.putSpatialLocationFromMemoryIndexInto(global_coords, args...); },
+                      idx);
+
+        // Check if we are at the origin.
+        bool isAtOrigin = true;
+        for (auto &&it : global_coords) {
+          if (it != 0) {
+            isAtOrigin = false;
+            break;
+          }
+        }
+        if (excludeOrigin && isAtOrigin) [[unlikely]]
+          return;
+
+        const HermitianRedundancy quality = mLayout.getHermitianPartners().qualify(global_coords);
+        if (quality != HermitianRedundancy::negativePartner) {
+          // get the radius
+          sType k2{};
+          for (size_t i = 0; i < NDim; ++i)
+            k2 += global_coords[i] * global_coords[i];
+
+          // don't over-weight the real-valued entries: only one float value, only half the weight.
+          floatType weight = quality == HermitianRedundancy::realValued ? 0.5 : 1;
+
+          // Add the bin contribution to the workspace.
+          device::apply(
+            [&](auto &&...args) { baseWorkSpace.add_device(k2, DoEval::eval(mInstance, args...), weight); }, idx);
+        }
+      };
+      device::iteration::foreach ("RadialProjectorFourier", mLayout, functor);
+      baseWorkSpace.pull();
+
+      return baseWorkSpace;
+    }
+
   private:
     void confirmGetterSpace()
     {
@@ -197,17 +294,17 @@ namespace TempLat
     }
 
     /** @brief Creates the lambda that maps the IterationCoordinates to a bin. */
-    inline auto makeBinComputer(ptrdiff_t nLinearBins, sType minValue, sType customRange = -1)
+    inline auto makeBinComputer(ptrdiff_t nLinearBins, sType minValue, sType maxValue = -1, double deltakBins = -1)
     {
-      auto rMax = customRange < 0 ? mLayout.getMaxRadius() : customRange;
+      auto rMax = maxValue < 0 ? mLayout.getMaxRadius() : maxValue;
 
-      return RadialBinComputer(minValue, rMax, nLinearBins);
+      return RadialBinComputer(minValue, rMax, nLinearBins, deltakBins);
     }
   };
 
   template <size_t NDim, typename T>
   RadialProjector<T> projectRadially(T instance, SpaceStateType spaceType,
-                                     device::memory::host_ptr<MemoryToolBox<NDim>> pToolBox, bool useBinCentralValues)
+                                     device::memory::host_ptr<MemoryToolBox<NDim>> pToolBox, bool useBinCentralValues = false)
   {
     return RadialProjector<T>(instance, spaceType, pToolBox, useBinCentralValues);
   }

@@ -40,7 +40,10 @@ namespace TempLat
   {
   public:
     /* Put public methods here. These should change very little over time. */
-    FileSaverHDF5() = default;
+    FileSaverHDF5():
+    mdown(10, 0),
+    mstep(10, 1)
+    {}
 
     void open(std::string fn) { mFile.open(fn); }
 
@@ -48,6 +51,21 @@ namespace TempLat
 
     void close() { mFile.close(); }
     void reset() { this->close(); }
+
+    template<typename R>
+    void setLimits(R down, R up, R step, ptrdiff_t NDim) {
+      mdown.resize(NDim);
+      mup.resize(NDim);
+      mstep.resize(NDim);
+      sparsesizes.resize(NDim);
+      sparsesave = true;
+      for (ptrdiff_t i = 0; i < NDim; i++) {
+        mdown[i] = down[i];
+        mup[i] = up[i];
+        mstep[i] = step[i];
+        sparsesizes[i] = (mup[i]-mdown[i]) / mstep[i];
+      }
+    }
 
     void save(ParameterParser &r)
     { // Conceptually, may be better as attributes? But nightmare to save vector of strings, did nt manage to do it in a
@@ -114,7 +132,12 @@ namespace TempLat
       using vType = GetGetReturnType<R>::type;
       ConfirmSpace::apply(r, r.getToolBox()->mLayouts.getConfigSpaceLayout(), SpaceStateType::Configuration);
       GhostsHunter::apply(r);
-      mDataset = mFile.createDataset<vType>(GetString::get(r), r.getToolBox()->mNGridPointsVec);
+      if(!sparsesave)
+        sparsesizes.assign(
+          r.getToolBox()->mNGridPointsVec.begin(),
+          r.getToolBox()->mNGridPointsVec.end()
+        );
+      mDataset = mFile.createDataset<vType>(GetString::get(r), sparsesizes);
       saveDim(r, 0, {});
       mDataset.close();
     }
@@ -124,8 +147,12 @@ namespace TempLat
       using vType = GetGetReturnType<R>::type;
       ConfirmSpace::apply(r, r.getToolBox()->mLayouts.getConfigSpaceLayout(), SpaceStateType::Configuration);
       GhostsHunter::apply(r);
-      mDataset = mFile.createOrOpenGroup(name).createDataset<vType>(PrettyToString::get(t, 10),
-                                                                    r.getToolBox()->mNGridPointsVec);
+      if(!sparsesave)
+        sparsesizes.assign(
+          r.getToolBox()->mNGridPointsVec.begin(),
+          r.getToolBox()->mNGridPointsVec.end()
+        );
+      mDataset = mFile.createOrOpenGroup(name).createDataset<vType>(PrettyToString::get(t,10), sparsesizes);
       saveDim(r, 0, {});
       mDataset.close();
     }
@@ -366,21 +393,25 @@ namespace TempLat
       auto starts = toolBox->mLayouts.getConfigSpaceStarts(); // Local mpi offset.
       auto sizes = toolBox->mLayouts.getConfigSpaceSizes();   // Local mpi sizes.
 
+      auto inicoord = sparsesave ? mdown[dim] : 0;
+      auto endcoord = sparsesave ? mup[dim] : sizes[dim];
+      auto stepcoord = sparsesave ? mstep[dim] : 1;
+
       const auto mLayout = toolBox->mLayouts.getConfigSpaceLayout();
 
       if ((size_t)dim == toolBox->NDim - 1) // Last dimension, saved as a full rod.
       {
-        // look at index 0 in the last dimension. The next nGrid[last dimension] points are stored continuously.
-        coords.emplace_back(0);
+        // look at initial index of the last dimension. The next nGrid[last dimension] points are stored continuously.
+        coords.emplace_back(inicoord);
 
         // for hdf5, tell it we want to store a sub array of size (1,1,1...,nGrid[last dimension]).
         std::vector<hsize_t> subdims(NDim, 1);
-        subdims.back() = toolBox->mNGridPointsVec[dim];
+        subdims.back() = (endcoord-inicoord);
 
         // at position (i,j,k,...,0) in the global lattice file.
         std::vector<hsize_t> offsets;
         for (size_t i = 0; i < coords.size(); ++i)
-          offsets.emplace_back(coords[i]);
+          offsets.emplace_back( (coords[i]-mdown[i]) / mstep[i]);
         offsets.back() = 0;
 
         using vType = typename GetGetReturnType<R>::type;
@@ -398,6 +429,9 @@ namespace TempLat
         for (size_t i = 0; i < NDim - 1; ++i)
           subMemoryPos[i] = memoryPos[i];
 
+
+        std::vector<vType> sdata(toolBox->mNGridPointsVec[dim]);
+        std::vector<vType> sdatasparse(sparsesizes.back());
         // If the input is a field, we can copy directly from memory
         if constexpr (requires(R _r) { _r.getView(); }) {
           // And apply this to get the subview, with the last dimension as a range starting from memoryPos[dim] (which
@@ -411,9 +445,7 @@ namespace TempLat
               subMemoryPos);
 
           // Finally, we can copy this subview to host and write it to the selected hyperslab in the dataset.
-          std::vector<vType> sdata(toolBox->mNGridPointsVec[dim]);
           device::memory::copyDeviceToHost(subview, sdata.data());
-          mDataset.writeSlices(sdata, subdims, offsets);
         } else {
           // Otherwise, we get the data point by point.
           device::memory::NDView<vType, 1> device_buf("buffer", toolBox->mNGridPointsVec[dim]);
@@ -426,13 +458,15 @@ namespace TempLat
           device::iteration::foreach<1>("SaveDimBufferFilling", {memoryPos[dim]}, {(device::Idx)subdims[dim]}, functor);
 
           // Finally, we can copy this subview to host and write it to the selected hyperslab in the dataset.
-          std::vector<vType> sdata(toolBox->mNGridPointsVec[dim]);
           device::memory::copyDeviceToHost(device_buf, sdata.data());
-          mDataset.writeSlices(sdata, subdims, offsets);
         }
+        for (auto it = sdata.begin(); it < sdata.end(); it += stepcoord) sdatasparse.push_back(*it); //TODO: Jorge: I don't like this, although it is non-critical
+        subdims.back() = (endcoord-inicoord)/stepcoord;
+        mDataset.writeSlices(sdata, subdims, offsets);
       } else {
         // Recursive call to loop over an arbitrary number of dimensions.
         for (int i = 0; i < sizes[dim]; ++i) {
+          if (starts[dim] + i < inicoord || starts[dim] + i >= endcoord || (starts[dim] + i - inicoord) % stepcoord != 0) continue;
           std::vector<ptrdiff_t> newCoords(coords);
           newCoords.emplace_back(starts[dim] + i);
           saveDim(r, dim + 1, newCoords);
@@ -445,6 +479,9 @@ namespace TempLat
 
     HDF5File mFile;
     HDF5Dataset mDataset;
+    std::vector<ptrdiff_t> mup, mdown, mstep;
+    std::vector<ptrdiff_t> sparsesizes;
+    bool sparsesave = false;
   };
 } // namespace TempLat
 

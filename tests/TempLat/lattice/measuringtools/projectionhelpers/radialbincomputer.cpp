@@ -17,13 +17,13 @@ namespace TempLat
   void RadialBinComputerTester::Test(TDDAssertion &tdd)
   {
 
-    RadialBinComputer pc(1, 3, 4);
+    RadialBinComputer pc(1, 3, 4, 1);
 
     /* Default is to fail: to remind yourself to implement something here. */
     tdd.verify(pc(1.1) == 0);
     tdd.verify(pc(0) == 0);
 
-    tdd.verify(pc(2.1) == 2);
+    tdd.verify(pc(2.1) == 1);
     tdd.verify(pc(5) == 3);
   }
 

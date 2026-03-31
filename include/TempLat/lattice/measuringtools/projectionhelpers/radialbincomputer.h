@@ -20,8 +20,8 @@ namespace TempLat
   class RadialBinComputer
   {
   public:
-    RadialBinComputer(double minVal, double maxVal, ptrdiff_t nBins)
-        : mMinVal(minVal), mMaxVal(maxVal), mRange(mMaxVal - mMinVal), mNBins(nBins), mHighestBin(nBins - 1)
+    RadialBinComputer(double minVal, double maxVal, ptrdiff_t nBins, double deltaKBin)
+    : mMinVal(minVal), mMaxVal(maxVal), mRange(mMaxVal - mMinVal), mNBins(nBins), mHighestBin(nBins - 1), mDeltakBin(deltaKBin)
     {
       if (mRange <= 0) mRange = 1;
     }
@@ -30,16 +30,16 @@ namespace TempLat
     DEVICE_FUNCTION
     ptrdiff_t operator()(double value) const
     {
-      ptrdiff_t bin = static_cast<ptrdiff_t>(device::round(static_cast<double>(mNBins) * (value - mMinVal) / mRange));
+      ptrdiff_t bin = static_cast<ptrdiff_t>(device::floor( (value - mMinVal) / mDeltakBin ) );
       return device::min(mHighestBin, device::max(ptrdiff_t(0), bin));
     }
 
     template <typename T> void setCentralBinBounds(std::vector<T> &res)
     {
       res = std::vector<T>(mNBins);
-      T steps = mRange / static_cast<double>(mNBins);
+      T steps = mDeltakBin;
       for (ptrdiff_t i = 0; i < mNBins; ++i) {
-        res[i] = mMinVal + i * steps;
+        res[i] = mMinVal + mDeltakBin / 2. + i * steps;
       }
     }
 
@@ -50,6 +50,7 @@ namespace TempLat
     double mRange;
     ptrdiff_t mNBins;
     ptrdiff_t mHighestBin;
+    double mDeltakBin;
   };
 } // namespace TempLat
 

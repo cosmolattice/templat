@@ -44,32 +44,19 @@ namespace TempLat
     using floatType = typename GetFloatType<T>::type;
 
     // Put public methods here. These should change very little over time.
-    RadialProjectionResult(ptrdiff_t nBins, bool pUseBinCentralValues = false, bool pIsInFourier = false)
-        : std::vector<RadialProjectionSingleBinAndValue<T>>(), finalizedOnce(false), mNBins(nBins), mValues(mNBins),
-          mBinBounds(mNBins), mUseBinCentralValues(pUseBinCentralValues), mIsInFourier(pIsInFourier)
+    RadialProjectionResult(size_t nBins, bool pUseBinCentralValues = false, bool pIsInFourier = false):
+    std::vector<RadialProjectionSingleBinAndValue<T>>(),
+    finalizedOnce(false),
+    mNBins(nBins),
+    mValues(mNBins),
+    mBinBounds(mNBins),
+    mUseBinCentralValues(pUseBinCentralValues),
+    mIsInFourier(pIsInFourier)
     {
       mMultiplicitiesDevice = DeviceView("RadialProjectionResult::mMultiplicitiesDevice", mNBins);
       mMultiplicities = device::memory::createMirrorView(mMultiplicitiesDevice);
+      while(true) {}
     }
-
-    /** @brief operator+= is a requirement for use as a workspace in FieldlessGetteration. */
-    /*
-    Whatever the intention of this, it's an absolute disaster.
-    RadialProjectionResult<T> operator+=(const RadialProjectionResult &other)
-    {
-      if (this->mNBins != other.mNBins)
-        throw RadialProjectionResultSizeException(
-            "RadialProjectionResults are of different size! Cannot add things of different size... Abort.");
-      if (!other.finalizedOnce)
-        throw RadialProjectionResultFinalizationException(
-            "Cannot add a RadialProjectionResult which has not been finalized yet! Abort.");
-      if (!finalizedOnce) finalizedOnce = other.finalizedOnce;
-      for (size_t i = 0; i < this->size(); ++i) {
-        (*this)[i].getValue().average += other[i].getValue().average;
-      }
-      return *this;
-    }
-*/
 
     /** @brief Decrease the number of bins on demand. */
     RadialProjectionResult &rebin(ptrdiff_t nBins, T customRange = -1)
@@ -77,6 +64,11 @@ namespace TempLat
       std::vector<RadialProjectionSingleBinAndValue<T>>::operator=(
           RadialProjectionRebinner<T>::rebin(*this, nBins, centralBinBounds, customRange));
       return *this;
+    }
+
+    auto getNBins()
+    {
+      return mNBins;
     }
 
     /** @brief Rescale the results with a function of x or k (bin location),
@@ -161,8 +153,6 @@ namespace TempLat
 
     template <typename S> friend class RadialProjector;
 
-    template <typename Model> friend class RadialProjectorGW;
-
     template <typename S>
     friend RadialProjectionResult<S> operator+(const RadialProjectionResult<S> &a, const RadialProjectionResult<S> &b);
 
@@ -191,23 +181,20 @@ namespace TempLat
       auto &mFullResult = *this;
 
       mFullResult.clear();
-      for (ptrdiff_t i = 0; i < mNBins; ++i) {
-        if (mMultiplicities[i] > 0) {
+      for (size_t i = 0; i < mNBins; ++i) {
+        if (mMultiplicities[i] > 0.) {
           RadialProjectionSingleBinAndValue<T> next(mBinBounds.getFinal(i, mMultiplicities[i]),
                                                     mValues.getFinal(i, mMultiplicities[i]));
           this->push_back(next);
         }
       }
-      // mMultiplicities.clear();
-      // mValues.clear();
-      // mBinBounds.clear();
       return *this;
     }
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
     bool finalizedOnce;
-    ptrdiff_t mNBins;
+    size_t mNBins;
     RadialProjectionSingleQuantity<T> mValues, mBinBounds;
     std::vector<T> centralBinBounds; // Naive central values of the bin. Does not need to be set.
 
