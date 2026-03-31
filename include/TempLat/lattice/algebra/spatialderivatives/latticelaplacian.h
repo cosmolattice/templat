@@ -44,7 +44,7 @@ namespace TempLat
 
     template <typename... IDX>
       requires requires(std::decay_t<R> r, IDX... idx) {
-        requires IsVariadicNDIndex<NDim, IDX...>;
+        requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
     DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
