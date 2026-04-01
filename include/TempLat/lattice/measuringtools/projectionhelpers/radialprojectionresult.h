@@ -55,7 +55,6 @@ namespace TempLat
     {
       mMultiplicitiesDevice = DeviceView("RadialProjectionResult::mMultiplicitiesDevice", mNBins);
       mMultiplicities = device::memory::createMirrorView(mMultiplicitiesDevice);
-      while(true) {}
     }
 
     /** @brief Decrease the number of bins on demand. */
