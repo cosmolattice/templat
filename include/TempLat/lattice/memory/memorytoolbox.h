@@ -224,7 +224,7 @@ namespace TempLat
 
     bool amIRoot() { return mGroup.getBaseComm().rank() == 0; }
 
-    template <typename T> bool initializeFFT() //(JBB, Sep 2023)
+    template <typename T> bool initializeFFT()
     {
       if constexpr (std::is_same_v<T, float>)
         mFFTLibrary.getPlans_float();

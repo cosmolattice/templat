@@ -85,15 +85,17 @@ namespace TempLat
       return myResult;
     }
 
-    UnbinnedRadialProjectionResult<sType> measureUnbinned(bool excludeOrigin = true) {
+    UnbinnedRadialProjectionResult<sType> measureUnbinned(ptrdiff_t N, bool excludeOrigin = true) {
 
-      ptrdiff_t nLinearBins = NDim * pow<2>(GetNGrid::get(mToolBox)) / 4 + 1;
+      ptrdiff_t nLinearBins = NDim * pow<2>(N) / 4 + 1;
 
       UnbinnedRadialProjectionResult<sType> baseWorkSpace(nLinearBins,  mSpaceType == SpaceStateType::Fourier);
+
 
       UnbinnedRadialProjectionResult<sType> myResult = mSpaceType == SpaceStateType::Configuration ?
       computeConfigurationSpaceUnbinned(baseWorkSpace, excludeOrigin) :
       computeFourierSpaceUnbinned(baseWorkSpace, excludeOrigin);
+
 
       myResult.finalize(mToolBox->mGroup.getBaseComm());
 
