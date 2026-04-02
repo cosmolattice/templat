@@ -26,7 +26,7 @@ namespace TempLat
     // This is what TempLat operators (safeSqrt, +, *, etc.) want.
     template <typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       const T kSite = ntilde_norm.eval(idx...) * kIR; // k = |ntilde| * kIR
       return spline(clampK(kSite));
@@ -44,7 +44,7 @@ namespace TempLat
     decltype(ntilde.norm()) ntilde_norm;
     T kIR, kMin, kMax;
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     T clampK(T k) const { return (k < kMin) ? kMin : (k > kMax) ? kMax : k; }
   };
 

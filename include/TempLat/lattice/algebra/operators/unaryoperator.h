@@ -69,10 +69,10 @@ namespace TempLat
     /** @brief Override this method in your derived class, to have an easy implementation of your toString method. */
     virtual std::string operatorString() const { return " "; }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getDx() const { return GetDx::getDx(mR); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
     /** @brief If your descending class implements `operatorString()` and your operator is of the type "OP b" (where OP

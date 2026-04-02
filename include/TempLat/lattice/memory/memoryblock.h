@@ -64,7 +64,7 @@ namespace TempLat
     }
 
     /** @brief access */
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     T &operator[](ptrdiff_t i) const
     {
       checkBounds(i);
@@ -157,10 +157,10 @@ namespace TempLat
       }
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     operator T *() const { return mData.data(); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     T *data() const { return mData.data(); }
 
     MemoryBlock duplicate()
@@ -199,7 +199,7 @@ namespace TempLat
     static constexpr size_t TSIZE = sizeof(T);
     mutable bool mHostMirrorOutdated = true;
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     void checkBounds(ptrdiff_t i) const
     {
 #ifdef CHECKBOUNDS

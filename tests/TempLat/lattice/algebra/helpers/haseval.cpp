@@ -20,7 +20,7 @@ namespace TempLat
   void HasEvalTester::Test(TDDAssertion &tdd)
   {
     struct myTest {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double eval(ptrdiff_t i)
       {
         m = 76;
@@ -29,11 +29,11 @@ namespace TempLat
       double m;
     };
     struct myTest2 {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double eval() { return 777; }
     };
     struct myTest3 {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double eval(int i, int j, int x) { return i + j + x; }
     };
 

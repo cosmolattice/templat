@@ -85,7 +85,7 @@ namespace TempLat
 
     template <typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
-    DEVICE_FORCEINLINE_FUNCTION T eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION T eval(const IDX &...idx) const
     {
       // Convert memory indices to spatial coordinates
       device::IdxArray<NDim> spatial;

@@ -104,7 +104,7 @@ namespace TempLat
      */
     template <size_t i, typename Head, typename... Tail>
       requires(i <= sizeof...(Tail))
-    DEVICE_FORCEINLINE_FUNCTION constexpr auto tuple_last(const device_kokkos::tuple<Head, Tail...> &t)
+    DEVICE_INLINE_FUNCTION constexpr auto tuple_last(const device_kokkos::tuple<Head, Tail...> &t)
     {
       static_assert(i <= sizeof...(Tail), "Cannot take a longer tail than the tuple.");
       if constexpr (sizeof...(Tail) + 1 == i)
@@ -125,7 +125,7 @@ namespace TempLat
      * @return auto a tied tuple of the first i elements
      */
     template <int i, typename Head, typename... Tail>
-    DEVICE_FORCEINLINE_FUNCTION constexpr auto tuple_first(const device_kokkos::tuple<Head, Tail...> &t)
+    DEVICE_INLINE_FUNCTION constexpr auto tuple_first(const device_kokkos::tuple<Head, Tail...> &t)
     {
       static_assert(i <= sizeof...(Tail), "Cannot take a longer sequence than the tuple.");
       static_assert(i >= 0, "Cannot take a longer sequence than the tuple.");
@@ -143,26 +143,23 @@ namespace TempLat
     }
 
     template <typename... Args, std::size_t... Is>
-    DEVICE_FORCEINLINE_FUNCTION auto reverse_tuple(const device_kokkos::tuple<Args...> &tuple,
-                                                   std::index_sequence<Is...>)
+    DEVICE_INLINE_FUNCTION auto reverse_tuple(const device_kokkos::tuple<Args...> &tuple, std::index_sequence<Is...>)
     {
       return device_kokkos::tie(device_kokkos::get<sizeof...(Args) - 1 - Is>(tuple)...);
     }
 
-    template <typename... Args>
-    DEVICE_FORCEINLINE_FUNCTION auto reverse_tuple(const device_kokkos::tuple<Args...> &tuple)
+    template <typename... Args> DEVICE_INLINE_FUNCTION auto reverse_tuple(const device_kokkos::tuple<Args...> &tuple)
     {
       return reverse_tuple(tuple, std::make_index_sequence<sizeof...(Args)>());
     }
 
     template <typename Arg, size_t N, std::size_t... Is>
-    DEVICE_FORCEINLINE_FUNCTION auto reverse_array(const device_kokkos::array<Arg, N> &arr, std::index_sequence<Is...>)
+    DEVICE_INLINE_FUNCTION auto reverse_array(const device_kokkos::array<Arg, N> &arr, std::index_sequence<Is...>)
     {
       return device_kokkos::array<Arg, N>{{get<N - 1 - Is>(arr)...}};
     }
 
-    template <typename Arg, size_t N>
-    DEVICE_FORCEINLINE_FUNCTION auto reverse_array(const device_kokkos::array<Arg, N> &arr)
+    template <typename Arg, size_t N> DEVICE_INLINE_FUNCTION auto reverse_array(const device_kokkos::array<Arg, N> &arr)
     {
       return reverse_array(arr, std::make_index_sequence<N>());
     }
@@ -188,7 +185,7 @@ namespace TempLat
 
       template <typename... Args>
         requires(sizeof...(Args) == NDim)
-      DEVICE_FORCEINLINE_FUNCTION void operator()(const Args &...args) const
+      DEVICE_INLINE_FUNCTION void operator()(const Args &...args) const
       {
         // What's going on here: on GPU, it is beneficial to reverse the memory access pattern, for coalesced access.
         // However, we do not want to impose this on the level of the memory layouts. In particular, this would
@@ -221,7 +218,7 @@ namespace TempLat
 
       template <typename... Args>
         requires(sizeof...(Args) == NDim + 1)
-      DEVICE_FORCEINLINE_FUNCTION void operator()(Args &&...args) const
+      DEVICE_INLINE_FUNCTION void operator()(Args &&...args) const
       {
         // What's going on here: on GPU, it is beneficial to reverse the memory access pattern, for coalesced access.
         // However, we do not want to impose this on the level of the memory layouts. In particular, this would
@@ -241,7 +238,7 @@ namespace TempLat
 
       template <typename... Args>
         requires(sizeof...(Args) == NDim)
-      DEVICE_FORCEINLINE_FUNCTION auto makeArray(device_kokkos::tuple<Args...> &&tuple) const
+      DEVICE_INLINE_FUNCTION auto makeArray(device_kokkos::tuple<Args...> &&tuple) const
       {
         return device_kokkos::apply(
             [](const auto &...args) { return device_kokkos::IdxArray<NDim>{{static_cast<Idx>(args)...}}; },

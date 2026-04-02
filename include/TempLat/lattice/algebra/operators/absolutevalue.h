@@ -43,7 +43,7 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(r, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return abs(DoEval::eval(mR, idx...));
       }
@@ -51,7 +51,7 @@ namespace TempLat
       virtual std::string operatorString() const override { return "abs"; }
 
       /** @brief Passing on the automatic / symbolic derivatives. */
-      template <typename U> DEVICE_FORCEINLINE_FUNCTION auto d(const U &other)
+      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
       {
         return GetDeriv::get(mR, other) * (-heaviside(-mR) + heaviside(mR));
       }
@@ -61,7 +61,7 @@ namespace TempLat
   /** @brief Exposing our newly defined absolute value operation to the world. */
   template <typename T>
     requires ConditionalUnaryGetter<T>
-  DEVICE_FORCEINLINE_FUNCTION auto abs(const T &a)
+  DEVICE_INLINE_FUNCTION auto abs(const T &a)
   {
     return Operators::AbsoluteValue<T>(a);
   }

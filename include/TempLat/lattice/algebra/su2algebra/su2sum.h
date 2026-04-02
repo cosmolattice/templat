@@ -32,12 +32,12 @@ namespace TempLat
 
     SU2Addition(const R &pR, const T &pT) : SU2BinaryOperator<R, T>(pR, pT) {}
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
+    template <int N> DEVICE_INLINE_FUNCTION auto SU2Get(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3, "SU2Get: N must be between 0 and 3 for SU2Addition");
       return mT.SU2Get(t) + mR.SU2Get(t);
     }
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const { return SU2Get(t); }
+    template <int N> DEVICE_INLINE_FUNCTION auto operator()(Tag<N> t) const { return SU2Get(t); }
 
     template <typename... IDX>
       requires requires(std::decay_t<R> r, std::decay_t<T> t, IDX... idx) {
@@ -45,7 +45,7 @@ namespace TempLat
         DoEval::eval(r, idx...);
         DoEval::eval(t, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto cL = DoEval::eval(mR, idx...);
       const auto cR = DoEval::eval(mT, idx...);

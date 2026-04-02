@@ -31,7 +31,7 @@ namespace TempLat
 
     SU2DoubletShifter(const R &pR) : SU2DoubletUnaryOperator<R>(pR) {}
 
-    template <int M> DEVICE_FORCEINLINE_FUNCTION auto SU2DoubletGet(Tag<M> t) const
+    template <int M> DEVICE_INLINE_FUNCTION auto SU2DoubletGet(Tag<M> t) const
     {
       static_assert(M >= 0 && M <= 3, "SU2DoubletGet: M must be between 0 and 3 for SU2DoubletShifter");
       return shift<N...>(mR.SU2DoubletGet(t));
@@ -42,7 +42,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto tup = device::tie(idx...);
       constexpr_for<0, dim>([&](const auto _d) {
@@ -68,7 +68,7 @@ namespace TempLat
 
     SU2DoubletShifterByOne(const R &pR) : SU2DoubletUnaryOperator<R>(pR) {}
 
-    template <int M> DEVICE_FORCEINLINE_FUNCTION auto SU2DoubletGet(Tag<M> t) const
+    template <int M> DEVICE_INLINE_FUNCTION auto SU2DoubletGet(Tag<M> t) const
     {
       static_assert(M >= 0 && M <= 3, "SU2DoubletGet: M must be between 0 and 3 for SU2DoubletShifterByOne");
       return shift<_N>(mR.SU2DoubletGet(t));
@@ -79,7 +79,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       return device::apply([&](const auto &...shifted_idx) { return DoEval::eval(mR, shifted_idx...); },
                            tuple_add_to_nth<N - 1, dir>(device::tie(idx...)));

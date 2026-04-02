@@ -36,7 +36,7 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(r, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         const auto a = DoEval::eval(mR, idx...);
         constexpr decltype(a) zero{};
@@ -46,30 +46,30 @@ namespace TempLat
       virtual std::string operatorString() const override { return "safe_sqrt"; }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_FORCEINLINE_FUNCTION void d(const U &other) = delete;
+      template <typename U> DEVICE_INLINE_FUNCTION void d(const U &other) = delete;
     };
   } // namespace Operators
 
   template <typename R>
     requires ConditionalUnaryGetter<R>
-  DEVICE_FORCEINLINE_FUNCTION auto safeSqrt(const R &r)
+  DEVICE_INLINE_FUNCTION auto safeSqrt(const R &r)
   {
     return Operators::SafeSqrt<R>(r);
   }
 
   template <typename T>
     requires(ConditionalBinaryGetter<T, HalfType> && !std::is_arithmetic_v<T>)
-  DEVICE_FORCEINLINE_FUNCTION auto sqrt(T a)
+  DEVICE_INLINE_FUNCTION auto sqrt(T a)
   {
     return Operators::Power<T, HalfType>(a, HalfType());
   }
 
   /** @brief Specialize for possible zero input! */
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   ZeroType sqrt(ZeroType a) { return a; }
 
   /** @brief Specialize for possible unit input! */
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   OneType sqrt(OneType a) { return a; }
 } // namespace TempLat
 

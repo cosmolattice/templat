@@ -36,7 +36,7 @@ namespace TempLat
         a[2];
         a[3];
       }
-    DEVICE_FORCEINLINE_FUNCTION static void multiply_inplace(Array &res, const Array &cL, const Array &cR)
+    DEVICE_INLINE_FUNCTION static void multiply_inplace(Array &res, const Array &cL, const Array &cR)
     {
       res[0] = cL[0] * cR[0] - cL[1] * cR[1] - cL[2] * cR[2] - cL[3] * cR[3];
       res[1] = cL[0] * cR[1] + cL[1] * cR[0] + cL[3] * cR[2] - cL[2] * cR[3];
@@ -60,7 +60,7 @@ namespace TempLat
         a[1];
         a[2];
       }
-    DEVICE_FORCEINLINE_FUNCTION static void expmap_inplace(ResArray &res, const AlgArray &alg)
+    DEVICE_INLINE_FUNCTION static void expmap_inplace(ResArray &res, const AlgArray &alg)
     {
       const auto a = device::sqrt(alg[0] * alg[0] + alg[1] * alg[1] + alg[2] * alg[2]);
       res[0] = device::cos(a);
@@ -91,7 +91,7 @@ namespace TempLat
         r[2];
         r[3];
       }
-    DEVICE_FORCEINLINE_FUNCTION static void expmap_inplace(ResArray &res)
+    DEVICE_INLINE_FUNCTION static void expmap_inplace(ResArray &res)
     {
       const auto a = device::sqrt(res[1] * res[1] + res[2] * res[2] + res[3] * res[3]);
       res[0] = device::cos(a);

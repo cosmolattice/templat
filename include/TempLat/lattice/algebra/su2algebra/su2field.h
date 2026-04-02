@@ -56,19 +56,19 @@ namespace TempLat
       fs[0].updateGhosts();
     }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION const auto &SU2Get(Tag<N> t) const
+    template <int N> DEVICE_INLINE_FUNCTION const auto &SU2Get(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3, "SU2Get: N must be between 0 and 3 for SU2Field");
       return fs[N];
     }
 
-    template <int M> DEVICE_FORCEINLINE_FUNCTION auto &operator()(Tag<M> t)
+    template <int M> DEVICE_INLINE_FUNCTION auto &operator()(Tag<M> t)
     {
       static_assert(M >= 0 && M <= 3, "Operator(): M must be between 0 and 3 for SU2Field");
       return fs[M];
     }
 
-    template <int M> DEVICE_FORCEINLINE_FUNCTION const auto &operator()(Tag<M> t) const
+    template <int M> DEVICE_INLINE_FUNCTION const auto &operator()(Tag<M> t) const
     {
       static_assert(M >= 0 && M <= 3, "Operator(): M must be between 0 and 3 for SU2Field");
       return fs[M];
@@ -137,10 +137,10 @@ namespace TempLat
 
     std::string toString() const { return *mName; }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getDx() const { return GetDx::getDx(fs[0]); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(fs[0]); }
 
     inline auto getToolBox() { return GetToolBox::get(fs[0]); }
@@ -158,7 +158,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(f, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       device::array<T, 4> result;
       result[0] = fs[0].eval(idx...);

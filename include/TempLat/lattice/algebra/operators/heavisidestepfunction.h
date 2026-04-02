@@ -30,13 +30,13 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       return (DoEval::eval(mR, idx...) >= 0 ? 1 : 0);
     }
 
     /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-    template <typename U> DEVICE_FORCEINLINE_FUNCTION auto d(const U &other)
+    template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
     {
       return GetDeriv::get(mR, other) * DiracDelta(mR);
     }
@@ -46,17 +46,17 @@ namespace TempLat
 
   template <typename R>
     requires ConditionalUnaryGetter<R>
-  DEVICE_FORCEINLINE_FUNCTION auto heaviside(const R &r)
+  DEVICE_INLINE_FUNCTION auto heaviside(const R &r)
   {
     return HeavisideStepFunction<R>(r);
   }
 
   /** @brief Specialize for possible zero input! */
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   OneType heaviside(ZeroType a) { return {}; }
 
   /** @brief Specialize for possible unit input! */
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   OneType heaviside(OneType a) { return {}; }
 } // namespace TempLat
 

@@ -34,9 +34,9 @@ namespace TempLat
     DEVICE_FUNCTION
     ComplexFieldAddition(const R &pR, const T &pT) : ComplexFieldBinaryOperator<R, T>(pR, pT) {}
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<0> t) const { return Real(mR) + Real(mT); }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<1> t) const { return Imag(mR) + Imag(mT); }
 
     template <typename... IDX>
@@ -45,7 +45,7 @@ namespace TempLat
         DoEval::eval(r, idx...);
         DoEval::eval(t, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto cL = DoEval::eval(mR, idx...);
       auto cR = DoEval::eval(mT, idx...);
@@ -63,21 +63,21 @@ namespace TempLat
 
   template <typename R, typename T>
     requires(HasComplexFieldGet<R> && HasComplexFieldGet<T>)
-  DEVICE_FORCEINLINE_FUNCTION auto operator+(const R &r, const T &t)
+  DEVICE_INLINE_FUNCTION auto operator+(const R &r, const T &t)
   {
     return ComplexFieldAddition<R, T>{r, t};
   }
 
   template <typename R, typename T>
     requires(!HasComplexFieldGet<R> && HasComplexFieldGet<T>)
-  DEVICE_FORCEINLINE_FUNCTION auto operator+(const R &r, const T &t)
+  DEVICE_INLINE_FUNCTION auto operator+(const R &r, const T &t)
   {
     return ComplexFieldAddition<ComplexFieldWrapper<R, ZeroType>, T>{Complexify(r, ZeroType()), t};
   }
 
   template <typename R, typename T>
     requires(!HasComplexFieldGet<T> && HasComplexFieldGet<R>)
-  DEVICE_FORCEINLINE_FUNCTION auto operator+(const R &r, const T &t)
+  DEVICE_INLINE_FUNCTION auto operator+(const R &r, const T &t)
   {
     return ComplexFieldAddition<R, ComplexFieldWrapper<T, ZeroType>>{r, Complexify(t, ZeroType())};
   }

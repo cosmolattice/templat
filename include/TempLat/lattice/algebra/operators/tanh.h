@@ -40,13 +40,13 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(t, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return tanh(DoEval::eval(mR, idx...));
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_FORCEINLINE_FUNCTION auto d(const U &other)
+      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
       {
         return GetDeriv::get(mR, other) / pow<2>(sinh(*this));
       }
@@ -58,13 +58,13 @@ namespace TempLat
   /** @brief Exposing our newly define exp operation to the world. */
   template <typename T>
     requires(!std::is_arithmetic_v<T> && !IsComplexType<T>)
-  DEVICE_FORCEINLINE_FUNCTION auto tanh(T a)
+  DEVICE_INLINE_FUNCTION auto tanh(T a)
   {
     return Operators::Tanh<T>(a);
   }
 
   /** @brief Specialize for possible zero input! */
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   ZeroType tanh(ZeroType a) { return ZeroType(); }
 } // namespace TempLat
 

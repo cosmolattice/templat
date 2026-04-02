@@ -64,7 +64,7 @@ namespace TempLat
       mRawView = mManager->getRawView();
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getView() const { return mView; }
 
     template <typename R> void assign(R &&g)
@@ -99,7 +99,7 @@ namespace TempLat
         requires(NDim == sizeof...(IDX));
         requires(std::is_integral_v<std::decay_t<IDX>> && ...);
       }
-    DEVICE_FORCEINLINE_FUNCTION T &getSet(IDX &&...idx) const
+    DEVICE_INLINE_FUNCTION T &getSet(IDX &&...idx) const
     {
       return mView(idx...);
     }
@@ -136,7 +136,7 @@ namespace TempLat
 
     template <typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       return mView(idx...);
     }

@@ -34,7 +34,7 @@ namespace TempLat
       shiftString = shift<N...>(mR.ComplexFieldGet(0_c)).getString({N...});
     }
 
-    template <int M> DEVICE_FORCEINLINE_FUNCTION auto ComplexFieldGet(Tag<M> t) const
+    template <int M> DEVICE_INLINE_FUNCTION auto ComplexFieldGet(Tag<M> t) const
     {
       static_assert(M >= 0 && M <= 1, "ComplexFieldGet: M must be 0 or 1 for ComplexFieldShifter");
       return shift<N...>(mR.ComplexFieldGet(t));
@@ -45,7 +45,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto tup = device::tie(idx...);
       constexpr_for<0, dim>([&](const auto _d) {
@@ -75,7 +75,7 @@ namespace TempLat
 
     ComplexFieldShifterByOne(const R &pR) : ComplexFieldUnaryOperator<R>(pR) {}
 
-    template <int M> DEVICE_FORCEINLINE_FUNCTION auto ComplexFieldGet(Tag<M> t) const
+    template <int M> DEVICE_INLINE_FUNCTION auto ComplexFieldGet(Tag<M> t) const
     {
       static_assert(M >= 0 && M <= 1, "ComplexFieldGet: M must be 0 or 1 for ComplexFieldShifterByOne");
       return shift<_N>(mR.ComplexFieldGet(t));
@@ -86,7 +86,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       return device::apply([&](const auto &...shifted_idx) { return DoEval::eval(mR, shifted_idx...); },
                            tuple_add_to_nth<N - 1, dir>(device::tie(idx...)));

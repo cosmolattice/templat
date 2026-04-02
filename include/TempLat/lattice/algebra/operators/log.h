@@ -41,13 +41,13 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(t, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return log(DoEval::eval(mR, idx...));
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_FORCEINLINE_FUNCTION auto d(const U &other)
+      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
       {
         /* not using pow for 1/mInstanceT because pow imports us, log.h */
         return GetDeriv::get(mR, other) / mR;
@@ -60,13 +60,13 @@ namespace TempLat
   /** @brief Exposing our newly define log operation to the world. */
   template <typename T>
     requires ConditionalUnaryGetter<T>
-  DEVICE_FORCEINLINE_FUNCTION auto log(T a)
+  DEVICE_INLINE_FUNCTION auto log(T a)
   {
     return Operators::Log<T>(a);
   }
 
   /** @brief Specialize for possible zero output! */
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   ZeroType log(OneType a) { return {}; }
 } // namespace TempLat
 

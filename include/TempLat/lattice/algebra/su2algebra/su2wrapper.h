@@ -39,12 +39,12 @@ namespace TempLat
     DEVICE_FUNCTION
     SU2Wrapper(const SU2Wrapper &) = default;
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto SU2Get(Tag<N> t) const
+    template <int N> DEVICE_INLINE_FUNCTION auto SU2Get(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3, "SU2Get: N must be between 0 and 3 for SU2Wrapper");
       return device::get<N>(data);
     }
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const { return SU2Get(t); }
+    template <int N> DEVICE_INLINE_FUNCTION auto operator()(Tag<N> t) const { return SU2Get(t); }
 
     std::string toString() const
     {
@@ -60,7 +60,7 @@ namespace TempLat
         DoEval::eval(c, idx...);
         DoEval::eval(d, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       device::array<SV, 4> result;
       result[0] = DoEval::eval(device::get<0>(data), idx...);

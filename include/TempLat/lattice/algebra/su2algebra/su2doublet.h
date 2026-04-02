@@ -48,7 +48,7 @@ namespace TempLat
     {
     }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION const Field<T, NDim> &SU2DoubletGet(Tag<N> t) const
+    template <int N> DEVICE_INLINE_FUNCTION const Field<T, NDim> &SU2DoubletGet(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3, "SU2DoubletGet: N must be between 0 and 3 for SU2Doublet");
       return fs[t];
@@ -59,7 +59,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(f, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       device::array<T, 4> result;
       result[0] = DoEval::eval(fs[0], idx...);
@@ -69,7 +69,7 @@ namespace TempLat
       return result;
     }
 
-    template <int M> DEVICE_FORCEINLINE_FUNCTION auto &operator()(Tag<M> t)
+    template <int M> DEVICE_INLINE_FUNCTION auto &operator()(Tag<M> t)
     {
       static_assert(M >= 0 && M <= 3, "Operator(): M must be between 0 and 3 for SU2Doublet");
       return fs[t];
@@ -114,10 +114,10 @@ namespace TempLat
 
     device::memory::host_ptr<MemoryToolBox<NDim>> getToolBox() const { return GetToolBox::get(fs[0]); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getDx() const { return GetDx::getDx(fs[0]); }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(fs[0]); }
 
     inline void updateGhosts()

@@ -41,13 +41,13 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(t, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return cos(DoEval::eval(mR, idx...));
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_FORCEINLINE_FUNCTION auto d(const U &other)
+      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
       {
         return -GetDeriv::get(mR, other) * sin(mR);
       }
@@ -59,13 +59,13 @@ namespace TempLat
   /** @brief Exposing our newly define exp operation to the world. */
   template <typename T>
     requires ConditionalUnaryGetter<T>
-  DEVICE_FORCEINLINE_FUNCTION auto cos(T a)
+  DEVICE_INLINE_FUNCTION auto cos(T a)
   {
     return Operators::Cosine<T>(a);
   }
 
   /** @brief Specialize for possible zero input! */
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   OneType cos(ZeroType a) { return {}; }
 } // namespace TempLat
 

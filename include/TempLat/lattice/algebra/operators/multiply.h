@@ -44,7 +44,7 @@ namespace TempLat
           DoEval::eval(r, idx...);
           DoEval::eval(t, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return DoEval::eval(mR, idx...) * DoEval::eval(mT, idx...);
       }
@@ -52,7 +52,7 @@ namespace TempLat
       virtual std::string operatorString() const override { return "*"; }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_FORCEINLINE_FUNCTION auto d(const U &other)
+      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
       {
         return GetDeriv::get(mT, other) * mR + mT * GetDeriv::get(mR, other);
       }
@@ -70,7 +70,7 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(r, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return N * DoEval::eval(mR, idx...);
       }
@@ -78,28 +78,28 @@ namespace TempLat
       virtual std::string operatorString() const override { return std::to_string(N) + "*"; }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_FORCEINLINE_FUNCTION auto d(const U &other) { return N * mR; }
+      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other) { return N * mR; }
     };
   } // namespace Operators
 
   /** @brief Exposing our newly define multiplication operation to the world. */
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
-  DEVICE_FORCEINLINE_FUNCTION auto operator*(const R &r, const T &t)
+  DEVICE_INLINE_FUNCTION auto operator*(const R &r, const T &t)
   {
     return Operators::Multiplication<R, T>(r, t);
   }
 
   template <typename R, int N>
     requires(HasEvalMethod<R> && !(IsTempLatGettable<0, R> || IsSTDGettable<0, R>))
-  DEVICE_FORCEINLINE_FUNCTION auto operator*(const R &r, Tag<N> n)
+  DEVICE_INLINE_FUNCTION auto operator*(const R &r, Tag<N> n)
   {
     return Operators::MultiplicationN<R, N>(r);
   }
 
   template <typename R, int N>
     requires(HasEvalMethod<R> && !(IsTempLatGettable<0, R> || IsSTDGettable<0, R>))
-  DEVICE_FORCEINLINE_FUNCTION auto operator*(Tag<N> n, const R &r)
+  DEVICE_INLINE_FUNCTION auto operator*(Tag<N> n, const R &r)
   {
     return Operators::MultiplicationN<R, N>(r);
   }
@@ -107,14 +107,14 @@ namespace TempLat
   /** @brief Specialize for possible zero input! */
   template <typename T>
     requires(!std::is_same_v<T, ZeroType>)
-  DEVICE_FORCEINLINE_FUNCTION ZeroType operator*(const T &a, ZeroType b)
+  DEVICE_INLINE_FUNCTION ZeroType operator*(const T &a, ZeroType b)
   {
     return b;
   }
   /** @brief Specialize for possible zero input! */
   template <typename T>
     requires(!std::is_same_v<T, ZeroType>)
-  DEVICE_FORCEINLINE_FUNCTION ZeroType operator*(ZeroType a, const T &b)
+  DEVICE_INLINE_FUNCTION ZeroType operator*(ZeroType a, const T &b)
   {
     return a;
   }
@@ -122,20 +122,20 @@ namespace TempLat
   /** @brief Specialize for possible unit input! */
   template <typename T>
     requires(!std::is_same_v<T, OneType> && !std::is_same_v<T, ZeroType>)
-  DEVICE_FORCEINLINE_FUNCTION auto operator*(const T &a, const OneType b)
+  DEVICE_INLINE_FUNCTION auto operator*(const T &a, const OneType b)
   {
     return a;
   }
   /** @brief Specialize for possible unit input! */
   template <typename T>
     requires(!std::is_same_v<T, OneType> && !std::is_same_v<T, ZeroType>)
-  DEVICE_FORCEINLINE_FUNCTION auto operator*(const OneType &a, const T &b)
+  DEVICE_INLINE_FUNCTION auto operator*(const OneType &a, const T &b)
   {
     return b;
   }
 
   /** @brief Specialize for possible unit input! */
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   OneType operator*(OneType a, OneType b) { return a; }
 } // namespace TempLat
 

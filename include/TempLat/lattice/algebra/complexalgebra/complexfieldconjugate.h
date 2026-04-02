@@ -28,15 +28,15 @@ namespace TempLat
     DEVICE_FUNCTION
     ComplexFieldConjugate(const R &pR) : ComplexFieldUnaryOperator<R>(pR) {}
 
-    DEVICE_FORCEINLINE_FUNCTION auto ComplexFieldGet(Tag<0> t) const { return Real(mR); }
-    DEVICE_FORCEINLINE_FUNCTION auto ComplexFieldGet(Tag<1> t) const { return -Imag(mR); }
+    DEVICE_INLINE_FUNCTION auto ComplexFieldGet(Tag<0> t) const { return Real(mR); }
+    DEVICE_INLINE_FUNCTION auto ComplexFieldGet(Tag<1> t) const { return -Imag(mR); }
 
     template <typename... IDX>
       requires requires(std::decay_t<R> r, IDX... idx) {
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       const auto child = DoEval::eval(mR, idx...);
       device::array<std::decay_t<decltype(child[0])>, 2> result;
@@ -53,26 +53,26 @@ namespace TempLat
 
   template <typename R>
     requires HasComplexFieldGet<R>
-  DEVICE_FORCEINLINE_FUNCTION auto conj(const R &r)
+  DEVICE_INLINE_FUNCTION auto conj(const R &r)
   {
     return ComplexFieldConjugate<R>(r);
   }
 
   template <typename R>
     requires HasComplexFieldGet<R>
-  DEVICE_FORCEINLINE_FUNCTION auto dagger(const R &r)
+  DEVICE_INLINE_FUNCTION auto dagger(const R &r)
   {
     return ComplexFieldConjugate<R>(r);
   }
 
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   OneType dagger(OneType) { return {}; }
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   OneType conj(OneType) { return {}; }
 
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   ZeroType conj(ZeroType t) { return t; };
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   ZeroType dagger(ZeroType t) { return t; };
 } // namespace TempLat
 

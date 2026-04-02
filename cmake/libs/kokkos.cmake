@@ -34,9 +34,9 @@ set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION
 FetchContent_Declare(
   Kokkos
   DOWNLOAD_EXTRACT_TIMESTAMP FALSE
-  URL https://github.com/kokkos/kokkos/releases/download/5.0.2/kokkos-5.0.2.tar.gz
+  URL https://github.com/kokkos/kokkos/releases/download/5.1.0/kokkos-5.1.0.tar.gz
   URL_HASH
-    SHA256=188817bb452ca805ee8701f1c5adbbb4fb83dc8d1c50624566a18a719ba0fa5e
+    SHA256=7bdbdfc88033ed7d940c7940ed8919e1f2b78a9656c69276beb76ad45c41ec4e
   ${SYSTEM_MARKER})
 FetchContent_MakeAvailable(Kokkos)
 

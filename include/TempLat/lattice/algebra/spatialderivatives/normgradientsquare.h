@@ -46,7 +46,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       if constexpr (UnaryOperator<R>::getNDim() == 0)
         return ZeroType();
@@ -63,7 +63,7 @@ namespace TempLat
       }
     }
 
-    template <typename S> DEVICE_FORCEINLINE_FUNCTION auto d(const S &other)
+    template <typename S> DEVICE_INLINE_FUNCTION auto d(const S &other)
     {
       return 2 * LatForwardGrad(mR) * LatForwardGrad(mR.d(other));
     }
@@ -75,7 +75,7 @@ namespace TempLat
 
   template <size_t NDim_ = 0, typename R>
     requires HasEvalMethod<R>
-  DEVICE_FORCEINLINE_FUNCTION auto Grad2(R pR)
+  DEVICE_INLINE_FUNCTION auto Grad2(R pR)
   {
     static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),
                   "Explicit NDim does not match the NDim deduced from expression type R.");
@@ -84,7 +84,7 @@ namespace TempLat
 
   template <size_t NDim_ = 0, typename R>
     requires(!HasEvalMethod<R>)
-  DEVICE_FORCEINLINE_FUNCTION auto Grad2(R pR)
+  DEVICE_INLINE_FUNCTION auto Grad2(R pR)
   {
     return ZeroType();
   }

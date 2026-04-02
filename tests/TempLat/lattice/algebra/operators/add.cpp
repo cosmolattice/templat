@@ -27,7 +27,7 @@ namespace TempLat
       DEVICE_FUNCTION
       myClass(int b) : a(b) {}
 
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       auto get(ptrdiff_t i) const { return a; }
 
     private:
@@ -40,13 +40,13 @@ namespace TempLat
       DEVICE_FUNCTION
       myClass2(int b) : a(b) {}
 
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double get(ptrdiff_t i) const { return a; }
 
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       auto getDx() const { return 2.89; }
 
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       auto getKIR() const { return 9.89; }
 
     private:

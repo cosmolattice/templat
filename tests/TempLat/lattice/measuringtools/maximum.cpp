@@ -21,7 +21,7 @@ namespace TempLat
     myTmpStruct() : mt(MemoryToolBox<3>::makeShared(64, 0)), mLayout(mt->mLayouts.getConfigSpaceLayout()) {}
     template <typename... IDX>
       requires IsVariadicNDIndex<3, IDX...>
-    DEVICE_FORCEINLINE_FUNCTION double eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION double eval(const IDX &...idx) const
     {
       // get local position
       device::IdxArray<3> global_idx;

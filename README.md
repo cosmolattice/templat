@@ -1,5 +1,5 @@
 # TempLat
-
+*This repo is under active development; expect breaking changes.*
 ## Using TempLat in your project
 
 *Minimal requirements:* 

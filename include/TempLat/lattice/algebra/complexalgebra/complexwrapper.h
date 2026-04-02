@@ -37,12 +37,12 @@ namespace TempLat
     DEVICE_FUNCTION
     ComplexFieldWrapper(const ComplexFieldWrapper &) = default;
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<0> t) const { return mR; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<1> t) const { return mT; }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const
+    template <int N> DEVICE_INLINE_FUNCTION auto operator()(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 1, "Operator(): N must be 0 or 1 for ComplexFieldWrapper");
       return ComplexFieldGet(t);
@@ -54,7 +54,7 @@ namespace TempLat
         DoEval::eval(r, idx...);
         DoEval::eval(t, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       device::array<decltype(DoEval::eval(mR, idx...)), 2> result;
       result[0] = DoEval::eval(mR, idx...);
@@ -82,8 +82,7 @@ namespace TempLat
     T mT;
   };
 
-  template <typename R, typename T>
-  DEVICE_FORCEINLINE_FUNCTION ComplexFieldWrapper<R, T> Complexify(const R &r, const T &t)
+  template <typename R, typename T> DEVICE_INLINE_FUNCTION ComplexFieldWrapper<R, T> Complexify(const R &r, const T &t)
   {
     return {r, t};
   }

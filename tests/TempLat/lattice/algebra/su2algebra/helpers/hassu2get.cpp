@@ -18,11 +18,11 @@ namespace TempLat
   {
     /* Default is to fail: to remind yourself to implement something here. */
     struct MyStruct {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double SU2Get(Tag<0> t) { return 87; };
     };
     struct MyStruct2 {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double getComp(Tag<0> t) { return 87; };
     };
 

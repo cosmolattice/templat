@@ -31,7 +31,7 @@ namespace TempLat
     /* Put public methods here. These should change very little over time. */
     SU2DoubletDagger(const R &pR) : SU2DoubletUnaryOperator<R>(pR) {}
 
-    template <int M> DEVICE_FORCEINLINE_FUNCTION auto SU2DoubletGet(Tag<M> t) const
+    template <int M> DEVICE_INLINE_FUNCTION auto SU2DoubletGet(Tag<M> t) const
     {
       static_assert(M >= 0 && M <= 3, "SU2DoubletGet: M must be between 0 and 3 for SU2DoubletDagger");
       if constexpr (M % 2 == 0)
@@ -40,14 +40,14 @@ namespace TempLat
         return -mR.SU2DoubletGet(t);
     }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION const auto &operator()(Tag<N> t) const { return SU2DoubletGet(t); }
+    template <int N> DEVICE_INLINE_FUNCTION const auto &operator()(Tag<N> t) const { return SU2DoubletGet(t); }
 
     template <typename... IDX>
       requires requires(std::decay_t<R> r, IDX... idx) {
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto child = DoEval::eval(mR, idx...);
       // child[0] = child[0];

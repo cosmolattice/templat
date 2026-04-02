@@ -52,13 +52,13 @@ namespace TempLat
     struct MySU2Doublet {
       MySU2Doublet(double i, double j, double k, double l) : arr{{i, j, k, l}} {}
 
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double SU2DoubletGet(Tag<0> t) const { return arr[0]; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double SU2DoubletGet(Tag<1> t) const { return arr[1]; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double SU2DoubletGet(Tag<2> t) const { return arr[2]; }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       double SU2DoubletGet(Tag<3> t) const { return arr[3]; }
 
       std::string toString() const

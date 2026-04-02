@@ -45,7 +45,7 @@ namespace TempLat
           DoEval::eval(r, idx...);
           DoEval::eval(t, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         using NT1 = std::decay_t<decltype(DoEval::eval(mR, idx...))>;
         using NT2 = std::decay_t<decltype(DoEval::eval(mT, idx...))>;
@@ -56,7 +56,7 @@ namespace TempLat
       virtual std::string operatorString() const override { return "^"; }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_FORCEINLINE_FUNCTION auto d(const U &other)
+      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
       {
         /* so the compiler chooses without problems between std::log and TempLat::Operators::log */
         return GetDeriv::get(mR, other) * pow(mR, mT - OneType()) + GetDeriv::get(mT, other) * (*this) * log(mT);
@@ -68,7 +68,7 @@ namespace TempLat
     public:
       using UnaryOperator<R>::mR;
 
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       PowerN(const R &pR) : UnaryOperator<R>(pR) {}
 
       template <typename... IDX>
@@ -76,7 +76,7 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(r, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return powr<N>(DoEval::eval(mR, idx...));
       }
@@ -84,7 +84,7 @@ namespace TempLat
       std::string toString() const { return "(" + GetString::get(mR) + ")^" + std::to_string(2); }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_FORCEINLINE_FUNCTION auto d(const U &other) const
+      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other) const
       {
         /* so the compiler chooses without problems between std::log and TempLat::Operators::log */
         return Tag<N>() * PowerN<N - 1, R>(mR) * GetDeriv::get(mR, other);
@@ -94,19 +94,19 @@ namespace TempLat
 
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
-  DEVICE_FORCEINLINE_FUNCTION auto pow(const R &r, const T &t)
+  DEVICE_INLINE_FUNCTION auto pow(const R &r, const T &t)
   {
     return Operators::Power<R, T>(r, t);
   }
 
-  template <ptrdiff_t N> DEVICE_FORCEINLINE_FUNCTION ZeroType pow(ZeroType) { return {}; }
+  template <ptrdiff_t N> DEVICE_INLINE_FUNCTION ZeroType pow(ZeroType) { return {}; }
 
-  template <typename T> DEVICE_FORCEINLINE_FUNCTION OneType pow(const T &a, ZeroType b) { return {}; }
+  template <typename T> DEVICE_INLINE_FUNCTION OneType pow(const T &a, ZeroType b) { return {}; }
 
   /** @brief Specialize for possible zero input! Need to disable one of these for two ZeroTypes as input. */
   template <typename T>
     requires std::is_same_v<T, ZeroType>
-  DEVICE_FORCEINLINE_FUNCTION auto pow(ZeroType a, const T &b)
+  DEVICE_INLINE_FUNCTION auto pow(ZeroType a, const T &b)
   {
     return ZeroType();
   }
@@ -114,7 +114,7 @@ namespace TempLat
   // enable if is just so that we can overload to consitently write pow<3>(4)  for std::pow(4,3);
   template <ptrdiff_t N, typename R>
     requires(HasEvalMethod<R> && N != 1 && N != 0)
-  DEVICE_FORCEINLINE_FUNCTION auto pow(const R &r)
+  DEVICE_INLINE_FUNCTION auto pow(const R &r)
   {
     return Operators::PowerN<N, R>(r);
   }
@@ -128,7 +128,7 @@ namespace TempLat
       requires !(IsTempLatGettable<0, R> || IsSTDGettable<0, R>);
       powr<N>(r);
     }
-  DEVICE_FORCEINLINE_FUNCTION auto pow(const R &r)
+  DEVICE_INLINE_FUNCTION auto pow(const R &r)
   {
     return powr<N>(r);
   }
@@ -136,7 +136,7 @@ namespace TempLat
   /** @brief Specialize for possible zero input! */
   template <ptrdiff_t N, typename T>
     requires(N == 0)
-  constexpr DEVICE_FORCEINLINE_FUNCTION auto pow(const T &a)
+  constexpr DEVICE_INLINE_FUNCTION auto pow(const T &a)
   {
     return OneType();
   }
@@ -144,7 +144,7 @@ namespace TempLat
   /** @brief Specialize for possible one input! */
   template <ptrdiff_t N, typename T>
     requires(N == 1)
-  DEVICE_FORCEINLINE_FUNCTION T pow(const T &a)
+  DEVICE_INLINE_FUNCTION T pow(const T &a)
   {
     return a;
   }

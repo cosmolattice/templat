@@ -44,10 +44,10 @@ namespace TempLat
 
     template <typename... IDX>
       requires requires(std::decay_t<R> r, IDX... idx) {
-        requires IsVariadicNDIndex<NDim, IDX...>;
+        requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       if constexpr (UnaryOperator<R>::getNDim() == 0)
         return ZeroType();
@@ -67,10 +67,7 @@ namespace TempLat
     virtual std::string operatorString() const override { return "Laplacian"; }
 
     /** @brief Symbolic derivatives. */
-    template <typename S> DEVICE_FORCEINLINE_FUNCTION auto d(const S &other)
-    {
-      return LatLapl(GetDeriv::get(mR, other));
-    }
+    template <typename S> DEVICE_INLINE_FUNCTION auto d(const S &other) { return LatLapl(GetDeriv::get(mR, other)); }
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
@@ -79,7 +76,7 @@ namespace TempLat
 
   template <size_t NDim_ = 0, typename R>
     requires HasEvalMethod<R>
-  DEVICE_FORCEINLINE_FUNCTION auto LatLapl(R pR)
+  DEVICE_INLINE_FUNCTION auto LatLapl(R pR)
   {
     static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),
                   "Explicit NDim does not match the NDim deduced from expression type R.");
@@ -88,7 +85,7 @@ namespace TempLat
 
   template <size_t NDim_ = 0, typename R>
     requires(!HasEvalMethod<R>)
-  DEVICE_FORCEINLINE_FUNCTION auto LatLapl(R pR)
+  DEVICE_INLINE_FUNCTION auto LatLapl(R pR)
   {
     return ZeroType();
   }

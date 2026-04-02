@@ -37,13 +37,13 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(t, idx...);
         }
-      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return -DoEval::eval(mR, idx...);
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_FORCEINLINE_FUNCTION auto d(const U &other) { return -GetDeriv::get(mR, other); }
+      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other) { return -GetDeriv::get(mR, other); }
 
       virtual std::string operatorString() const override { return "-"; }
     };
@@ -52,17 +52,17 @@ namespace TempLat
   /** @brief Exposing our newly defined subtraction operation to the world. */
   template <typename T>
     requires HasEvalMethod<T>
-  DEVICE_FORCEINLINE_FUNCTION auto operator-(const T &a)
+  DEVICE_INLINE_FUNCTION auto operator-(const T &a)
   {
     return Operators::UnaryMinus<T>(a);
   }
 
   /** @brief Specialize for possible zero input! */
-  DEVICE_FORCEINLINE_FUNCTION
+  DEVICE_INLINE_FUNCTION
   ZeroType operator-(ZeroType a) { return a; }
 
   /** @brief Specialize for double minus signs. */
-  template <typename T> DEVICE_FORCEINLINE_FUNCTION auto operator-(Operators::UnaryMinus<Operators::UnaryMinus<T>> &&a)
+  template <typename T> DEVICE_INLINE_FUNCTION auto operator-(Operators::UnaryMinus<Operators::UnaryMinus<T>> &&a)
   {
     return std::move(a);
   }

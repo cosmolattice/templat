@@ -41,7 +41,7 @@ namespace TempLat
 
     template <typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       device::IdxArray<NDim> result;
       mLayout.putSpatialLocationFromMemoryIndexInto(result, idx...);

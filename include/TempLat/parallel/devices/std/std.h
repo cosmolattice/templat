@@ -105,7 +105,7 @@ template <typename T, typename S>
                requires(std::decay_t<S> s, std::size_t i) { s.eval(i); } ||
                requires(std::decay_t<S> s, std::size_t i, std::size_t j) { s.eval(i, j); } ||
                requires(std::decay_t<S> s, std::size_t i, std::size_t j, std::size_t k) { s.eval(i, j, k); }))
-DEVICE_FORCEINLINE_FUNCTION complex<T> operator*(S b, complex<T> a)
+DEVICE_INLINE_FUNCTION complex<T> operator*(S b, complex<T> a)
 {
   return a * (T)b;
 }

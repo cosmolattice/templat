@@ -5,7 +5,7 @@ if(MPI)
   set(HDF5_PREFER_PARALLEL ${MPI})
 endif()
 
-find_package(HDF5 COMPONENTS C)
+find_package(HDF5 1.12 COMPONENTS C)
 set(CORRECT_HDF_FOUND OFF)
 
 if(HDF5_FOUND)

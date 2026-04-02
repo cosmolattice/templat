@@ -36,7 +36,7 @@ namespace TempLat
     static constexpr size_t NDim = _NDim;
     myTmpStruct() : mt(MemoryToolBox<NDim>::makeShared(16, 1)) {}
 
-    template <typename... IDX> DEVICE_FORCEINLINE_FUNCTION double eval(const IDX &...idx) const { return NDim; }
+    template <typename... IDX> DEVICE_INLINE_FUNCTION double eval(const IDX &...idx) const { return NDim; }
 
     auto getToolBox() const { return mt; }
 
@@ -56,7 +56,7 @@ namespace TempLat
 
     template <typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
-    DEVICE_FORCEINLINE_FUNCTION complex<double> eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION complex<double> eval(const IDX &...idx) const
     {
       device::IdxArray<NDim> global_coord;
       mLayout.putSpatialLocationFromMemoryIndexInto(global_coord, idx...);

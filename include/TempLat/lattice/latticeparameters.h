@@ -34,13 +34,13 @@ namespace TempLat
 
     LatticeParameters() : dx(1), lSide(1), kIR(1) {}
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     T getDx() const { return dx; }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     T getKIR() const { return kIR; }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     T getLSide() const { return lSide; }
 
   private:

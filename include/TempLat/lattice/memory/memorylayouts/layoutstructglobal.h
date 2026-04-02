@@ -33,14 +33,14 @@ namespace TempLat
       }
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     device::IdxArray<NDim> &getGlobalSizes() { return mGlobalSizes; }
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     const device::IdxArray<NDim> &getGlobalSizes() const { return mGlobalSizes; }
 
     /** @brief returns the largest possible distance from the origin.
      */
-    template <typename T = double> DEVICE_FORCEINLINE_FUNCTION T getMaxRadius() const
+    template <typename T = double> DEVICE_INLINE_FUNCTION T getMaxRadius() const
     {
       T r2 = 0;
       for (size_t i = 0; i < NDim; ++i)
@@ -52,7 +52,7 @@ namespace TempLat
      *  values. Assuming periodic boundary conditions, we get that always c = i > half ? i - N : i;
      *  Don't mix up the arguments! Does not do transposition, so input pre-transposed dimension!
      */
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     device::Idx memoryIndexToSpatialCoordinate(device::Idx index, device::Idx dimension) const
     {
       const device::Idx &tSize = mSignConversionMidpoint[dimension];
@@ -60,7 +60,7 @@ namespace TempLat
     }
 
     /** @brief Inverse of memoryIndexToSpatialCoordinate: get memory from position. */
-    DEVICE_FORCEINLINE_FUNCTION
+    DEVICE_INLINE_FUNCTION
     device::Idx spatialCoordinateToMemoryIndex(device::Idx position, device::Idx dimension) const
     {
       return (position >= 0 ? position : position + mGlobalSizes[dimension]);

@@ -18,9 +18,9 @@ namespace TempLat
   {
 
     struct myStruct {
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       complex<double> get(ptrdiff_t i) const { return complex<double>(1, -1); }
-      DEVICE_FORCEINLINE_FUNCTION
+      DEVICE_INLINE_FUNCTION
       complex<double> eval(ptrdiff_t i) const { return complex<double>(1, -1); }
     };
 
