@@ -9,6 +9,11 @@
 
 #include "TempLat/util/exception.h"
 #include "TempLat/parallel/devices/kokkos/kokkos.h"
+#include "TempLat/parallel/threadsettings.h"
+
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
 
 namespace TempLat::device_kokkos
 {
@@ -34,9 +39,46 @@ namespace TempLat::device_kokkos
     DeviceGuard(int argc, char **argv, bool verbose = false)
         : instanceProtectionKey(InstanceCounter(1)), mVerbose(verbose)
     {
-      if (this->mVerbose) {
-      }; /* just for the compiler warnings */
-      Kokkos::initialize(argc, argv);
+      auto threadSettings = ThreadSettings::getInstance();
+
+      Kokkos::InitializationSettings kokkos_settings;
+      kokkos_settings.set_print_configuration(this->mVerbose);
+      kokkos_settings.set_num_threads(threadSettings.getMaxThreadCount());
+
+// We need to do load-balancing here, if we are using GPU + MPI
+#ifdef HAVE_MPI
+#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
+      int num_devices = Kokkos::num_devices();
+
+      // First, make an MPI group for the local machine.
+      MPI_Comm shmcomm;
+      MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shmcomm);
+      int shmrank, shmsize;
+      MPI_Comm_rank(shmcomm, &shmrank);
+      MPI_Comm_size(shmcomm, &shmsize);
+
+      int gpuNoConstrain = 0;
+      try {
+        if (const char *env_p = std::getenv("GPU_NOCONSTRAIN")) gpuNoConstrain = std::stoi(env_p);
+      } catch (...) {
+        throw KokkosDeviceGuardInstantiationException(
+            "Error parsing GPU_NOCONSTRAIN environment variable. Expected an integer. Got: ",
+            std::getenv("GPU_NOCONSTRAIN"));
+      }
+
+      // Check if there are more processes on this node than devices.
+      if (num_devices < shmsize && gpuNoConstrain == 0)
+        throw KokkosDeviceGuardInstantiationException(
+            "There are more MPI processes on this node than available GPU devices. This will lead to "
+            "problems. Number of devices: ",
+            num_devices, ", number of processes on this node: ", shmsize);
+
+      // Assign devices to processes in a round-robin fashion.
+      kokkos_settings.set_device_id(shmrank % num_devices);
+#endif
+#endif
+
+      Kokkos::initialize(kokkos_settings);
     }
 
     ~DeviceGuard() { Kokkos::finalize(); }

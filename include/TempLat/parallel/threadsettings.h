@@ -69,10 +69,10 @@ namespace TempLat
       mHardwareAllowedThreadsPerProcess = std::max(mHardwareAllowedThreadsPerProcess, ptrdiff_t{1});
 
       ptrdiff_t kokkosThreads = 0;
-      if (const char *env_p = std::getenv("KOKKOS_NUM_THREADS")) kokkosThreads = std::atoi(env_p);
+      if (const char *env_p = std::getenv("KOKKOS_NUM_THREADS")) kokkosThreads = std::stoi(env_p);
 
       ptrdiff_t ompThreads = 0;
-      if (const char *env_p = std::getenv("OMP_NUM_THREADS")) ompThreads = std::atoi(env_p);
+      if (const char *env_p = std::getenv("OMP_NUM_THREADS")) ompThreads = std::stoi(env_p);
 
       mUserAllowedThreadsPerProcess = std::max(kokkosThreads, ompThreads);
       if (kokkosThreads > 0 && ompThreads > 0 && kokkosThreads != ompThreads) {

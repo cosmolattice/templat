@@ -23,8 +23,8 @@ int main(int argc, char **argv)
 
   toolBox->unsetVerbose();
 
-  Field<NDim, T> phi("phi", toolBox);
-  Field<NDim, T> pi("pi", toolBox);
+  Field<T, NDim> phi("phi", toolBox);
+  Field<T, NDim> pi("pi", toolBox);
 
   phi.getMemoryManager()->confirmFourierSpace();
   pi.getMemoryManager()->confirmFourierSpace();
@@ -44,8 +44,8 @@ int main(int argc, char **argv)
       });
 
       measurer.measure("initialize field", [&]() {
-        phi.inFourierSpace() = RandomGaussianField<NDim, T>("Hoi", toolBox);
-        pi.inFourierSpace() = RandomGaussianField<NDim, T>("Hai", toolBox);
+        phi.inFourierSpace() = RandomGaussianField<T, NDim>("Hoi", toolBox);
+        pi.inFourierSpace() = RandomGaussianField<T, NDim>("Hai", toolBox);
         device::iteration::fence();
       });
 
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
         device::iteration::fence();
       });
       measurer.measure("timestepping", [&]() {
-        pi = pi + dt * LatticeLaplacian<NDim, decltype(phi)>(phi) * dt;
+        pi = pi + dt * LatticeLaplacian(phi) * dt;
         phi = phi + dt * pi;
         device::iteration::fence();
       });

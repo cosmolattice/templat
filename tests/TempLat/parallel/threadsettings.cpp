@@ -29,13 +29,13 @@ namespace TempLat
 
     char *env_p = std::getenv("OMP_NUM_THREADS");
     if (env_p != nullptr) {
-      ptrdiff_t ompThreads = std::atoi(env_p);
+      ptrdiff_t ompThreads = std::stoi(env_p);
       tdd.verify(ompThreads >= newThreadCount);
     }
 
     char *kokkosEnv_p = std::getenv("KOKKOS_NUM_THREADS");
     if (kokkosEnv_p != nullptr) {
-      ptrdiff_t kokkosThreads = std::atoi(kokkosEnv_p);
+      ptrdiff_t kokkosThreads = std::stoi(kokkosEnv_p);
       tdd.verify(kokkosThreads >= newThreadCount);
     }
 
