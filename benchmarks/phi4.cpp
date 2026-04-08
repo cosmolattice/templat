@@ -63,6 +63,13 @@ int main(int argc, char **argv)
       });
       measurer.measure("timestepping", [&]() {
         pi = pi + dt * LatticeLaplacian(phi) * dt;
+        device::iteration::fence();
+      });
+      measurer.measure("ghosts", [&]() {
+        pi.updateGhosts();
+        device::iteration::fence();
+      });
+      measurer.measure("timestepping", [&]() {
         phi = phi + dt * pi;
         device::iteration::fence();
       });
