@@ -59,6 +59,7 @@ int main(int argc, char **argv)
     for (size_t i = 0; i < nSteps; ++i) {
       measurer.measure("ghosts", [&]() {
         pi.updateGhosts();
+        phi.updateGhosts();
         device::iteration::fence();
       });
       measurer.measure("timestepping", [&]() {
@@ -67,6 +68,7 @@ int main(int argc, char **argv)
       });
       measurer.measure("ghosts", [&]() {
         pi.updateGhosts();
+        phi.updateGhosts();
         device::iteration::fence();
       });
       measurer.measure("timestepping", [&]() {
