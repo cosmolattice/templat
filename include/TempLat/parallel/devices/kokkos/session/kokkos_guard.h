@@ -10,6 +10,7 @@
 #include "TempLat/util/exception.h"
 #include "TempLat/parallel/devices/kokkos/kokkos.h"
 #include "TempLat/parallel/threadsettings.h"
+#include "TempLat/util/log/saycomplete.h"
 
 #ifdef HAVE_MPI
 #include <mpi.h>
@@ -73,8 +74,13 @@ namespace TempLat::device_kokkos
             "problems. Number of devices: ",
             num_devices, ", number of processes on this node: ", shmsize);
 
+      int rank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
       // Assign devices to processes in a round-robin fashion.
       kokkos_settings.set_device_id(shmrank % num_devices);
+      std::cout << "Global process rank " << rank << " (local rank " << shmrank << " on this node) assigned to device "
+                << shmrank % num_devices << std::endl;
 #endif
 #endif
 

@@ -84,9 +84,9 @@ namespace TempLat
       if (mUserAllowedThreadsPerProcess > 0)
         mHardwareAllowedThreadsPerProcess = std::min(mUserAllowedThreadsPerProcess, mHardwareAllowedThreadsPerProcess);
 
-      std::cout << "Result: mHardwareNumCores = " << mHardwareNumCores << ", mMPILocalSize = " << mMPILocalSize
-                << ", mUserAllowedThreadsPerProcess = " << mUserAllowedThreadsPerProcess
-                << ", mHardwareAllowedThreadsPerProcess = " << mHardwareAllowedThreadsPerProcess << "\n";
+      // std::cout << "Result: mHardwareNumCores = " << mHardwareNumCores << ", mMPILocalSize = " << mMPILocalSize
+      //           << ", mUserAllowedThreadsPerProcess = " << mUserAllowedThreadsPerProcess
+      //           << ", mHardwareAllowedThreadsPerProcess = " << mHardwareAllowedThreadsPerProcess << "\n";
     }
 
     void pSetMPILocalSize(ptrdiff_t newSize)
