@@ -95,10 +95,7 @@ namespace TempLat
     void operator=(const ConfigView<T, NDim> &other) { this->assign(other); }
 
     template <typename... IDX>
-      requires requires {
-        requires(NDim == sizeof...(IDX));
-        requires(std::is_integral_v<std::decay_t<IDX>> && ...);
-      }
+      requires IsVariadicNDIndex<NDim, IDX...>
     DEVICE_INLINE_FUNCTION T &getSet(IDX &&...idx) const
     {
       return mView(idx...);

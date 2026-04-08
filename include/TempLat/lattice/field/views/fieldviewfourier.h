@@ -100,10 +100,7 @@ namespace TempLat
     }
 
     template <typename... IDX>
-      requires requires {
-        requires(NDim == sizeof...(IDX));
-        requires(std::is_integral_v<std::decay_t<IDX>> && ...);
-      }
+      requires IsVariadicNDIndex<NDim, IDX...>
     DEVICE_INLINE_FUNCTION complex<T> &getSet(const IDX &...idx) const
     {
       return mView(idx...);
