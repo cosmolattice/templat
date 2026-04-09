@@ -10,6 +10,9 @@ set(PARAFAFT_CUDA
 set(PARAFAFT_HIP
     ${HIP}
     CACHE BOOL "")
+set(PARAFAFT_FFTW_DIR
+    ${FFTW_DIR}
+    CACHE PATH "")
 # declare ParaFaFT
 FetchContent_Declare(
   ParaFaFT # name of the content
