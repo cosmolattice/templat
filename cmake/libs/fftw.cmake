@@ -1,3 +1,10 @@
+set(FFTW_INCLUDES
+    "${FFTW_DIR}/include"
+    CACHE PATH "Path to FFTW include directory")
+set(FFTW_LIB_DIR
+    "${FFTW_DIR}/lib"
+    CACHE PATH "Path to FFTW library directory")
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw/find.cmake)
 
 # Tell about the found FFTW configuration

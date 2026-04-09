@@ -10,8 +10,11 @@ set(PARAFAFT_CUDA
 set(PARAFAFT_HIP
     ${HIP}
     CACHE BOOL "")
-set(PARAFAFT_FFTW_DIR
-    ${FFTW_DIR}
+set(PARAFAFT_FFTW_INCLUDE_DIR
+    ${FFTW_INCLUDES}
+    CACHE PATH "")
+set(PARAFAFT_FFTW_LIB_DIR
+    ${FFTW_LIB_DIR}
     CACHE PATH "")
 # declare ParaFaFT
 FetchContent_Declare(
