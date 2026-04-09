@@ -1,13 +1,13 @@
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw/find.cmake)
 
 # Tell about the found FFTW configuration
-if(FFTW_LIBRARIES)
+if(FFTW_FOUND)
   message(STATUS "Found FFTW libraries: ${FFTW_LIBRARIES}")
 else()
   if(${AUTOBUILD_FFTW})
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw/get.cmake)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw/find.cmake)
-    if(FFTW_LIBRARIES)
+    if(FFTW_FOUND)
       message(STATUS "Found FFTW libraries: ${FFTW_LIBRARIES}")
     else()
       message(
