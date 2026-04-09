@@ -32,7 +32,7 @@ namespace TempLat
       }
     DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
-      return (DoEval::eval(mR, idx...) >= 0 ? 1 : 0);
+      return (DoEval::eval(mR, idx...) >= 0. ? 1. : 0.);
     }
 
     /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
