@@ -54,6 +54,19 @@ namespace TempLat
       if (!allSame)
         throw GhostUpdaterException(
             "Can only work with identical padding at start and end of each dimension, not this.", allSame);
+
+      // Pre-allocate GPU slab buffers for ghost exchange to avoid per-call cudaMalloc/cudaFree
+      mMaxSlabSize = 0;
+      for (size_t d = 0; d < NDim; ++d) {
+        size_t slabTotal = mGhostDepth;
+        for (size_t i = 0; i < NDim; ++i)
+          if (i != d)
+            slabTotal *= full_sizes[i] + 2 * mGhostDepth;
+        mMaxSlabSize = std::max(mMaxSlabSize, slabTotal);
+      }
+      mMaxSlabBytes = mMaxSlabSize * sizeof(double);
+      mSendBuffer = device::memory::NDView<char, 1>("ghostSendBuf", mMaxSlabBytes);
+      mRecvBuffer = device::memory::NDView<char, 1>("ghostRecvBuf", mMaxSlabBytes);
     }
 
     template <typename T> void update(MemoryBlock<T, NDim> &block)
@@ -80,6 +93,12 @@ namespace TempLat
     LayoutStruct<NDim> mLayout;
     device::Idx mGhostDepth;
     GhostSubarrayMap<NDim> mGhostSubarrayMap;
+
+    // Pre-allocated GPU buffers for ghost slab exchange (avoids per-call cudaMalloc/cudaFree)
+    size_t mMaxSlabSize = 0;
+    size_t mMaxSlabBytes = 0;
+    device::memory::NDView<char, 1> mSendBuffer;
+    device::memory::NDView<char, 1> mRecvBuffer;
 
     template <typename T> void pUpdate(MemoryBlock<T, NDim> &block)
     {
@@ -108,11 +127,17 @@ namespace TempLat
       for (size_t i = 0; i < NDim; ++i)
         total_size *= slab_sizes[i];
 
-      // We need two slabs of thickness ghostDepth
+      // Create unmanaged ND views over pre-allocated byte buffers (no cudaMalloc per call)
       auto sendSlab = device::apply(
-          [&](const auto &...args) { return device::memory::NDView<T, NDim>("sendSlab", args...); }, slab_sizes);
+          [&](const auto &...args) {
+            return device::memory::NDViewUnmanaged<T, NDim>(reinterpret_cast<T *>(mSendBuffer.data()), args...);
+          },
+          slab_sizes);
       auto receiveSlab = device::apply(
-          [&](const auto &...args) { return device::memory::NDView<T, NDim>("receiveSlab", args...); }, slab_sizes);
+          [&](const auto &...args) {
+            return device::memory::NDViewUnmanaged<T, NDim>(reinterpret_cast<T *>(mRecvBuffer.data()), args...);
+          },
+          slab_sizes);
 
       // To get the right subviews of the full data, we need to create slices for each dimension
       device::array<std::pair<device::Idx, device::Idx>, NDim> send_slices{};
@@ -146,9 +171,8 @@ namespace TempLat
         MPI_Datatype dataType = MPITypeSelect<T>();
         mExchange.exchangeUp(dataType, dimension, sendSlab.data(), receiveSlab.data(), total_size);
 
-        // Copy the data from the receive slab
+        // Copy the data from the receive slab (no fence needed: DOWN pack reads interior, not ghost cells)
         device::memory::copyDeviceToDevice(receiveSlab, receiveSubView);
-        device::iteration::fence();
       }
 
       // DOWN
