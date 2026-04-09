@@ -48,38 +48,30 @@ namespace TempLat
 #endif
     }
 
-    void IsendUp(MPI_Datatype dataType, ptrdiff_t dimension, void *ptrSend, void *ptrReceive)
+    void IsendUp(MPI_Datatype dataType, ptrdiff_t dimension, void *ptrSend, int sendCount = 1)
     {
 #ifdef HAVE_MPI
-      // MPI_Status stat;
-      static constexpr int sendCount = 1;
       MPI_Isend(ptrSend, sendCount, dataType, mNeighbours.getUpperNeighbour(dimension), MPITags::dataShiftGhostCells,
                 mGroup.getComm(), &mRequests[2]);
 #endif
     }
-    void IrecvUp(MPI_Datatype dataType, ptrdiff_t dimension, void *ptrSend, void *ptrReceive)
+    void IrecvUp(MPI_Datatype dataType, ptrdiff_t dimension, void *ptrReceive, int sendCount = 1)
     {
 #ifdef HAVE_MPI
-      // MPI_Status stat;
-      static constexpr int sendCount = 1;
       MPI_Irecv(ptrReceive, sendCount, dataType, mNeighbours.getLowerNeighbour(dimension), MPITags::dataShiftGhostCells,
                 mGroup.getComm(), &mRequests[0]);
 #endif
     }
-    void IsendDown(MPI_Datatype dataType, ptrdiff_t dimension, void *ptrSend, void *ptrReceive)
+    void IsendDown(MPI_Datatype dataType, ptrdiff_t dimension, void *ptrSend, int sendCount = 1)
     {
 #ifdef HAVE_MPI
-      // MPI_Status stat;
-      static constexpr int sendCount = 1;
       MPI_Isend(ptrSend, sendCount, dataType, mNeighbours.getLowerNeighbour(dimension), MPITags::dataShiftGhostCells,
                 mGroup.getComm(), &mRequests[3]);
 #endif
     }
-    void IrecvDown(MPI_Datatype dataType, ptrdiff_t dimension, void *ptrSend, void *ptrReceive)
+    void IrecvDown(MPI_Datatype dataType, ptrdiff_t dimension, void *ptrReceive, int sendCount = 1)
     {
 #ifdef HAVE_MPI
-      // MPI_Status stat;
-      static constexpr int sendCount = 1;
       MPI_Irecv(ptrReceive, sendCount, dataType, mNeighbours.getUpperNeighbour(dimension), MPITags::dataShiftGhostCells,
                 mGroup.getComm(), &mRequests[1]);
 #endif
@@ -87,8 +79,8 @@ namespace TempLat
     void waitall()
     {
 #ifdef HAVE_MPI
-      MPI_Status stat;
-      MPI_Waitall(4, mRequests.data(), &stat);
+      std::array<MPI_Status, 4> stats;
+      MPI_Waitall(4, mRequests.data(), stats.data());
 #endif
     }
 

@@ -64,9 +64,6 @@ namespace TempLat
             slabTotal *= full_sizes[i] + 2 * mGhostDepth;
         mMaxSlabSize = std::max(mMaxSlabSize, slabTotal);
       }
-      mMaxSlabBytes = mMaxSlabSize * sizeof(double);
-      mSendBuffer = device::memory::NDView<char, 1>("ghostSendBuf", mMaxSlabBytes);
-      mRecvBuffer = device::memory::NDView<char, 1>("ghostRecvBuf", mMaxSlabBytes);
     }
 
     template <typename T> void update(MemoryBlock<T, NDim> &block)
@@ -94,11 +91,13 @@ namespace TempLat
     device::Idx mGhostDepth;
     GhostSubarrayMap<NDim> mGhostSubarrayMap;
 
-    // Pre-allocated GPU buffers for ghost slab exchange (avoids per-call cudaMalloc/cudaFree)
+    // Pre-computed max slab element count; buffers allocated lazily on first update<T>() call
     size_t mMaxSlabSize = 0;
-    size_t mMaxSlabBytes = 0;
-    device::memory::NDView<char, 1> mSendBuffer;
-    device::memory::NDView<char, 1> mRecvBuffer;
+    size_t mAllocatedBytes = 0;
+    device::memory::NDView<char, 1> mSendUpBuffer;
+    device::memory::NDView<char, 1> mRecvUpBuffer;
+    device::memory::NDView<char, 1> mSendDownBuffer;
+    device::memory::NDView<char, 1> mRecvDownBuffer;
 
     template <typename T> void pUpdate(MemoryBlock<T, NDim> &block)
     {
@@ -127,85 +126,86 @@ namespace TempLat
       for (size_t i = 0; i < NDim; ++i)
         total_size *= slab_sizes[i];
 
+      // Ensure byte buffers are large enough for this T (lazy alloc on first call or type change)
+      size_t neededBytes = mMaxSlabSize * sizeof(T);
+      if (neededBytes > mAllocatedBytes) {
+        mSendUpBuffer = device::memory::NDView<char, 1>("ghostSendUpBuf", neededBytes);
+        mRecvUpBuffer = device::memory::NDView<char, 1>("ghostRecvUpBuf", neededBytes);
+        mSendDownBuffer = device::memory::NDView<char, 1>("ghostSendDownBuf", neededBytes);
+        mRecvDownBuffer = device::memory::NDView<char, 1>("ghostRecvDownBuf", neededBytes);
+        mAllocatedBytes = neededBytes;
+      }
+
       // Create unmanaged ND views over pre-allocated byte buffers (no cudaMalloc per call)
-      auto sendSlab = device::apply(
+      auto sendUpSlab = device::apply(
           [&](const auto &...args) {
-            return device::memory::NDViewUnmanaged<T, NDim>(reinterpret_cast<T *>(mSendBuffer.data()), args...);
+            return device::memory::NDViewUnmanaged<T, NDim>(reinterpret_cast<T *>(mSendUpBuffer.data()), args...);
           },
           slab_sizes);
-      auto receiveSlab = device::apply(
+      auto recvUpSlab = device::apply(
           [&](const auto &...args) {
-            return device::memory::NDViewUnmanaged<T, NDim>(reinterpret_cast<T *>(mRecvBuffer.data()), args...);
+            return device::memory::NDViewUnmanaged<T, NDim>(reinterpret_cast<T *>(mRecvUpBuffer.data()), args...);
+          },
+          slab_sizes);
+      auto sendDownSlab = device::apply(
+          [&](const auto &...args) {
+            return device::memory::NDViewUnmanaged<T, NDim>(reinterpret_cast<T *>(mSendDownBuffer.data()), args...);
+          },
+          slab_sizes);
+      auto recvDownSlab = device::apply(
+          [&](const auto &...args) {
+            return device::memory::NDViewUnmanaged<T, NDim>(reinterpret_cast<T *>(mRecvDownBuffer.data()), args...);
           },
           slab_sizes);
 
-      // To get the right subviews of the full data, we need to create slices for each dimension
-      device::array<std::pair<device::Idx, device::Idx>, NDim> send_slices{};
-      device::array<std::pair<device::Idx, device::Idx>, NDim> receive_slices{};
+      // Compute slices for UP and DOWN directions
+      device::array<std::pair<device::Idx, device::Idx>, NDim> sendUp_slices{};
+      device::array<std::pair<device::Idx, device::Idx>, NDim> recvUp_slices{};
+      device::array<std::pair<device::Idx, device::Idx>, NDim> sendDown_slices{};
+      device::array<std::pair<device::Idx, device::Idx>, NDim> recvDown_slices{};
 
-      // UP
-      {
-        for (size_t i = 0; i < NDim; ++i) {
-          // we send the end of the dimension
-          send_slices[i] = (i == dimension) ? std::pair<device::Idx, device::Idx>(full_sizes[i] - 2 * mGhostDepth,
-                                                                                  full_sizes[i] - mGhostDepth)
+      for (size_t i = 0; i < NDim; ++i) {
+        // UP: send end of dimension, receive at origin
+        sendUp_slices[i] = (i == dimension) ? std::pair<device::Idx, device::Idx>(full_sizes[i] - 2 * mGhostDepth,
+                                                                                   full_sizes[i] - mGhostDepth)
                                             : std::pair<device::Idx, device::Idx>(0, slab_sizes[i]);
-          // we receive at the origin of the dimension
-          receive_slices[i] = (i == dimension) ? std::pair<device::Idx, device::Idx>(0, mGhostDepth)
-                                               : std::pair<device::Idx, device::Idx>(0, slab_sizes[i]);
-        }
-
-        // Get Subviews to the full data
-        auto sendSubView = device::apply(
-            [&](const auto &...args) { return device::memory::subview(block.getNDView(full_sizes), args...); },
-            send_slices);
-        auto receiveSubView = device::apply(
-            [&](const auto &...args) { return device::memory::subview(block.getNDView(full_sizes), args...); },
-            receive_slices);
-
-        // Copy the data to the send slab
-        device::memory::copyDeviceToDevice(sendSubView, sendSlab);
-        device::iteration::fence();
-
-        // Exchange the slabs
-        MPI_Datatype dataType = MPITypeSelect<T>();
-        mExchange.exchangeUp(dataType, dimension, sendSlab.data(), receiveSlab.data(), total_size);
-
-        // Copy the data from the receive slab (no fence needed: DOWN pack reads interior, not ghost cells)
-        device::memory::copyDeviceToDevice(receiveSlab, receiveSubView);
+        recvUp_slices[i] = (i == dimension) ? std::pair<device::Idx, device::Idx>(0, mGhostDepth)
+                                            : std::pair<device::Idx, device::Idx>(0, slab_sizes[i]);
+        // DOWN: send origin of dimension, receive at end
+        sendDown_slices[i] = (i == dimension) ? std::pair<device::Idx, device::Idx>(mGhostDepth, 2 * mGhostDepth)
+                                              : std::pair<device::Idx, device::Idx>(0, slab_sizes[i]);
+        recvDown_slices[i] = (i == dimension)
+                                 ? std::pair<device::Idx, device::Idx>(full_sizes[i] - mGhostDepth, full_sizes[i])
+                                 : std::pair<device::Idx, device::Idx>(0, slab_sizes[i]);
       }
 
-      // DOWN
-      {
-        for (size_t i = 0; i < NDim; ++i) {
-          // we send the origin of the dimension
-          send_slices[i] = (i == dimension) ? std::pair<device::Idx, device::Idx>(mGhostDepth, 2 * mGhostDepth)
-                                            : std::pair<device::Idx, device::Idx>(0, slab_sizes[i]);
-          // we receive at the end of the dimension
-          receive_slices[i] = (i == dimension)
-                                  ? std::pair<device::Idx, device::Idx>(full_sizes[i] - mGhostDepth, full_sizes[i])
-                                  : std::pair<device::Idx, device::Idx>(0, slab_sizes[i]);
-        }
+      auto fullView = block.getNDView(full_sizes);
 
-        // Get Subviews to the full data
-        auto sendSubView = device::apply(
-            [&](const auto &...args) { return device::memory::subview(block.getNDView(full_sizes), args...); },
-            send_slices);
-        auto receiveSubView = device::apply(
-            [&](const auto &...args) { return device::memory::subview(block.getNDView(full_sizes), args...); },
-            receive_slices);
+      // Pack both UP and DOWN send slabs (GPU kernels can run concurrently)
+      auto sendUpSubView = device::apply(
+          [&](const auto &...args) { return device::memory::subview(fullView, args...); }, sendUp_slices);
+      auto sendDownSubView = device::apply(
+          [&](const auto &...args) { return device::memory::subview(fullView, args...); }, sendDown_slices);
+      device::memory::copyDeviceToDevice(sendUpSubView, sendUpSlab);
+      device::memory::copyDeviceToDevice(sendDownSubView, sendDownSlab);
+      device::iteration::fence(); // single fence ensures both packs complete
 
-        // Copy the data to the send slab
-        device::memory::copyDeviceToDevice(sendSubView, sendSlab);
-        device::iteration::fence();
+      // Launch all 4 non-blocking MPI operations
+      MPI_Datatype dataType = MPITypeSelect<T>();
+      mExchange.IrecvUp(dataType, dimension, recvUpSlab.data(), total_size);
+      mExchange.IrecvDown(dataType, dimension, recvDownSlab.data(), total_size);
+      mExchange.IsendUp(dataType, dimension, sendUpSlab.data(), total_size);
+      mExchange.IsendDown(dataType, dimension, sendDownSlab.data(), total_size);
+      mExchange.waitall();
 
-        // Exchange the slabs
-        mExchange.exchangeDown(MPITypeSelect<T>(), dimension, sendSlab.data(), receiveSlab.data(), total_size);
-
-        // Copy the data from the receive slab
-        device::memory::copyDeviceToDevice(receiveSlab, receiveSubView);
-        device::iteration::fence();
-      }
+      // Unpack both receive slabs (GPU kernels can run concurrently)
+      auto recvUpSubView = device::apply(
+          [&](const auto &...args) { return device::memory::subview(fullView, args...); }, recvUp_slices);
+      auto recvDownSubView = device::apply(
+          [&](const auto &...args) { return device::memory::subview(fullView, args...); }, recvDown_slices);
+      device::memory::copyDeviceToDevice(recvUpSlab, recvUpSubView);
+      device::memory::copyDeviceToDevice(recvDownSlab, recvDownSubView);
+      device::iteration::fence(); // ensures both unpacks complete before next dimension
     }
 
   private:
