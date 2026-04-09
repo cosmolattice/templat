@@ -157,6 +157,13 @@ endif()
 
 set(CMAKE_PREFIX_PATH "${FFTW_DIR};${CMAKE_PREFIX_PATH}")
 
+set(FFTW_INCLUDES
+    "${FFTW_DIR}/include"
+    CACHE PATH "Path to FFTW include directory" FORCE)
+set(FFTW_LIB_DIR
+    "${FFTW_DIR}/lib"
+    CACHE PATH "Path to FFTW library directory" FORCE)
+
 message(
   "${BoldYellow}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fetching FFTW DONE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${ColorReset}\n"
 )
