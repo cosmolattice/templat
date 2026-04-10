@@ -66,7 +66,7 @@ namespace TempLat
      *  a large number of linear bins here, and do the logarithmic binning yourself.
      *  Default is nGrid ^ (nDimensions - 1).
      */
-    RadialProjectionResult<sType> measure(sType maxValue, double deltakBins = 1, bool excludeOrigin = true)
+    RadialProjectionResult<sType> measure(sType maxValue, sType deltakBins = 1, bool excludeOrigin = true)
     {
       sType minValue = !excludeOrigin ? 0.0 : deltakBins >= 1.0 ? 0.5 : 1.0 - deltakBins / 2.;
       ptrdiff_t nLinearBins = ceil( (maxValue - minValue) / deltakBins );
@@ -296,7 +296,7 @@ namespace TempLat
     }
 
     /** @brief Creates the lambda that maps the IterationCoordinates to a bin. */
-    inline auto makeBinComputer(ptrdiff_t nLinearBins, sType minValue, sType maxValue = -1, double deltakBins = -1)
+    inline auto makeBinComputer(ptrdiff_t nLinearBins, sType minValue, sType maxValue = -1, sType deltakBins = -1)
     {
       auto rMax = maxValue < 0 ? mLayout.getMaxRadius() : maxValue;
 
