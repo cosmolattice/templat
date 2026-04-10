@@ -2,21 +2,22 @@
 # CMake configuration for TempLat, a modern C++ template library for lattice
 # computations.
 #
-# CMake Options: 
-# - PARAFAFT: compile TempLat with ParaFaft support for parallel FFTs. Default: OFF 
-# - MPI: compile TempLat with MPI support. Default: OFF 
-# - HDF5: compile TempLat with HDF5 support. Default: OFF 
-# - TEMPLAT_TESTS: enable TempLat's tests. Default: OFF 
-# - DEVICE_PROVIDER: switches the backend for parallelization. Default: Kokkos
-#   - CUDA: compile with CUDA support for GPU parallelization. Default: OFF
-#   - HIP: compile with HIP support for GPU parallelization. Default: OFF
-#   - OPENMP: compile with OpenMP support for CPU parallelization. Default: OFF
-#   - PTHREADS: compile with C++ threads support for CPU parallelization. Default: OFF
-#   - NOTHREADING: compile without parallelization. Default: OFF
-# By default, TempLat will try to auto-detect the system's capabilities and choose the backend. 
-# - FLOAT: compile with single-precision FFTW support. Default: OFF
-# - NATIVE: pass --march=native to the compiler for better performance. Default: ON on non-Darwin systems, OFF on Darwin (macOS)
-# - KOKKOSFFT: compile TempLat with KokkosFFT support for single-node GPU FFTs. Default: ON when CUDA or HIP support is enabled, OFF otherwise
+# CMake Options: - PARAFAFT: compile TempLat with ParaFaft support for parallel
+# FFTs. Default: OFF - MPI: compile TempLat with MPI support. Default: OFF -
+# HDF5: compile TempLat with HDF5 support. Default: OFF - TEMPLAT_TESTS: enable
+# TempLat's tests. Default: OFF - DEVICE_PROVIDER: switches the backend for
+# parallelization. Default: Kokkos - CUDA: compile with CUDA support for GPU
+# parallelization. Default: OFF - HIP: compile with HIP support for GPU
+# parallelization. Default: OFF - OPENMP: compile with OpenMP support for CPU
+# parallelization. Default: OFF - PTHREADS: compile with C++ threads support for
+# CPU parallelization. Default: OFF - NOTHREADING: compile without
+# parallelization. Default: OFF By default, TempLat will try to auto-detect the
+# system's capabilities and choose the backend. - FLOAT: compile with
+# single-precision FFTW support. Default: OFF - NATIVE: pass --march=native to
+# the compiler for better performance. Default: ON on non-Darwin systems, OFF on
+# Darwin (macOS) - KOKKOSFFT: compile TempLat with KokkosFFT support for
+# single-node GPU FFTs. Default: ON when CUDA or HIP support is enabled, OFF
+# otherwise
 #
 # ##############################################################################
 
@@ -113,8 +114,10 @@ if(KOKKOSFFT)
   if(NOT FLOAT)
     set(FLOAT
         ON
-        CACHE BOOL "Enable single-precision (float) FFTW support (required by KokkosFFT)"
-              FORCE)
+        CACHE
+          BOOL
+          "Enable single-precision (float) FFTW support (required by KokkosFFT)"
+          FORCE)
   endif()
 endif()
 
@@ -134,6 +137,15 @@ if(MPI)
   target_compile_definitions(TempLat INTERFACE HAVE_MPI)
   message(
     STATUS "MPI enabled, including MPI headers from ${MPI_CXX_INCLUDE_DIRS}")
+
+  # Force ParaFaFT on if MPI is enabled, since ParaFaFT is just better than FFTW
+  # and there's no reason not to use it if MPI is available.
+  if(NOT PARAFAFT)
+    set(PARAFAFT
+        ON
+        CACHE BOOL "Enable ParaFaFT support (recommended if MPI is enabled)"
+              FORCE)
+  endif()
 endif()
 
 if(KOKKOSFFT)
