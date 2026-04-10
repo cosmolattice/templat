@@ -154,6 +154,40 @@ namespace TempLat::device_kokkos::p2p
 #endif
 
   // ============================================================
+  // Raw GPU memory allocation (bypasses Kokkos header)
+  // ============================================================
+
+  // Kokkos::View.data() is offset from the cudaMalloc base by a SharedAllocationHeader
+  // (128 bytes). cudaIpcGetMemHandle/cudaIpcOpenMemHandle operate on the allocation base.
+  // To avoid this offset issue, IPC-exported buffers are allocated with raw cudaMalloc/hipMalloc
+  // and wrapped as unmanaged Kokkos views. This gives us clean base pointers for IPC.
+
+  inline void *rawDeviceMalloc(size_t bytes)
+  {
+    void *ptr = nullptr;
+#if defined(KOKKOS_ENABLE_CUDA)
+    auto err = cudaMalloc(&ptr, bytes);
+    if (err != cudaSuccess)
+      throw GpuP2PException("cudaMalloc failed for IPC buffer (", bytes, " bytes): ", cudaGetErrorString(err));
+#elif defined(KOKKOS_ENABLE_HIP)
+    auto err = hipMalloc(&ptr, bytes);
+    if (err != hipSuccess)
+      throw GpuP2PException("hipMalloc failed for IPC buffer (", bytes, " bytes): ", hipGetErrorString(err));
+#endif
+    return ptr;
+  }
+
+  inline void rawDeviceFree(void *ptr)
+  {
+    if (ptr == nullptr) return;
+#if defined(KOKKOS_ENABLE_CUDA)
+    cudaFree(ptr);
+#elif defined(KOKKOS_ENABLE_HIP)
+    hipFree(ptr);
+#endif
+  }
+
+  // ============================================================
   // IPC handle packet — POD struct sent via MPI_BYTE
   // ============================================================
 
@@ -161,6 +195,7 @@ namespace TempLat::device_kokkos::p2p
     char handle[IpcHandleSize];
     int deviceId;
     uint64_t version;
+    ptrdiff_t offset; // byte offset from allocation base to actual data pointer
   };
 
 } // namespace TempLat::device_kokkos::p2p

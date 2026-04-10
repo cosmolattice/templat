@@ -69,6 +69,17 @@ namespace TempLat
       }
     }
 
+    ~GhostUpdater()
+    {
+#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
+      device_kokkos::p2p::rawDeviceFree(mSendUpRaw);
+      device_kokkos::p2p::rawDeviceFree(mSendDownRaw);
+#else
+      delete[] mSendUpRaw;
+      delete[] mSendDownRaw;
+#endif
+    }
+
     template <typename T> void update(MemoryBlock<T, NDim> &block)
     {
 #ifdef HAVE_MPI
@@ -100,9 +111,12 @@ namespace TempLat
     size_t mMaxSlabSize = 0;
     size_t mAllocatedBytes = 0;
     uint64_t mHandleVersion = 0;
-    device::memory::NDView<char, 1> mSendUpBuffer;
+
+    // Send buffers: raw GPU allocations (no Kokkos header) so IPC handles point to exact data start.
+    // Recv buffers: Kokkos views (local-only, no IPC needed).
+    char *mSendUpRaw = nullptr;
+    char *mSendDownRaw = nullptr;
     device::memory::NDView<char, 1> mRecvUpBuffer;
-    device::memory::NDView<char, 1> mSendDownBuffer;
     device::memory::NDView<char, 1> mRecvDownBuffer;
 
     template <typename T> void pUpdate(MemoryBlock<T, NDim> &block)
@@ -135,21 +149,33 @@ namespace TempLat
       // Ensure byte buffers are large enough for this T (lazy alloc on first call or type change)
       size_t neededBytes = mMaxSlabSize * sizeof(T);
       if (neededBytes > mAllocatedBytes) {
-        mSendUpBuffer = device::memory::NDView<char, 1>("ghostSendUpBuf", neededBytes);
+        // Send buffers: raw GPU alloc (no Kokkos header) for clean IPC base pointers
+#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
+        device_kokkos::p2p::rawDeviceFree(mSendUpRaw);
+        device_kokkos::p2p::rawDeviceFree(mSendDownRaw);
+        mSendUpRaw = static_cast<char *>(device_kokkos::p2p::rawDeviceMalloc(neededBytes));
+        mSendDownRaw = static_cast<char *>(device_kokkos::p2p::rawDeviceMalloc(neededBytes));
+#else
+        // CPU fallback: use operator new
+        delete[] mSendUpRaw;
+        delete[] mSendDownRaw;
+        mSendUpRaw = new char[neededBytes];
+        mSendDownRaw = new char[neededBytes];
+#endif
+        // Recv buffers: Kokkos views (local-only)
         mRecvUpBuffer = device::memory::NDView<char, 1>("ghostRecvUpBuf", neededBytes);
-        mSendDownBuffer = device::memory::NDView<char, 1>("ghostSendDownBuf", neededBytes);
         mRecvDownBuffer = device::memory::NDView<char, 1>("ghostRecvDownBuf", neededBytes);
         mAllocatedBytes = neededBytes;
 #ifdef HAVE_MPI
-        mExchangeManager.updateBufferHandles(mSendUpBuffer.data(), mSendDownBuffer.data(), mRecvUpBuffer.data(),
-                                             mRecvDownBuffer.data(), ++mHandleVersion);
+        mExchangeManager.updateBufferHandles(mSendUpRaw, mSendDownRaw, mRecvUpBuffer.data(), mRecvDownBuffer.data(),
+                                             ++mHandleVersion);
 #endif
       }
 
       // Create unmanaged ND views over pre-allocated byte buffers (no cudaMalloc per call)
       auto sendUpSlab = device::apply(
           [&](const auto &...args) {
-            return device::memory::NDViewUnmanaged<T, NDim>(reinterpret_cast<T *>(mSendUpBuffer.data()), args...);
+            return device::memory::NDViewUnmanaged<T, NDim>(reinterpret_cast<T *>(mSendUpRaw), args...);
           },
           slab_sizes);
       auto recvUpSlab = device::apply(
@@ -159,7 +185,7 @@ namespace TempLat
           slab_sizes);
       auto sendDownSlab = device::apply(
           [&](const auto &...args) {
-            return device::memory::NDViewUnmanaged<T, NDim>(reinterpret_cast<T *>(mSendDownBuffer.data()), args...);
+            return device::memory::NDViewUnmanaged<T, NDim>(reinterpret_cast<T *>(mSendDownRaw), args...);
           },
           slab_sizes);
       auto recvDownSlab = device::apply(
