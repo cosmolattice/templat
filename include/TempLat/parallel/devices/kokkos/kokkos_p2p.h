@@ -186,6 +186,26 @@ namespace TempLat::device_kokkos::p2p
   }
 
   // ============================================================
+  // Link type detection: NVLink/xGMI (full-duplex) vs PCIe
+  // ============================================================
+
+  inline bool isFullDuplexLink(int deviceA, int deviceB)
+  {
+#if defined(KOKKOS_ENABLE_CUDA)
+    // cudaDevP2PAttrCudaArrayAccessSupported is only true over NVLink/NVSwitch, not PCIe.
+    int value = 0;
+    cudaDeviceGetP2PAttribute(&value, cudaDevP2PAttrCudaArrayAccessSupported, deviceA, deviceB);
+    return value != 0;
+#elif defined(KOKKOS_ENABLE_HIP)
+    uint32_t linktype = 0, hopcount = 0;
+    auto err = hipExtGetLinkTypeAndHopCount(deviceA, deviceB, &linktype, &hopcount);
+    if (err != hipSuccess) return false;
+    // HSA_AMD_LINK_INFO_TYPE_XGMI = 4 (AMD Infinity Fabric, full-duplex)
+    return linktype == 4;
+#endif
+  }
+
+  // ============================================================
   // IPC handle packet — POD struct sent via MPI_BYTE
   // ============================================================
 

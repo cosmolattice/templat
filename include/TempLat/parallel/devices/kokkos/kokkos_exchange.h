@@ -47,6 +47,7 @@ namespace TempLat::device_kokkos
       MPI_Comm_rank(mCartComm, &mMyRank);
 
       mP2PAvailable.fill(false);
+      mFullDuplex.fill(false);
       mRemoteSendUpPtr.fill(nullptr);
       mRemoteSendDownPtr.fill(nullptr);
       mRemoteHandleVersion.fill(0);
@@ -108,49 +109,56 @@ namespace TempLat::device_kokkos
       bool downP2P = isP2PDown(dimension);
 
       if (upP2P || downP2P) {
-        // --- Two-phase P2P pull model (rank-based phasing) ---
-        // On PCIe (PIX/PXB) topologies, simultaneous bidirectional P2P reads between GPUs
-        // on a shared PCIe switch degrade throughput by 10x+. We split reads into two phases
-        // by rank ordering: for each read from source rank S, do it in phase 0 if myRank < S,
-        // phase 1 if myRank > S. This guarantees no bidirectional pair in either phase.
-        // On NVLink the extra barrier is negligible (~μs vs ~ms for P2P copies).
-        //
         // Kokkos::fence was already called by the ghost updater (packing complete on GPU).
-
-        // "recvUp" reads from lower neighbor, "recvDown" reads from upper neighbor
-        int upReadSource = mNeighborRanks[dimension * 2 + 1];  // lower neighbor
-        int downReadSource = mNeighborRanks[dimension * 2 + 0]; // upper neighbor
+        bool allFullDuplex = (!upP2P || mFullDuplex[dimension * 2 + 0]) &&
+                             (!downP2P || mFullDuplex[dimension * 2 + 1]);
 
         // Post non-P2P MPI receives before the barrier (overlaps with barrier wait)
         if (!upP2P) mExchange.IrecvUp(dataType, dimension, recvUpPtr, count);
         if (!downP2P) mExchange.IrecvDown(dataType, dimension, recvDownPtr, count);
 
-        // Barrier 1: all same-node ranks have finished packing → send buffers are safe to read
+        // Barrier: all same-node ranks have finished packing → send buffers are safe to read
         MPI_Barrier(mShmComm);
 
         // Post non-P2P MPI sends (can overlap with P2P reads)
         if (!upP2P) mExchange.IsendUp(dataType, dimension, sendUpPtr, count);
         if (!downP2P) mExchange.IsendDown(dataType, dimension, sendDownPtr, count);
 
-        // Phase 0: reads where this rank has the lower rank number
-        if (upP2P && mMyRank < upReadSource)
-          p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
-        if (downP2P && mMyRank < downReadSource)
-          p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
-        p2p::streamSynchronize();
-        MPI_Barrier(mShmComm);
+        if (allFullDuplex) {
+          // --- Single-phase: NVLink/xGMI is full-duplex, no bidirectional contention ---
+          if (upP2P)
+            p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
+          if (downP2P)
+            p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
+          p2p::streamSynchronize();
+        } else {
+          // --- Two-phase: PCIe bidirectional contention avoidance ---
+          // Simultaneous bidirectional P2P reads on a shared PCIe switch degrade throughput
+          // by 10x+. Split reads by rank ordering: phase 0 if myRank < sourceRank,
+          // phase 1 if myRank > sourceRank. No bidirectional pair in either phase.
+          int upReadSource = mNeighborRanks[dimension * 2 + 1];  // lower neighbor
+          int downReadSource = mNeighborRanks[dimension * 2 + 0]; // upper neighbor
 
-        // Phase 1: reads where this rank has the higher rank number
-        if (upP2P && mMyRank > upReadSource)
-          p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
-        if (downP2P && mMyRank > downReadSource)
-          p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
-        p2p::streamSynchronize();
+          // Phase 0: reads where this rank has the lower rank number
+          if (upP2P && mMyRank < upReadSource)
+            p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
+          if (downP2P && mMyRank < downReadSource)
+            p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
+          p2p::streamSynchronize();
+          MPI_Barrier(mShmComm);
+
+          // Phase 1: reads where this rank has the higher rank number
+          if (upP2P && mMyRank > upReadSource)
+            p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
+          if (downP2P && mMyRank > downReadSource)
+            p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
+          p2p::streamSynchronize();
+        }
 
         // Wait for non-P2P MPI to complete
         if (!upP2P || !downP2P) mExchange.waitall();
 
-        // Barrier 2: all same-node ranks have finished reading → send buffers safe to reuse
+        // Barrier: all same-node ranks have finished reading → send buffers safe to reuse
         MPI_Barrier(mShmComm);
 
         return;
@@ -191,6 +199,7 @@ namespace TempLat::device_kokkos
 
     // Per (dimension, direction): indexed as [d * 2 + dir], dir: 0=up, 1=down
     std::array<bool, 2 * NDim> mP2PAvailable{};
+    std::array<bool, 2 * NDim> mFullDuplex{}; // true if link is NVLink/xGMI (no bidirectional contention)
     // IPC-mapped pointers to each neighbor's send buffers (we READ from these)
     // mRemoteSendUpPtr[d*2+dir]: the neighbor in direction 'dir' of dimension d's sendUp buffer
     std::array<void *, 2 * NDim> mRemoteSendUpPtr{};
@@ -264,9 +273,11 @@ namespace TempLat::device_kokkos
 
       p2p::enablePeerAccess(neighborDevice);
       mP2PAvailable[idx] = true;
+      mFullDuplex[idx] = p2p::isFullDuplexLink(mMyDevice, neighborDevice);
 
       sayMPI << "Ghost exchange: P2P enabled for dimension " << dim << (dir == 0 ? " (up)" : " (down)") << " to rank "
-             << neighborRank << " (device " << neighborDevice << ")\n";
+             << neighborRank << " (device " << neighborDevice << ", "
+             << (mFullDuplex[idx] ? "NVLink/xGMI" : "PCIe") << ")\n";
     }
 
     void exchangeIpcHandles(char *sendUpPtr, char *sendDownPtr, uint64_t version)
