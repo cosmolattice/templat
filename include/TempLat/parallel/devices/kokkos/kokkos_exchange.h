@@ -24,19 +24,13 @@
 namespace TempLat::device_kokkos
 {
 
-  namespace P2PTags
-  {
-    static constexpr int packDoneBase = 500;  // sender signals "my send buffer is packed, you can read"
-    static constexpr int readDoneBase = 600;  // reader signals "I'm done reading your send buffer"
-  } // namespace P2PTags
-
   /**
    * @brief Exchange manager that routes ghost cell communication to P2P or MPI per (dimension, direction).
    *
    * On GPU builds with CUDA or HIP, the constructor probes which MPI neighbors reside on the same node
    * and have P2P-capable GPUs. For those neighbors, IPC handles are exchanged for the SEND buffers.
    * Each rank then READS from the remote's send buffer (pull model), matching ParaFaFT's proven approach.
-   * Two zero-byte MPI messages per pair synchronize the pack and read phases.
+   * Two MPI_Barrier calls on the shared-memory communicator synchronize the pack and read phases.
    *
    * On CPU builds, this class is a trivial wrapper around MPICartesianExchange with no overhead.
    */
@@ -50,6 +44,7 @@ namespace TempLat::device_kokkos
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
       mMyDevice = myDeviceId;
       mCartComm = mExchange.getMPICartesianGroup().getComm();
+      mShmComm = shmComm;
       MPI_Comm_rank(mCartComm, &mMyRank);
 
       mP2PAvailable.fill(false);
@@ -124,89 +119,34 @@ namespace TempLat::device_kokkos
       bool downP2P = isP2PDown(dimension);
 
       if (upP2P || downP2P) {
-        // --- P2P pull model ---
-        // Phase 1: Signal neighbors that our send buffers are packed and ready to read
-        // (Kokkos::fence was already called by the ghost updater before this method)
+        // --- P2P pull model with barrier sync ---
+        // Kokkos::fence was already called by the ghost updater (packing complete on GPU).
 
-        MPI_Request packDoneRecvReqs[2];
-        MPI_Request readDoneRecvReqs[2];
-
-        // Post receives for "pack done" signals from neighbors who will send to us
-        if (upP2P) {
-          // We will read from our LOWER neighbor's sendUp buffer (they sent up to us)
-          MPI_Irecv(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 1],
-                    P2PTags::packDoneBase + dimension * 2 + 0, mCartComm, &packDoneRecvReqs[0]);
-        }
-        if (downP2P) {
-          // We will read from our UPPER neighbor's sendDown buffer (they sent down to us)
-          MPI_Irecv(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 0],
-                    P2PTags::packDoneBase + dimension * 2 + 1, mCartComm, &packDoneRecvReqs[1]);
-        }
-
-        // Post non-P2P MPI receives
+        // Post non-P2P MPI receives before the barrier (overlaps with barrier wait)
         if (!upP2P) mExchange.IrecvUp(dataType, dimension, recvUpPtr, count);
         if (!downP2P) mExchange.IrecvDown(dataType, dimension, recvDownPtr, count);
 
-        // Signal our neighbors that our send buffers are packed
-        if (upP2P) {
-          // Our upper neighbor will read from our sendUp buffer
-          MPI_Send(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 0],
-                   P2PTags::packDoneBase + dimension * 2 + 0, mCartComm);
-        }
-        if (downP2P) {
-          // Our lower neighbor will read from our sendDown buffer
-          MPI_Send(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 1],
-                   P2PTags::packDoneBase + dimension * 2 + 1, mCartComm);
-        }
+        // Barrier 1: all same-node ranks have finished packing → send buffers are safe to read
+        MPI_Barrier(mShmComm);
 
-        // Post non-P2P MPI sends
+        // Post non-P2P MPI sends (can overlap with P2P reads)
         if (!upP2P) mExchange.IsendUp(dataType, dimension, sendUpPtr, count);
         if (!downP2P) mExchange.IsendDown(dataType, dimension, sendDownPtr, count);
 
-        // Phase 2: Wait for "pack done" from neighbors, then read from their send buffers
-        if (upP2P) {
-          MPI_Wait(&packDoneRecvReqs[0], MPI_STATUS_IGNORE);
-          // Read from lower neighbor's sendUp buffer into our recvUp buffer
-          // (lower neighbor sent up → we receive from below)
+        // P2P reads from remote send buffers into local recv buffers
+        if (upP2P)
           p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
-        }
-        if (downP2P) {
-          MPI_Wait(&packDoneRecvReqs[1], MPI_STATUS_IGNORE);
-          // Read from upper neighbor's sendDown buffer into our recvDown buffer
-          // (upper neighbor sent down → we receive from above)
+        if (downP2P)
           p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
-        }
 
-        // Sync GPU reads
-        if (upP2P || downP2P) p2p::streamSynchronize();
-
-        // Phase 3: Signal neighbors that we're done reading their send buffers
-        // Post receives for "read done" signals
-        if (upP2P) {
-          MPI_Irecv(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 0],
-                    P2PTags::readDoneBase + dimension * 2 + 0, mCartComm, &readDoneRecvReqs[0]);
-        }
-        if (downP2P) {
-          MPI_Irecv(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 1],
-                    P2PTags::readDoneBase + dimension * 2 + 1, mCartComm, &readDoneRecvReqs[1]);
-        }
-
-        // Signal that we're done reading
-        if (upP2P) {
-          MPI_Send(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 1],
-                   P2PTags::readDoneBase + dimension * 2 + 0, mCartComm);
-        }
-        if (downP2P) {
-          MPI_Send(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 0],
-                   P2PTags::readDoneBase + dimension * 2 + 1, mCartComm);
-        }
+        // Ensure GPU reads complete
+        p2p::streamSynchronize();
 
         // Wait for non-P2P MPI to complete
         if (!upP2P || !downP2P) mExchange.waitall();
 
-        // Wait for "read done" from neighbors (so our send buffers can be reused next dimension)
-        if (upP2P) MPI_Wait(&readDoneRecvReqs[0], MPI_STATUS_IGNORE);
-        if (downP2P) MPI_Wait(&readDoneRecvReqs[1], MPI_STATUS_IGNORE);
+        // Barrier 2: all same-node ranks have finished reading → send buffers safe to reuse
+        MPI_Barrier(mShmComm);
 
         return;
       }
@@ -242,6 +182,7 @@ namespace TempLat::device_kokkos
     int mMyDevice = -1;
     int mMyRank = -1;
     MPI_Comm mCartComm = MPI_COMM_NULL;
+    MPI_Comm mShmComm = MPI_COMM_NULL;
 
     // Per (dimension, direction): indexed as [d * 2 + dir], dir: 0=up, 1=down
     std::array<bool, 2 * NDim> mP2PAvailable{};
