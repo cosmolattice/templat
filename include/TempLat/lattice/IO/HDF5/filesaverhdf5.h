@@ -418,7 +418,7 @@ namespace TempLat
 
         // We have the coordinate, now we need to convert this to an index in local memory. Let's buffer the coords in a
         // device array to use with putMemoryIndexFromSpatialLocationInto.
-        device::IdxArray<NDim> memoryPos;
+        device::IdxArray<NDim> memoryPos{};
         for (size_t i = 0; i < coords.size(); ++i)
           memoryPos[i] = coords[i];
         // Then, overwrite memoryPos with the actual memory indices.
@@ -465,11 +465,13 @@ namespace TempLat
         mDataset.writeSlices(sdata, subdims, offsets);
       } else {
         // Recursive call to loop over an arbitrary number of dimensions.
-        for (int i = 0; i < sizes[dim]; ++i) {
-          if (starts[dim] + i < inicoord || starts[dim] + i >= endcoord || (starts[dim] + i - inicoord) % stepcoord != 0) continue;
-          std::vector<ptrdiff_t> newCoords(coords);
-          newCoords.emplace_back(starts[dim] + i);
-          saveDim(r, dim + 1, newCoords);
+        if constexpr (NDim > 1) {
+          for (int i = 0; i < sizes[dim]; ++i) {
+            if (starts[dim] + i < inicoord || starts[dim] + i >= endcoord || (starts[dim] + i - inicoord) % stepcoord != 0) continue;
+            std::vector<ptrdiff_t> newCoords(coords);
+            newCoords.emplace_back(starts[dim] + i);
+            saveDim(r, dim + 1, newCoords);
+          }
         }
       }
     }
