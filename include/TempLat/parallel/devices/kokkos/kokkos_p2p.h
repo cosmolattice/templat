@@ -13,6 +13,8 @@
 
 #if defined(KOKKOS_ENABLE_CUDA)
 #include <cuda_runtime.h>
+#include <cstdio>
+#include <dlfcn.h>
 #elif defined(KOKKOS_ENABLE_HIP)
 #include <hip/hip_runtime.h>
 #endif
@@ -189,21 +191,82 @@ namespace TempLat::device_kokkos::p2p
   // Link type detection: NVLink/xGMI (full-duplex) vs PCIe
   // ============================================================
 
+#if defined(KOKKOS_ENABLE_CUDA)
+  // CUDA runtime P2P attributes (cudaDevP2PAttrCudaArrayAccessSupported, etc.) are
+  // unreliable for distinguishing NVLink from PCIe. Query NVML's NVLink port state
+  // via dlopen — libnvidia-ml.so.1 is always present with the NVIDIA driver.
+  inline bool isFullDuplexLink(int cudaDeviceA, int cudaDeviceB)
+  {
+    // Get PCI addresses from CUDA to match against NVML devices
+    cudaDeviceProp propA{}, propB{};
+    if (cudaGetDeviceProperties(&propA, cudaDeviceA) != cudaSuccess) return false;
+    if (cudaGetDeviceProperties(&propB, cudaDeviceB) != cudaSuccess) return false;
+
+    void *lib = dlopen("libnvidia-ml.so.1", RTLD_LAZY);
+    if (!lib) return false; // NVML unavailable → assume PCIe (safe default)
+
+    // NVML function signatures (avoid header dependency)
+    using InitFn = unsigned int (*)();
+    using ShutdownFn = unsigned int (*)();
+    using HandleByPciFn = unsigned int (*)(const char *, void **);
+    using NvLinkStateFn = unsigned int (*)(void *, unsigned int, unsigned int *);
+    using NvLinkRemotePciFn = unsigned int (*)(void *, unsigned int, void *);
+    using GetPciInfoFn = unsigned int (*)(void *, void *);
+
+    auto fnInit = reinterpret_cast<InitFn>(dlsym(lib, "nvmlInit_v2"));
+    auto fnShutdown = reinterpret_cast<ShutdownFn>(dlsym(lib, "nvmlShutdown"));
+    auto fnHandleByPci = reinterpret_cast<HandleByPciFn>(dlsym(lib, "nvmlDeviceGetHandleByPciBusId_v2"));
+    auto fnNvLinkState = reinterpret_cast<NvLinkStateFn>(dlsym(lib, "nvmlDeviceGetNvLinkState"));
+    auto fnNvLinkRemotePci = reinterpret_cast<NvLinkRemotePciFn>(dlsym(lib, "nvmlDeviceGetNvLinkRemotePciInfo_v2"));
+    auto fnGetPciInfo = reinterpret_cast<GetPciInfoFn>(dlsym(lib, "nvmlDeviceGetPciInfo_v3"));
+
+    if (!fnInit || !fnShutdown || !fnHandleByPci || !fnNvLinkState || !fnNvLinkRemotePci || !fnGetPciInfo) {
+      dlclose(lib);
+      return false;
+    }
+
+    bool found = false;
+    if (fnInit() == 0) { // NVML_SUCCESS = 0
+      // Look up NVML device handles by PCI bus ID (handles CUDA_VISIBLE_DEVICES reordering)
+      char busIdA[32], busIdB[32];
+      snprintf(busIdA, sizeof(busIdA), "%08x:%02x:%02x.0", propA.pciDomainID, propA.pciBusID, propA.pciDeviceID);
+      snprintf(busIdB, sizeof(busIdB), "%08x:%02x:%02x.0", propB.pciDomainID, propB.pciBusID, propB.pciDeviceID);
+
+      void *devA = nullptr, *devB = nullptr;
+      if (fnHandleByPci(busIdA, &devA) == 0 && fnHandleByPci(busIdB, &devB) == 0) {
+        // Get device B's PCI info for comparison with NVLink remote endpoints
+        // nvmlPciInfo_t layout: char busIdLegacy[16], uint domain, uint bus, uint device, ...
+        struct { char legacy[16]; unsigned int domain, bus, device; } pciB{};
+        fnGetPciInfo(devB, &pciB);
+
+        // Enumerate NVLink ports on device A (up to 18 on recent hardware)
+        for (unsigned int link = 0; link < 18 && !found; ++link) {
+          unsigned int state = 0; // nvmlEnableState_t
+          if (fnNvLinkState(devA, link, &state) != 0 || state != 1) // NVML_FEATURE_ENABLED = 1
+            continue;
+          struct { char legacy[16]; unsigned int domain, bus, device; } remotePci{};
+          if (fnNvLinkRemotePci(devA, link, &remotePci) != 0)
+            continue;
+          if (remotePci.domain == pciB.domain && remotePci.bus == pciB.bus && remotePci.device == pciB.device)
+            found = true;
+        }
+      }
+      fnShutdown();
+    }
+    dlclose(lib);
+    return found;
+  }
+
+#elif defined(KOKKOS_ENABLE_HIP)
   inline bool isFullDuplexLink(int deviceA, int deviceB)
   {
-#if defined(KOKKOS_ENABLE_CUDA)
-    // cudaDevP2PAttrCudaArrayAccessSupported is only true over NVLink/NVSwitch, not PCIe.
-    int value = 0;
-    cudaDeviceGetP2PAttribute(&value, cudaDevP2PAttrCudaArrayAccessSupported, deviceA, deviceB);
-    return value != 0;
-#elif defined(KOKKOS_ENABLE_HIP)
     uint32_t linktype = 0, hopcount = 0;
     auto err = hipExtGetLinkTypeAndHopCount(deviceA, deviceB, &linktype, &hopcount);
     if (err != hipSuccess) return false;
     // HSA_AMD_LINK_INFO_TYPE_XGMI = 4 (AMD Infinity Fabric, full-duplex)
     return linktype == 4;
-#endif
   }
+#endif
 
   // ============================================================
   // IPC handle packet — POD struct sent via MPI_BYTE
