@@ -64,13 +64,13 @@ namespace TempLat
     static vType normalizeTypeSpecific(vType value, HermitianValueAccounting accounting)
     {
       if constexpr (isComplexValued) {
-        const auto normRe = accounting.getRealValueCount();
-        const auto normIm = accounting.getImaginaryValueCount();
+        const double normRe = accounting.getRealValueCount();
+        const double normIm = accounting.getImaginaryValueCount();
 
         return vType(value.real() / normRe, value.imag() / normIm);
       } else {
-        const auto normRe = accounting.getRealValueCount();
-        return value / normRe;
+        const double normRe = accounting.getRealValueCount();
+        return static_cast<vType>(value / normRe);
       }
     }
   };

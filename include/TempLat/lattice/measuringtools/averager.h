@@ -19,6 +19,8 @@
 
 namespace TempLat
 {
+  template <typename T>
+  using AveragerReturnType = std::conditional_t<std::is_integral_v<T> || std::is_floating_point_v<T>, double, T>;
 
   /** @brief A class which computes the average value of a getter.
    *
@@ -28,7 +30,8 @@ namespace TempLat
   template <typename T> class Averager
   {
   public:
-    using vType = typename GetGetReturnType<T>::type;
+    using retType = typename GetGetReturnType<T>::type;
+    using vType = AveragerReturnType<retType>;
     static constexpr bool isComplexValued = GetGetReturnType<T>::isComplex;
 
     static constexpr size_t NDim = GetNDim::get<T>();
