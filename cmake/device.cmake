@@ -57,8 +57,7 @@ if(_USER_SPECIFIED_GPU)
     check_language(CUDA)
     if(NOT CMAKE_CUDA_COMPILER)
       message(
-        FATAL_ERROR
-          "CUDA was explicitly requested but no CUDA compiler was found.")
+        WARNING "CUDA was explicitly requested but no CUDA compiler was found.")
     endif()
     # _try_cuda(_CUDA_COMPILES) if(NOT _CUDA_COMPILES) message( FATAL_ERROR
     # "CUDA compiler was found but failed to compile a test program.") endif()
