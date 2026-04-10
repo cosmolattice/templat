@@ -15,6 +15,7 @@
 
 #include "TempLat/parallel/device_iteration.h"
 #include "TempLat/parallel/device_memory.h"
+#include "TempLat/parallel/device_guard.h"
 
 namespace TempLat
 {
@@ -36,8 +37,11 @@ namespace TempLat
   public:
     // Put public methods here. These should change very little over time.
     GhostUpdater(MPICartesianExchange exchange, LayoutStruct<NDim> layout)
-        : mExchange(exchange), mLayout(layout), mGhostDepth(mLayout.getNGhosts()),
-          mGhostSubarrayMap(mLayout, mGhostDepth)
+        :
+#ifdef HAVE_MPI
+          mExchangeManager(exchange, DeviceGuard::getShmComm(), DeviceGuard::getDeviceId()),
+#endif
+          mLayout(layout), mGhostDepth(mLayout.getNGhosts()), mGhostSubarrayMap(mLayout, mGhostDepth)
     {
       auto full_sizes = mLayout.getSizesInMemory();
       for (size_t i = 0; i < NDim; ++i) {
@@ -60,8 +64,7 @@ namespace TempLat
       for (size_t d = 0; d < NDim; ++d) {
         size_t slabTotal = mGhostDepth;
         for (size_t i = 0; i < NDim; ++i)
-          if (i != d)
-            slabTotal *= full_sizes[i] + 2 * mGhostDepth;
+          if (i != d) slabTotal *= full_sizes[i] + 2 * mGhostDepth;
         mMaxSlabSize = std::max(mMaxSlabSize, slabTotal);
       }
     }
@@ -72,7 +75,7 @@ namespace TempLat
       // There is no MPI splitting in one dimension. Also, when we have only a single node, there is no need to do MPI
       // communication.
       if constexpr (NDim > 1) {
-        if (mExchange.getMPICartesianGroup().size() > 1) {
+        if (mExchangeManager.getMPICartesianGroup().size() > 1) {
           pUpdate(block);
         } else {
           pUpdate_NOMPI(block);
@@ -86,7 +89,9 @@ namespace TempLat
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
-    MPICartesianExchange mExchange;
+#ifdef HAVE_MPI
+    device::memory::ExchangeManager<NDim> mExchangeManager;
+#endif
     LayoutStruct<NDim> mLayout;
     device::Idx mGhostDepth;
     GhostSubarrayMap<NDim> mGhostSubarrayMap;
@@ -94,6 +99,7 @@ namespace TempLat
     // Pre-computed max slab element count; buffers allocated lazily on first update<T>() call
     size_t mMaxSlabSize = 0;
     size_t mAllocatedBytes = 0;
+    uint64_t mHandleVersion = 0;
     device::memory::NDView<char, 1> mSendUpBuffer;
     device::memory::NDView<char, 1> mRecvUpBuffer;
     device::memory::NDView<char, 1> mSendDownBuffer;
@@ -103,7 +109,7 @@ namespace TempLat
     {
       /* iterate dimensions */
       for (size_t d = 0; d < NDim; ++d) {
-#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP) || defined(KOKKOS_ENABLE_SYCL)
+#if defined(DEVICE_CUDA) || defined(DEVICE_HIP)
         update_forDimension_device(block, d);
 #else
         update_forDimension(block, d);
@@ -134,6 +140,9 @@ namespace TempLat
         mSendDownBuffer = device::memory::NDView<char, 1>("ghostSendDownBuf", neededBytes);
         mRecvDownBuffer = device::memory::NDView<char, 1>("ghostRecvDownBuf", neededBytes);
         mAllocatedBytes = neededBytes;
+#ifdef HAVE_MPI
+        mExchangeManager.updateBufferHandles(mRecvUpBuffer.data(), mRecvDownBuffer.data(), ++mHandleVersion);
+#endif
       }
 
       // Create unmanaged ND views over pre-allocated byte buffers (no cudaMalloc per call)
@@ -167,7 +176,7 @@ namespace TempLat
       for (size_t i = 0; i < NDim; ++i) {
         // UP: send end of dimension, receive at origin
         sendUp_slices[i] = (i == dimension) ? std::pair<device::Idx, device::Idx>(full_sizes[i] - 2 * mGhostDepth,
-                                                                                   full_sizes[i] - mGhostDepth)
+                                                                                  full_sizes[i] - mGhostDepth)
                                             : std::pair<device::Idx, device::Idx>(0, slab_sizes[i]);
         recvUp_slices[i] = (i == dimension) ? std::pair<device::Idx, device::Idx>(0, mGhostDepth)
                                             : std::pair<device::Idx, device::Idx>(0, slab_sizes[i]);
@@ -182,25 +191,27 @@ namespace TempLat
       auto fullView = block.getNDView(full_sizes);
 
       // Pack both UP and DOWN send slabs (GPU kernels can run concurrently)
-      auto sendUpSubView = device::apply(
-          [&](const auto &...args) { return device::memory::subview(fullView, args...); }, sendUp_slices);
+      auto sendUpSubView =
+          device::apply([&](const auto &...args) { return device::memory::subview(fullView, args...); }, sendUp_slices);
       auto sendDownSubView = device::apply(
           [&](const auto &...args) { return device::memory::subview(fullView, args...); }, sendDown_slices);
       device::memory::copyDeviceToDevice(sendUpSubView, sendUpSlab);
       device::memory::copyDeviceToDevice(sendDownSubView, sendDownSlab);
       device::iteration::fence(); // single fence ensures both packs complete
 
-      // Launch all 4 non-blocking MPI operations
+      // Exchange ghost slabs — ExchangeManager routes to P2P or MPI per direction
+#ifdef HAVE_MPI
       MPI_Datatype dataType = MPITypeSelect<T>();
-      mExchange.IrecvUp(dataType, dimension, recvUpSlab.data(), total_size);
-      mExchange.IrecvDown(dataType, dimension, recvDownSlab.data(), total_size);
-      mExchange.IsendUp(dataType, dimension, sendUpSlab.data(), total_size);
-      mExchange.IsendDown(dataType, dimension, sendDownSlab.data(), total_size);
-      mExchange.waitall();
+      mExchangeManager.recvUp(dimension, recvUpSlab.data(), total_size, dataType);
+      mExchangeManager.recvDown(dimension, recvDownSlab.data(), total_size, dataType);
+      mExchangeManager.sendUp(dimension, sendUpSlab.data(), total_size * sizeof(T), total_size, dataType);
+      mExchangeManager.sendDown(dimension, sendDownSlab.data(), total_size * sizeof(T), total_size, dataType);
+      mExchangeManager.waitall(dimension);
+#endif
 
       // Unpack both receive slabs (GPU kernels can run concurrently)
-      auto recvUpSubView = device::apply(
-          [&](const auto &...args) { return device::memory::subview(fullView, args...); }, recvUp_slices);
+      auto recvUpSubView =
+          device::apply([&](const auto &...args) { return device::memory::subview(fullView, args...); }, recvUp_slices);
       auto recvDownSubView = device::apply(
           [&](const auto &...args) { return device::memory::subview(fullView, args...); }, recvDown_slices);
       device::memory::copyDeviceToDevice(recvUpSlab, recvUpSubView);
@@ -213,19 +224,20 @@ namespace TempLat
     {
       auto *ptr = block.data();
 #ifdef HAVE_MPI
-      mExchange.exchangeUp(mGhostSubarrayMap.template getSubArray<T>(dimension), dimension,
-                           /* base ptr is lower corner of all memory, including ghosts. */
-                           /* send:
-                            Don't jump to origin, but jump along the edge of dimension
-                            to the point where we still have mGhostDepth until the end of
-                            our *owned* memory (before the mGhostDepth hyper slices start) */
-                           ptr + (mLayout.getSizesInMemory()[dimension]) * mLayout.stride(dimension),
-                           /* receive: in origin, including ghosts. */
-                           ptr);
+      mExchangeManager.exchangeUp(mGhostSubarrayMap.template getSubArray<T>(dimension), dimension,
+                                  /* base ptr is lower corner of all memory, including ghosts. */
+                                  /* send:
+                                   Don't jump to origin, but jump along the edge of dimension
+                                   to the point where we still have mGhostDepth until the end of
+                                   our *owned* memory (before the mGhostDepth hyper slices start) */
+                                  ptr + (mLayout.getSizesInMemory()[dimension]) * mLayout.stride(dimension),
+                                  /* receive: in origin, including ghosts. */
+                                  ptr);
       /* pointers: the same as above, but shifted by ghostDepth and ordering swapped. Yes. */
-      mExchange.exchangeDown(mGhostSubarrayMap.template getSubArray<T>(dimension), dimension,
-                             ptr + mGhostDepth * mLayout.stride(dimension),
-                             ptr + (mGhostDepth + mLayout.getSizesInMemory()[dimension]) * mLayout.stride(dimension));
+      mExchangeManager.exchangeDown(mGhostSubarrayMap.template getSubArray<T>(dimension), dimension,
+                                    ptr + mGhostDepth * mLayout.stride(dimension),
+                                    ptr + (mGhostDepth + mLayout.getSizesInMemory()[dimension]) *
+                                              mLayout.stride(dimension));
 #endif
     }
 

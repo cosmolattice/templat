@@ -86,6 +86,9 @@ namespace TempLat
 
     const MPICartesianGroup &getMPICartesianGroup() const { return mGroup; }
 
+    MPICartesianNeighbours &getNeighbours() { return mNeighbours; }
+    const MPICartesianNeighbours &getNeighbours() const { return mNeighbours; }
+
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
     MPICartesianGroup mGroup;

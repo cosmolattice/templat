@@ -12,6 +12,9 @@
 #ifdef DEVICE_KOKKOS
 
 #include "TempLat/parallel/devices/kokkos/kokkos_memory.h"
+#ifdef HAVE_MPI
+#include "TempLat/parallel/devices/kokkos/kokkos_exchange.h"
+#endif
 
 #elif DEVICE_STD
 
@@ -56,6 +59,10 @@ namespace TempLat::device::memory
   using export_device_namespace::memory::fill;
   using export_device_namespace::memory::getAtOnePoint;
   using export_device_namespace::memory::setAtOnePoint;
+
+#ifdef HAVE_MPI
+  using export_device_namespace::ExchangeManager;
+#endif
 
   template <typename T> class host_ptr
   {

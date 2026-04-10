@@ -54,6 +54,7 @@ namespace TempLat::device_kokkos
       // First, make an MPI group for the local machine.
       MPI_Comm shmcomm;
       MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shmcomm);
+      sShmComm = shmcomm;
       int shmrank, shmsize;
       MPI_Comm_rank(shmcomm, &shmrank);
       MPI_Comm_size(shmcomm, &shmsize);
@@ -78,9 +79,10 @@ namespace TempLat::device_kokkos
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
       // Assign devices to processes in a round-robin fashion.
-      kokkos_settings.set_device_id(shmrank % num_devices);
+      sDeviceId = shmrank % num_devices;
+      kokkos_settings.set_device_id(sDeviceId);
       std::cout << "Global process rank " << rank << " (local rank " << shmrank << " on this node) assigned to device "
-                << shmrank % num_devices << std::endl;
+                << sDeviceId << std::endl;
 #endif
 #endif
 
@@ -111,6 +113,24 @@ namespace TempLat::device_kokkos
 
   public:
     static int GetInstanceCount() { return InstanceCounter(); }
+
+#ifdef HAVE_MPI
+#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
+    static MPI_Comm getShmComm() { return sShmComm; }
+    static int getDeviceId() { return sDeviceId; }
+
+  private:
+    static inline MPI_Comm sShmComm = MPI_COMM_NULL;
+    static inline int sDeviceId = -1;
+#else
+  public:
+    static MPI_Comm getShmComm() { return MPI_COMM_NULL; }
+    static int getDeviceId() { return 0; }
+#endif
+#else
+  public:
+    static int getDeviceId() { return 0; }
+#endif
   };
 } // namespace TempLat::device_kokkos
 

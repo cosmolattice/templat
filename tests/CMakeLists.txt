@@ -41,7 +41,7 @@ foreach(fn ${test_sources})
       COMMAND
         bash -c
         "make ${target_name} &&
-                ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${NPROCESSES} ${MPIEXEC_PREFLAGS} $<TARGET_FILE:${target_name}> ${MPIEXEC_POSTFLAGS}"
+                GPU_NOCONSTRAIN=1 ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${NPROCESSES} ${MPIEXEC_PREFLAGS} $<TARGET_FILE:${target_name}> ${MPIEXEC_POSTFLAGS}"
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   else()
     add_test(
