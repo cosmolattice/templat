@@ -71,9 +71,9 @@ namespace TempLat
 
     ~GhostUpdater()
     {
-#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
-      device_kokkos::p2p::rawDeviceFree(mSendUpRaw);
-      device_kokkos::p2p::rawDeviceFree(mSendDownRaw);
+#if defined(DEVICE_CUDA) || defined(DEVICE_HIP)
+      device::p2p::rawDeviceFree(mSendUpRaw);
+      device::p2p::rawDeviceFree(mSendDownRaw);
 #else
       delete[] mSendUpRaw;
       delete[] mSendDownRaw;
@@ -112,8 +112,8 @@ namespace TempLat
     size_t mAllocatedBytes = 0;
     uint64_t mHandleVersion = 0;
 
-    // Send buffers: raw GPU allocations (no Kokkos header) so IPC handles point to exact data start.
-    // Recv buffers: Kokkos views (local-only, no IPC needed).
+    // Send buffers: raw GPU allocations so IPC handles point to exact data start.
+    // Recv buffers: views (local-only, no IPC needed).
     char *mSendUpRaw = nullptr;
     char *mSendDownRaw = nullptr;
     device::memory::NDView<char, 1> mRecvUpBuffer;
@@ -133,7 +133,7 @@ namespace TempLat
           continue;
         }
 #endif
-#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP) || defined(KOKKOS_ENABLE_SYCL)
+#if defined(DEVICE_CUDA) || defined(DEVICE_HIP)
         update_forDimension_device(block, d);
 #else
         update_forDimension(block, d);
@@ -159,12 +159,12 @@ namespace TempLat
       // Ensure byte buffers are large enough for this T (lazy alloc on first call or type change)
       size_t neededBytes = mMaxSlabSize * sizeof(T);
       if (neededBytes > mAllocatedBytes) {
-        // Send buffers: raw GPU alloc (no Kokkos header) for clean IPC base pointers
-#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
-        device_kokkos::p2p::rawDeviceFree(mSendUpRaw);
-        device_kokkos::p2p::rawDeviceFree(mSendDownRaw);
-        mSendUpRaw = static_cast<char *>(device_kokkos::p2p::rawDeviceMalloc(neededBytes));
-        mSendDownRaw = static_cast<char *>(device_kokkos::p2p::rawDeviceMalloc(neededBytes));
+        // Send buffers: raw GPU alloc for clean IPC base pointers
+#if defined(DEVICE_CUDA) || defined(DEVICE_HIP)
+        device::p2p::rawDeviceFree(mSendUpRaw);
+        device::p2p::rawDeviceFree(mSendDownRaw);
+        mSendUpRaw = static_cast<char *>(device::p2p::rawDeviceMalloc(neededBytes));
+        mSendDownRaw = static_cast<char *>(device::p2p::rawDeviceMalloc(neededBytes));
 #else
         // CPU fallback: use operator new
         delete[] mSendUpRaw;
@@ -172,7 +172,7 @@ namespace TempLat
         mSendUpRaw = new char[neededBytes];
         mSendDownRaw = new char[neededBytes];
 #endif
-        // Recv buffers: Kokkos views (local-only)
+        // Recv buffers: views (local-only)
         mRecvUpBuffer = device::memory::NDView<char, 1>("ghostRecvUpBuf", neededBytes);
         mRecvDownBuffer = device::memory::NDView<char, 1>("ghostRecvDownBuf", neededBytes);
         mAllocatedBytes = neededBytes;
@@ -306,9 +306,9 @@ namespace TempLat
                                     ? std::make_pair<device::Idx, device::Idx>(ghostDepth + sizes[i] - depth,
                                                                                ghostDepth + sizes[i] - depth + 1)
                                     : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
-            btf_slicesTo[i] =
-                (i == dim) ? std::make_pair<device::Idx, device::Idx>(ghostDepth - depth, ghostDepth - depth + 1)
-                           : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
+            btf_slicesTo[i] = (i == dim)
+                                  ? std::make_pair<device::Idx, device::Idx>(ghostDepth - depth, ghostDepth - depth + 1)
+                                  : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
             ftb_slicesFrom[i] =
                 (i == dim)
                     ? std::make_pair<device::Idx, device::Idx>(ghostDepth + (depth - 1), ghostDepth + (depth - 1) + 1)
@@ -320,12 +320,12 @@ namespace TempLat
           }
           auto btf_fromSubView = device::apply(
               [&](const auto &...args) { return device::memory::subview(View, args...); }, btf_slicesFrom);
-          auto btf_toSubView = device::apply(
-              [&](const auto &...args) { return device::memory::subview(View, args...); }, btf_slicesTo);
+          auto btf_toSubView =
+              device::apply([&](const auto &...args) { return device::memory::subview(View, args...); }, btf_slicesTo);
           auto ftb_fromSubView = device::apply(
               [&](const auto &...args) { return device::memory::subview(View, args...); }, ftb_slicesFrom);
-          auto ftb_toSubView = device::apply(
-              [&](const auto &...args) { return device::memory::subview(View, args...); }, ftb_slicesTo);
+          auto ftb_toSubView =
+              device::apply([&](const auto &...args) { return device::memory::subview(View, args...); }, ftb_slicesTo);
 
           device::memory::copyDeviceToDevice(btf_fromSubView, btf_toSubView);
           device::memory::copyDeviceToDevice(ftb_fromSubView, ftb_toSubView);
