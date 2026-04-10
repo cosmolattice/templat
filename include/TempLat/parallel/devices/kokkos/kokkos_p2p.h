@@ -17,8 +17,6 @@
 #include <hip/hip_runtime.h>
 #endif
 
-#include <cstring>
-
 namespace TempLat::device_kokkos::p2p
 {
   MakeException(GpuP2PException);
@@ -195,7 +193,6 @@ namespace TempLat::device_kokkos::p2p
     char handle[IpcHandleSize];
     int deviceId;
     uint64_t version;
-    ptrdiff_t offset; // byte offset from allocation base to actual data pointer
   };
 
 } // namespace TempLat::device_kokkos::p2p

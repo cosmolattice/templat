@@ -10,7 +10,6 @@
 #ifdef HAVE_MPI
 
 #include "TempLat/parallel/mpi/cartesian/mpicartesianexchange.h"
-#include "TempLat/parallel/mpi/mpitags.h"
 #include "TempLat/util/log/saycomplete.h"
 
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
@@ -83,7 +82,6 @@ namespace TempLat::device_kokkos
     // ------------------------------------------------------------------
 
     void updateBufferHandles([[maybe_unused]] char *sendUpPtr, [[maybe_unused]] char *sendDownPtr,
-                             [[maybe_unused]] char *recvUpPtr, [[maybe_unused]] char *recvDownPtr,
                              [[maybe_unused]] uint64_t version)
     {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
@@ -99,17 +97,8 @@ namespace TempLat::device_kokkos
      * @brief P2P pull-model exchange for one dimension.
      *
      * After packing + fence, call this instead of individual send/recv/waitall.
-     * For P2P neighbors: signals "pack done" → remote reads from our send buffer →
-     * remote signals "read done". For non-P2P neighbors: standard MPI Isend/Irecv.
-     *
-     * @param dimension     Which spatial dimension
-     * @param sendUpPtr     Pointer to packed send-up slab (device memory)
-     * @param sendDownPtr   Pointer to packed send-down slab (device memory)
-     * @param recvUpPtr     Pointer to recv-up slab (device memory) — destination for pull
-     * @param recvDownPtr   Pointer to recv-down slab (device memory) — destination for pull
-     * @param byteCount     Number of bytes per slab
-     * @param count         Number of MPI elements per slab
-     * @param dataType      MPI datatype for non-P2P fallback
+     * For P2P neighbors: barrier → P2P read from remote send buffer → streamSync → barrier.
+     * For non-P2P neighbors: standard MPI Isend/Irecv (overlapped with P2P).
      */
     void exchange(size_t dimension, void *sendUpPtr, void *sendDownPtr, void *recvUpPtr, void *recvDownPtr,
                   size_t byteCount, int count, MPI_Datatype dataType)
@@ -277,12 +266,6 @@ namespace TempLat::device_kokkos
       //   - Our upper neighbor packed into their sendDown buffer
       //   - We need IPC handle for upper neighbor's sendDown buffer
       //   - We export our sendDown handle to our lower neighbor (they will recvDown = read our sendDown)
-
-      struct HandlePair {
-        p2p::IpcHandlePacket sendUpPacket{};
-        p2p::IpcHandlePacket sendDownPacket{};
-        uint64_t version = 0;
-      };
 
       for (size_t d = 0; d < NDim; ++d) {
         int upperRank = mNeighborRanks[d * 2 + 0];

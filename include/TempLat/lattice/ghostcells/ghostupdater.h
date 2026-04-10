@@ -177,8 +177,7 @@ namespace TempLat
         mRecvDownBuffer = device::memory::NDView<char, 1>("ghostRecvDownBuf", neededBytes);
         mAllocatedBytes = neededBytes;
 #ifdef HAVE_MPI
-        mExchangeManager.updateBufferHandles(mSendUpRaw, mSendDownRaw, mRecvUpBuffer.data(), mRecvDownBuffer.data(),
-                                             ++mHandleVersion);
+        mExchangeManager.updateBufferHandles(mSendUpRaw, mSendDownRaw, ++mHandleVersion);
 #endif
       }
 
@@ -334,7 +333,6 @@ namespace TempLat
       }
     }
 
-  public:
     template <typename T> void pUpdate_NOMPI(MemoryBlock<T, NDim> &block, device::Idx dimension = 0)
     {
       // Get View to the full data
