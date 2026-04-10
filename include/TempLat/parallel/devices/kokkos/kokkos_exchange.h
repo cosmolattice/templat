@@ -108,7 +108,12 @@ namespace TempLat::device_kokkos
       bool downP2P = isP2PDown(dimension);
 
       if (upP2P || downP2P) {
-        // --- P2P pull model with barrier sync ---
+        // --- Two-phase P2P pull model ---
+        // On PCIe (PIX/PXB) topologies, simultaneous bidirectional P2P reads between GPUs
+        // on a shared PCIe switch degrade throughput by 10x+. We split UP and DOWN reads
+        // into separate phases so no bidirectional pair occurs in the same phase.
+        // On NVLink the extra barrier is negligible (~μs vs ~ms for P2P copies).
+        //
         // Kokkos::fence was already called by the ghost updater (packing complete on GPU).
 
         // Post non-P2P MPI receives before the barrier (overlaps with barrier wait)
@@ -122,13 +127,15 @@ namespace TempLat::device_kokkos
         if (!upP2P) mExchange.IsendUp(dataType, dimension, sendUpPtr, count);
         if (!downP2P) mExchange.IsendDown(dataType, dimension, sendDownPtr, count);
 
-        // P2P reads from remote send buffers into local recv buffers
+        // Phase 0: UP reads only (all traffic flows rank i ← rank i+1, unidirectional)
         if (upP2P)
           p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
+        p2p::streamSynchronize();
+        MPI_Barrier(mShmComm);
+
+        // Phase 1: DOWN reads only (all traffic flows rank i ← rank i-1, unidirectional)
         if (downP2P)
           p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
-
-        // Ensure GPU reads complete
         p2p::streamSynchronize();
 
         // Wait for non-P2P MPI to complete
