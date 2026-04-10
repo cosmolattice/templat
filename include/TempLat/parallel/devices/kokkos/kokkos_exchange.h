@@ -24,19 +24,19 @@
 namespace TempLat::device_kokkos
 {
 
-  // MPI tag for P2P zero-byte completion signals — offset from ghost cell tag to avoid collisions
   namespace P2PTags
   {
-    static constexpr int signalBase = 500;
+    static constexpr int packDoneBase = 500;  // sender signals "my send buffer is packed, you can read"
+    static constexpr int readDoneBase = 600;  // reader signals "I'm done reading your send buffer"
   } // namespace P2PTags
 
   /**
    * @brief Exchange manager that routes ghost cell communication to P2P or MPI per (dimension, direction).
    *
    * On GPU builds with CUDA or HIP, the constructor probes which MPI neighbors reside on the same node
-   * and have P2P-capable GPUs. For those neighbors, IPC handles are exchanged so that send operations
-   * write directly into the remote rank's receive buffer. A zero-byte MPI message serves as the
-   * completion signal. For all other neighbors, communication falls back to standard MPI_Isend/MPI_Irecv.
+   * and have P2P-capable GPUs. For those neighbors, IPC handles are exchanged for the SEND buffers.
+   * Each rank then READS from the remote's send buffer (pull model), matching ParaFaFT's proven approach.
+   * Two zero-byte MPI messages per pair synchronize the pack and read phases.
    *
    * On CPU builds, this class is a trivial wrapper around MPICartesianExchange with no overhead.
    */
@@ -53,7 +53,8 @@ namespace TempLat::device_kokkos
       MPI_Comm_rank(mCartComm, &mMyRank);
 
       mP2PAvailable.fill(false);
-      mRemoteRecvPtr.fill(nullptr);
+      mRemoteSendUpPtr.fill(nullptr);
+      mRemoteSendDownPtr.fill(nullptr);
       mRemoteHandleVersion.fill(0);
 
       probeP2P(shmComm);
@@ -64,9 +65,13 @@ namespace TempLat::device_kokkos
     {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
       for (size_t i = 0; i < 2 * NDim; ++i) {
-        if (mRemoteRecvPtr[i] != nullptr) {
-          p2p::ipcCloseHandle(mRemoteRecvPtr[i]);
-          mRemoteRecvPtr[i] = nullptr;
+        if (mRemoteSendUpPtr[i] != nullptr) {
+          p2p::ipcCloseHandle(mRemoteSendUpPtr[i]);
+          mRemoteSendUpPtr[i] = nullptr;
+        }
+        if (mRemoteSendDownPtr[i] != nullptr) {
+          p2p::ipcCloseHandle(mRemoteSendDownPtr[i]);
+          mRemoteSendDownPtr[i] = nullptr;
         }
       }
 #endif
@@ -79,14 +84,15 @@ namespace TempLat::device_kokkos
     ExchangeManager &operator=(ExchangeManager &&) = default;
 
     // ------------------------------------------------------------------
-    // Buffer handle exchange — call after (re)allocating recv buffers
+    // Buffer handle exchange — call after (re)allocating send/recv buffers
     // ------------------------------------------------------------------
 
-    void updateBufferHandles([[maybe_unused]] char *recvUpPtr, [[maybe_unused]] char *recvDownPtr,
+    void updateBufferHandles([[maybe_unused]] char *sendUpPtr, [[maybe_unused]] char *sendDownPtr,
+                             [[maybe_unused]] char *recvUpPtr, [[maybe_unused]] char *recvDownPtr,
                              [[maybe_unused]] uint64_t version)
     {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
-      exchangeIpcHandles(recvUpPtr, recvDownPtr, version);
+      exchangeIpcHandles(sendUpPtr, sendDownPtr, version);
 #endif
     }
 
@@ -94,93 +100,123 @@ namespace TempLat::device_kokkos
     // Communication interface — ghost updater calls these
     // ------------------------------------------------------------------
 
-    void recvUp(size_t dimension, void *ptr, int count, MPI_Datatype dataType)
-    {
-#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
-      if (isP2PUp(dimension)) {
-        // Post zero-byte signal receiver: the remote will signal after its P2P write completes
-        char dummy = 0;
-        MPI_Irecv(&dummy, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 0], signalTag(dimension, 0), mCartComm,
-                   &mP2PSignalRecvRequests[dimension * 2 + 0]);
-        return;
-      }
-#endif
-      mExchange.IrecvUp(dataType, dimension, ptr, count);
-    }
-
-    void recvDown(size_t dimension, void *ptr, int count, MPI_Datatype dataType)
-    {
-#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
-      if (isP2PDown(dimension)) {
-        char dummy = 0;
-        MPI_Irecv(&dummy, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 1], signalTag(dimension, 1), mCartComm,
-                   &mP2PSignalRecvRequests[dimension * 2 + 1]);
-        return;
-      }
-#endif
-      mExchange.IrecvDown(dataType, dimension, ptr, count);
-    }
-
-    void sendUp(size_t dimension, void *ptr, size_t byteCount, [[maybe_unused]] int count,
-                [[maybe_unused]] MPI_Datatype dataType)
-    {
-#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
-      if (isP2PUp(dimension)) {
-        // Direct write into remote rank's recvDown buffer (our up-neighbor's down-recv)
-        p2p::memcpyAsync(mRemoteRecvPtr[dimension * 2 + 0], ptr, byteCount);
-        return;
-      }
-#endif
-      mExchange.IsendUp(dataType, dimension, ptr, count);
-    }
-
-    void sendDown(size_t dimension, void *ptr, size_t byteCount, [[maybe_unused]] int count,
-                  [[maybe_unused]] MPI_Datatype dataType)
-    {
-#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
-      if (isP2PDown(dimension)) {
-        p2p::memcpyAsync(mRemoteRecvPtr[dimension * 2 + 1], ptr, byteCount);
-        return;
-      }
-#endif
-      mExchange.IsendDown(dataType, dimension, ptr, count);
-    }
-
-    void waitall([[maybe_unused]] size_t dimension)
+    /**
+     * @brief P2P pull-model exchange for one dimension.
+     *
+     * After packing + fence, call this instead of individual send/recv/waitall.
+     * For P2P neighbors: signals "pack done" → remote reads from our send buffer →
+     * remote signals "read done". For non-P2P neighbors: standard MPI Isend/Irecv.
+     *
+     * @param dimension     Which spatial dimension
+     * @param sendUpPtr     Pointer to packed send-up slab (device memory)
+     * @param sendDownPtr   Pointer to packed send-down slab (device memory)
+     * @param recvUpPtr     Pointer to recv-up slab (device memory) — destination for pull
+     * @param recvDownPtr   Pointer to recv-down slab (device memory) — destination for pull
+     * @param byteCount     Number of bytes per slab
+     * @param count         Number of MPI elements per slab
+     * @param dataType      MPI datatype for non-P2P fallback
+     */
+    void exchange(size_t dimension, void *sendUpPtr, void *sendDownPtr, void *recvUpPtr, void *recvDownPtr,
+                  size_t byteCount, int count, MPI_Datatype dataType)
     {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
       bool upP2P = isP2PUp(dimension);
       bool downP2P = isP2PDown(dimension);
 
-      // Synchronize P2P: ensure async GPU copies are done, then signal remote
-      if (upP2P || downP2P) p2p::streamSynchronize();
+      if (upP2P || downP2P) {
+        // --- P2P pull model ---
+        // Phase 1: Signal neighbors that our send buffers are packed and ready to read
+        // (Kokkos::fence was already called by the ghost updater before this method)
 
-      if (upP2P) {
-        char dummy = 0;
-        MPI_Send(&dummy, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 0], signalTag(dimension, 0), mCartComm);
-      }
-      if (downP2P) {
-        char dummy = 0;
-        MPI_Send(&dummy, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 1], signalTag(dimension, 1), mCartComm);
-      }
+        MPI_Request packDoneRecvReqs[2];
+        MPI_Request readDoneRecvReqs[2];
 
-      // Wait for MPI transfers (non-P2P directions)
-      if (!upP2P || !downP2P) {
-        waitallMpiPartial(!upP2P, !downP2P);
-      }
+        // Post receives for "pack done" signals from neighbors who will send to us
+        if (upP2P) {
+          // We will read from our LOWER neighbor's sendUp buffer (they sent up to us)
+          MPI_Irecv(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 1],
+                    P2PTags::packDoneBase + dimension * 2 + 0, mCartComm, &packDoneRecvReqs[0]);
+        }
+        if (downP2P) {
+          // We will read from our UPPER neighbor's sendDown buffer (they sent down to us)
+          MPI_Irecv(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 0],
+                    P2PTags::packDoneBase + dimension * 2 + 1, mCartComm, &packDoneRecvReqs[1]);
+        }
 
-      // Wait for P2P signals from remote (confirms remote's write into our recv buffer is complete)
-      if (upP2P) {
-        MPI_Status stat;
-        MPI_Wait(&mP2PSignalRecvRequests[dimension * 2 + 0], &stat);
+        // Post non-P2P MPI receives
+        if (!upP2P) mExchange.IrecvUp(dataType, dimension, recvUpPtr, count);
+        if (!downP2P) mExchange.IrecvDown(dataType, dimension, recvDownPtr, count);
+
+        // Signal our neighbors that our send buffers are packed
+        if (upP2P) {
+          // Our upper neighbor will read from our sendUp buffer
+          MPI_Send(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 0],
+                   P2PTags::packDoneBase + dimension * 2 + 0, mCartComm);
+        }
+        if (downP2P) {
+          // Our lower neighbor will read from our sendDown buffer
+          MPI_Send(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 1],
+                   P2PTags::packDoneBase + dimension * 2 + 1, mCartComm);
+        }
+
+        // Post non-P2P MPI sends
+        if (!upP2P) mExchange.IsendUp(dataType, dimension, sendUpPtr, count);
+        if (!downP2P) mExchange.IsendDown(dataType, dimension, sendDownPtr, count);
+
+        // Phase 2: Wait for "pack done" from neighbors, then read from their send buffers
+        if (upP2P) {
+          MPI_Wait(&packDoneRecvReqs[0], MPI_STATUS_IGNORE);
+          // Read from lower neighbor's sendUp buffer into our recvUp buffer
+          // (lower neighbor sent up → we receive from below)
+          p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
+        }
+        if (downP2P) {
+          MPI_Wait(&packDoneRecvReqs[1], MPI_STATUS_IGNORE);
+          // Read from upper neighbor's sendDown buffer into our recvDown buffer
+          // (upper neighbor sent down → we receive from above)
+          p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
+        }
+
+        // Sync GPU reads
+        if (upP2P || downP2P) p2p::streamSynchronize();
+
+        // Phase 3: Signal neighbors that we're done reading their send buffers
+        // Post receives for "read done" signals
+        if (upP2P) {
+          MPI_Irecv(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 0],
+                    P2PTags::readDoneBase + dimension * 2 + 0, mCartComm, &readDoneRecvReqs[0]);
+        }
+        if (downP2P) {
+          MPI_Irecv(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 1],
+                    P2PTags::readDoneBase + dimension * 2 + 1, mCartComm, &readDoneRecvReqs[1]);
+        }
+
+        // Signal that we're done reading
+        if (upP2P) {
+          MPI_Send(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 1],
+                   P2PTags::readDoneBase + dimension * 2 + 0, mCartComm);
+        }
+        if (downP2P) {
+          MPI_Send(nullptr, 0, MPI_BYTE, mNeighborRanks[dimension * 2 + 0],
+                   P2PTags::readDoneBase + dimension * 2 + 1, mCartComm);
+        }
+
+        // Wait for non-P2P MPI to complete
+        if (!upP2P || !downP2P) mExchange.waitall();
+
+        // Wait for "read done" from neighbors (so our send buffers can be reused next dimension)
+        if (upP2P) MPI_Wait(&readDoneRecvReqs[0], MPI_STATUS_IGNORE);
+        if (downP2P) MPI_Wait(&readDoneRecvReqs[1], MPI_STATUS_IGNORE);
+
+        return;
       }
-      if (downP2P) {
-        MPI_Status stat;
-        MPI_Wait(&mP2PSignalRecvRequests[dimension * 2 + 1], &stat);
-      }
-#else
-      mExchange.waitall();
 #endif
+      // Pure MPI path (no P2P for this dimension)
+      mExchange.IrecvUp(dataType, dimension, recvUpPtr, count);
+      mExchange.IrecvDown(dataType, dimension, recvDownPtr, count);
+      mExchange.IsendUp(dataType, dimension, sendUpPtr, count);
+      mExchange.IsendDown(dataType, dimension, sendDownPtr, count);
+      mExchange.waitall();
     }
 
     const MPICartesianGroup &getMPICartesianGroup() const { return mExchange.getMPICartesianGroup(); }
@@ -209,22 +245,21 @@ namespace TempLat::device_kokkos
 
     // Per (dimension, direction): indexed as [d * 2 + dir], dir: 0=up, 1=down
     std::array<bool, 2 * NDim> mP2PAvailable{};
-    std::array<void *, 2 * NDim> mRemoteRecvPtr{};
+    // IPC-mapped pointers to each neighbor's send buffers (we READ from these)
+    // mRemoteSendUpPtr[d*2+dir]: the neighbor in direction 'dir' of dimension d's sendUp buffer
+    std::array<void *, 2 * NDim> mRemoteSendUpPtr{};
+    std::array<void *, 2 * NDim> mRemoteSendDownPtr{};
     std::array<uint64_t, 2 * NDim> mRemoteHandleVersion{};
     std::array<int, 2 * NDim> mNeighborRanks{};
     std::array<int, 2 * NDim> mNeighborDevices{};
-    std::array<MPI_Request, 2 * NDim> mP2PSignalRecvRequests{};
 
     bool isP2PUp(size_t d) const { return mP2PAvailable[d * 2 + 0]; }
     bool isP2PDown(size_t d) const { return mP2PAvailable[d * 2 + 1]; }
-
-    static int signalTag(size_t dimension, int direction) { return P2PTags::signalBase + dimension * 2 + direction; }
 
     void probeP2P(MPI_Comm shmComm)
     {
       if (shmComm == MPI_COMM_NULL) return;
 
-      // Build a set of ranks in the shared-memory communicator
       MPI_Group worldGroup, shmGroup;
       MPI_Comm_group(mCartComm, &worldGroup);
       MPI_Comm_group(shmComm, &shmGroup);
@@ -232,16 +267,13 @@ namespace TempLat::device_kokkos
       int shmSize;
       MPI_Comm_size(shmComm, &shmSize);
 
-      // Allgather device IDs within the shared-memory communicator
       std::vector<int> shmDevices(shmSize);
       MPI_Allgather(&mMyDevice, 1, MPI_INT, shmDevices.data(), 1, MPI_INT, shmComm);
 
-      // Allgather global ranks within shmComm so we can map shmRank -> globalRank -> device
       std::vector<int> shmGlobalRanks(shmSize);
       MPI_Allgather(&mMyRank, 1, MPI_INT, shmGlobalRanks.data(), 1, MPI_INT, shmComm);
 
-      // Build globalRank -> deviceId map for same-node ranks
-      std::vector<std::pair<int, int>> rankDeviceMap; // (globalRank, deviceId)
+      std::vector<std::pair<int, int>> rankDeviceMap;
       for (int i = 0; i < shmSize; ++i)
         rankDeviceMap.emplace_back(shmGlobalRanks[i], shmDevices[i]);
 
@@ -254,12 +286,7 @@ namespace TempLat::device_kokkos
         mNeighborRanks[d * 2 + 0] = upperNeighbor;
         mNeighborRanks[d * 2 + 1] = lowerNeighbor;
 
-        // Check upper neighbor (up direction: we send to upper, recv from lower)
-        // For P2P "up": we write into upper neighbor's recvDown buffer
-        // The signal goes to/from the upper neighbor
         checkAndEnableP2P(d, 0, upperNeighbor, rankDeviceMap);
-
-        // Check lower neighbor (down direction)
         checkAndEnableP2P(d, 1, lowerNeighbor, rankDeviceMap);
       }
 
@@ -272,10 +299,8 @@ namespace TempLat::device_kokkos
     {
       size_t idx = dim * 2 + dir;
 
-      // Skip self (same rank means no MPI needed — handled by NOMPI path)
       if (neighborRank == mMyRank) return;
 
-      // Check if neighbor is on the same node
       int neighborDevice = -1;
       for (auto &[rank, device] : rankDeviceMap) {
         if (rank == neighborRank) {
@@ -283,124 +308,93 @@ namespace TempLat::device_kokkos
           break;
         }
       }
-      if (neighborDevice < 0) return; // not on same node
+      if (neighborDevice < 0) return;
 
       mNeighborDevices[idx] = neighborDevice;
 
-      // Check P2P capability
-      if (neighborDevice == mMyDevice) return; // same device — no P2P needed (data is already accessible)
+      if (neighborDevice == mMyDevice) return;
 
       if (!p2p::canAccessPeer(mMyDevice, neighborDevice)) return;
 
       p2p::enablePeerAccess(neighborDevice);
       mP2PAvailable[idx] = true;
 
-      sayMPI << "Ghost exchange: P2P enabled for dimension " << dim << (dir == 0 ? " (up)" : " (down)")
-             << " to rank " << neighborRank << " (device " << neighborDevice << ")\n";
+      sayMPI << "Ghost exchange: P2P enabled for dimension " << dim << (dir == 0 ? " (up)" : " (down)") << " to rank "
+             << neighborRank << " (device " << neighborDevice << ")\n";
     }
 
-    void exchangeIpcHandles(char *recvUpPtr, char *recvDownPtr, uint64_t version)
+    void exchangeIpcHandles(char *sendUpPtr, char *sendDownPtr, uint64_t version)
     {
-      // For each P2P-capable neighbor, exchange IPC handles for recv buffers.
-      // Our upper neighbor needs a handle to our recvUp buffer (they write into it as their sendDown).
-      // Wait — the directions are:
-      //   - We sendUp to upper neighbor. Upper neighbor's recvDown is where our data lands.
-      //     So we need IPC handle for upper neighbor's recvDown buffer.
-      //   - Upper neighbor sendDown to us. Our recvUp is where their data lands.
-      //     So upper neighbor needs IPC handle for our recvUp buffer.
+      // Pull model: we need IPC handles for each neighbor's SEND buffers so we can READ from them.
       //
-      // In our "push" model:
-      //   - sendUp writes to remote's recv buffer. We need the remote's recv handle.
-      //   - The remote's recv for our sendUp is: the remote's recvDown (since we send up, they receive down).
-      //     But from the remote's perspective, when we sendUp, the remote receives from its lower neighbor.
-      //     The remote posts recvUp from its lower neighbor... wait, let me think about this clearly.
+      // For "recvUp" (receiving data sent UP from our lower neighbor):
+      //   - Our lower neighbor packed into their sendUp buffer
+      //   - We need IPC handle for lower neighbor's sendUp buffer
+      //   - We export our sendUp handle to our upper neighbor (they will recvUp = read our sendUp)
       //
-      // Ghost exchange semantics in MPICartesianExchange:
-      //   - IsendUp sends to getUpperNeighbour, IrecvUp recvs from getLowerNeighbour
-      //   - IsendDown sends to getLowerNeighbour, IrecvDown recvs from getUpperNeighbour
-      //
-      // So when rank A sendUp to rank B (B = A's upper neighbor):
-      //   - A is B's lower neighbor
-      //   - B will IrecvUp from its lower neighbor = A, into B's recvUpSlab
-      //
-      // For P2P: A needs to write directly into B's recvUpSlab.
-      // So A needs the IPC handle for B's recvUp buffer.
-      //
-      // Similarly, when A sendDown to rank C (C = A's lower neighbor):
-      //   - A is C's upper neighbor
-      //   - C will IrecvDown from its upper neighbor = A, into C's recvDownSlab
-      //   - So A needs the IPC handle for C's recvDown buffer.
-      //
-      // Exchange protocol:
-      //   - Each rank sends its recvUp handle to its lower neighbor (who will sendUp to us)
-      //   - Each rank sends its recvDown handle to its upper neighbor (who will sendDown to us)
+      // For "recvDown" (receiving data sent DOWN from our upper neighbor):
+      //   - Our upper neighbor packed into their sendDown buffer
+      //   - We need IPC handle for upper neighbor's sendDown buffer
+      //   - We export our sendDown handle to our lower neighbor (they will recvDown = read our sendDown)
+
+      struct HandlePair {
+        p2p::IpcHandlePacket sendUpPacket{};
+        p2p::IpcHandlePacket sendDownPacket{};
+        uint64_t version = 0;
+      };
 
       for (size_t d = 0; d < NDim; ++d) {
-        // --- Up direction: we sendUp to upper neighbor, need their recvUp handle ---
-        if (mP2PAvailable[d * 2 + 0]) {
-          int upperRank = mNeighborRanks[d * 2 + 0];
+        int upperRank = mNeighborRanks[d * 2 + 0];
+        int lowerRank = mNeighborRanks[d * 2 + 1];
 
-          // Send our recvUp handle to our lower neighbor (they sendUp to us, need our recvUp)
-          // Receive upper neighbor's recvUp handle (we sendUp to them, need their recvUp)
-          p2p::IpcHandlePacket sendPacket{};
-          if (recvUpPtr != nullptr) p2p::ipcGetHandle(recvUpPtr, sendPacket.handle);
-          sendPacket.deviceId = mMyDevice;
-          sendPacket.version = version;
+        // Exchange sendUp handles: we send ours to upper, receive lower's
+        if (mP2PAvailable[d * 2 + 0] || mP2PAvailable[d * 2 + 1]) {
+          // Pack our sendUp handle
+          p2p::IpcHandlePacket mySendUpPacket{};
+          if (sendUpPtr != nullptr) p2p::ipcGetHandle(sendUpPtr, mySendUpPacket.handle);
+          mySendUpPacket.deviceId = mMyDevice;
+          mySendUpPacket.version = version;
 
-          p2p::IpcHandlePacket recvPacket{};
+          // Pack our sendDown handle
+          p2p::IpcHandlePacket mySendDownPacket{};
+          if (sendDownPtr != nullptr) p2p::ipcGetHandle(sendDownPtr, mySendDownPacket.handle);
+          mySendDownPacket.deviceId = mMyDevice;
+          mySendDownPacket.version = version;
+
+          // Exchange: send our sendUp handle to upper neighbor (they need it for their recvUp = read our sendUp)
+          //           receive lower neighbor's sendUp handle (we need it for our recvUp = read their sendUp)
+          p2p::IpcHandlePacket recvSendUpFromLower{};
           MPI_Status stat;
-          // We send our recvUp to lower neighbor, receive upper neighbor's recvUp
-          // But actually: upper neighbor sends us their recvUp handle
-          // Use MPI_Sendrecv: send our recvUp handle to lower, recv upper's recvUp handle from upper
-          int lowerRank = mNeighborRanks[d * 2 + 1]; // our lower neighbor
-          // Lower neighbor will sendUp to us and needs our recvUp handle
-          // Upper neighbor: we sendUp to them and need their recvUp handle (they send it to us)
-          MPI_Sendrecv(&sendPacket, sizeof(p2p::IpcHandlePacket), MPI_BYTE, lowerRank, signalTag(d, 0) + 100,
-                       &recvPacket, sizeof(p2p::IpcHandlePacket), MPI_BYTE, upperRank, signalTag(d, 0) + 100,
-                       mCartComm, &stat);
+          int tag1 = 700 + d * 4 + 0;
+          MPI_Sendrecv(&mySendUpPacket, sizeof(p2p::IpcHandlePacket), MPI_BYTE, upperRank, tag1, &recvSendUpFromLower,
+                       sizeof(p2p::IpcHandlePacket), MPI_BYTE, lowerRank, tag1, mCartComm, &stat);
 
-          if (recvPacket.version > mRemoteHandleVersion[d * 2 + 0]) {
-            if (mRemoteRecvPtr[d * 2 + 0] != nullptr) p2p::ipcCloseHandle(mRemoteRecvPtr[d * 2 + 0]);
-            mRemoteRecvPtr[d * 2 + 0] = (recvPacket.version > 0) ? p2p::ipcOpenHandle(recvPacket.handle) : nullptr;
-            mRemoteHandleVersion[d * 2 + 0] = recvPacket.version;
+          // Exchange: send our sendDown handle to lower neighbor (they need it for their recvDown = read our sendDown)
+          //           receive upper neighbor's sendDown handle (we need it for our recvDown = read their sendDown)
+          p2p::IpcHandlePacket recvSendDownFromUpper{};
+          int tag2 = 700 + d * 4 + 1;
+          MPI_Sendrecv(&mySendDownPacket, sizeof(p2p::IpcHandlePacket), MPI_BYTE, lowerRank, tag2,
+                       &recvSendDownFromUpper, sizeof(p2p::IpcHandlePacket), MPI_BYTE, upperRank, tag2, mCartComm,
+                       &stat);
+
+          // Open lower neighbor's sendUp handle (for our recvUp)
+          if (mP2PAvailable[d * 2 + 0] && recvSendUpFromLower.version > mRemoteHandleVersion[d * 2 + 1]) {
+            if (mRemoteSendUpPtr[d * 2 + 1] != nullptr) p2p::ipcCloseHandle(mRemoteSendUpPtr[d * 2 + 1]);
+            mRemoteSendUpPtr[d * 2 + 1] =
+                (recvSendUpFromLower.version > 0) ? p2p::ipcOpenHandle(recvSendUpFromLower.handle) : nullptr;
           }
-        }
 
-        // --- Down direction: we sendDown to lower neighbor, need their recvDown handle ---
-        if (mP2PAvailable[d * 2 + 1]) {
-          int lowerRank = mNeighborRanks[d * 2 + 1];
-
-          p2p::IpcHandlePacket sendPacket{};
-          if (recvDownPtr != nullptr) p2p::ipcGetHandle(recvDownPtr, sendPacket.handle);
-          sendPacket.deviceId = mMyDevice;
-          sendPacket.version = version;
-
-          p2p::IpcHandlePacket recvPacket{};
-          MPI_Status stat;
-          int upperRank = mNeighborRanks[d * 2 + 0]; // our upper neighbor
-          // Upper neighbor will sendDown to us and needs our recvDown handle
-          // Lower neighbor: we sendDown to them and need their recvDown handle
-          MPI_Sendrecv(&sendPacket, sizeof(p2p::IpcHandlePacket), MPI_BYTE, upperRank, signalTag(d, 1) + 100,
-                       &recvPacket, sizeof(p2p::IpcHandlePacket), MPI_BYTE, lowerRank, signalTag(d, 1) + 100,
-                       mCartComm, &stat);
-
-          if (recvPacket.version > mRemoteHandleVersion[d * 2 + 1]) {
-            if (mRemoteRecvPtr[d * 2 + 1] != nullptr) p2p::ipcCloseHandle(mRemoteRecvPtr[d * 2 + 1]);
-            mRemoteRecvPtr[d * 2 + 1] = (recvPacket.version > 0) ? p2p::ipcOpenHandle(recvPacket.handle) : nullptr;
-            mRemoteHandleVersion[d * 2 + 1] = recvPacket.version;
+          // Open upper neighbor's sendDown handle (for our recvDown)
+          if (mP2PAvailable[d * 2 + 1] && recvSendDownFromUpper.version > mRemoteHandleVersion[d * 2 + 0]) {
+            if (mRemoteSendDownPtr[d * 2 + 0] != nullptr) p2p::ipcCloseHandle(mRemoteSendDownPtr[d * 2 + 0]);
+            mRemoteSendDownPtr[d * 2 + 0] =
+                (recvSendDownFromUpper.version > 0) ? p2p::ipcOpenHandle(recvSendDownFromUpper.handle) : nullptr;
           }
+
+          mRemoteHandleVersion[d * 2 + 0] = std::max(mRemoteHandleVersion[d * 2 + 0], recvSendDownFromUpper.version);
+          mRemoteHandleVersion[d * 2 + 1] = std::max(mRemoteHandleVersion[d * 2 + 1], recvSendUpFromLower.version);
         }
       }
-    }
-
-    void waitallMpiPartial(bool waitUp, bool waitDown)
-    {
-      // Collect active MPI requests and wait on them
-      // mExchange uses indices: 0=IrecvUp, 1=IrecvDown, 2=IsendUp, 3=IsendDown
-      // We just call the full waitall — inactive requests are MPI_REQUEST_NULL and are skipped
-      // However, we can only call waitall if we actually posted MPI requests.
-      // For safety, just call the full waitall which handles MPI_REQUEST_NULL correctly.
-      if (waitUp || waitDown) mExchange.waitall();
     }
 #endif
   };

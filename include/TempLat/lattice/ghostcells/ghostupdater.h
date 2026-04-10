@@ -141,7 +141,8 @@ namespace TempLat
         mRecvDownBuffer = device::memory::NDView<char, 1>("ghostRecvDownBuf", neededBytes);
         mAllocatedBytes = neededBytes;
 #ifdef HAVE_MPI
-        mExchangeManager.updateBufferHandles(mRecvUpBuffer.data(), mRecvDownBuffer.data(), ++mHandleVersion);
+        mExchangeManager.updateBufferHandles(mSendUpBuffer.data(), mSendDownBuffer.data(), mRecvUpBuffer.data(),
+                                             mRecvDownBuffer.data(), ++mHandleVersion);
 #endif
       }
 
@@ -202,11 +203,8 @@ namespace TempLat
       // Exchange ghost slabs — ExchangeManager routes to P2P or MPI per direction
 #ifdef HAVE_MPI
       MPI_Datatype dataType = MPITypeSelect<T>();
-      mExchangeManager.recvUp(dimension, recvUpSlab.data(), total_size, dataType);
-      mExchangeManager.recvDown(dimension, recvDownSlab.data(), total_size, dataType);
-      mExchangeManager.sendUp(dimension, sendUpSlab.data(), total_size * sizeof(T), total_size, dataType);
-      mExchangeManager.sendDown(dimension, sendDownSlab.data(), total_size * sizeof(T), total_size, dataType);
-      mExchangeManager.waitall(dimension);
+      mExchangeManager.exchange(dimension, sendUpSlab.data(), sendDownSlab.data(), recvUpSlab.data(),
+                                recvDownSlab.data(), total_size * sizeof(T), total_size, dataType);
 #endif
 
       // Unpack both receive slabs (GPU kernels can run concurrently)
