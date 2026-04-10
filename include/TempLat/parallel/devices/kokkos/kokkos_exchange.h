@@ -108,13 +108,18 @@ namespace TempLat::device_kokkos
       bool downP2P = isP2PDown(dimension);
 
       if (upP2P || downP2P) {
-        // --- Two-phase P2P pull model ---
+        // --- Two-phase P2P pull model (rank-based phasing) ---
         // On PCIe (PIX/PXB) topologies, simultaneous bidirectional P2P reads between GPUs
-        // on a shared PCIe switch degrade throughput by 10x+. We split UP and DOWN reads
-        // into separate phases so no bidirectional pair occurs in the same phase.
+        // on a shared PCIe switch degrade throughput by 10x+. We split reads into two phases
+        // by rank ordering: for each read from source rank S, do it in phase 0 if myRank < S,
+        // phase 1 if myRank > S. This guarantees no bidirectional pair in either phase.
         // On NVLink the extra barrier is negligible (~μs vs ~ms for P2P copies).
         //
         // Kokkos::fence was already called by the ghost updater (packing complete on GPU).
+
+        // "recvUp" reads from lower neighbor, "recvDown" reads from upper neighbor
+        int upReadSource = mNeighborRanks[dimension * 2 + 1];  // lower neighbor
+        int downReadSource = mNeighborRanks[dimension * 2 + 0]; // upper neighbor
 
         // Post non-P2P MPI receives before the barrier (overlaps with barrier wait)
         if (!upP2P) mExchange.IrecvUp(dataType, dimension, recvUpPtr, count);
@@ -127,14 +132,18 @@ namespace TempLat::device_kokkos
         if (!upP2P) mExchange.IsendUp(dataType, dimension, sendUpPtr, count);
         if (!downP2P) mExchange.IsendDown(dataType, dimension, sendDownPtr, count);
 
-        // Phase 0: UP reads only (all traffic flows rank i ← rank i+1, unidirectional)
-        if (upP2P)
+        // Phase 0: reads where this rank has the lower rank number
+        if (upP2P && mMyRank < upReadSource)
           p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
+        if (downP2P && mMyRank < downReadSource)
+          p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
         p2p::streamSynchronize();
         MPI_Barrier(mShmComm);
 
-        // Phase 1: DOWN reads only (all traffic flows rank i ← rank i-1, unidirectional)
-        if (downP2P)
+        // Phase 1: reads where this rank has the higher rank number
+        if (upP2P && mMyRank > upReadSource)
+          p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
+        if (downP2P && mMyRank > downReadSource)
           p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
         p2p::streamSynchronize();
 
