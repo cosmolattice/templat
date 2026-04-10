@@ -275,6 +275,7 @@ namespace TempLat
 #endif
     }
 
+  public:
     /** @brief Local periodic ghost copy for a single dimension (no MPI). */
     template <typename T> void pUpdate_NOMPI_singleDim(MemoryBlock<T, NDim> &block, size_t dim)
     {
