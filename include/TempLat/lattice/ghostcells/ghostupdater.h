@@ -121,9 +121,19 @@ namespace TempLat
 
     template <typename T> void pUpdate(MemoryBlock<T, NDim> &block)
     {
+#ifdef HAVE_MPI
+      auto &decomp = mExchangeManager.getMPICartesianGroup().getDecomposition();
+#endif
       /* iterate dimensions */
       for (size_t d = 0; d < NDim; ++d) {
-#if defined(DEVICE_CUDA) || defined(DEVICE_HIP)
+#ifdef HAVE_MPI
+        // Non-split dimensions: local periodic copy (no MPI overhead)
+        if (decomp[d] <= 1) {
+          pUpdate_NOMPI_singleDim(block, d);
+          continue;
+        }
+#endif
+#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP) || defined(KOKKOS_ENABLE_SYCL)
         update_forDimension_device(block, d);
 #else
         update_forDimension(block, d);
@@ -263,6 +273,64 @@ namespace TempLat
                                     ptr + (mGhostDepth + mLayout.getSizesInMemory()[dimension]) *
                                               mLayout.stride(dimension));
 #endif
+    }
+
+    /** @brief Local periodic ghost copy for a single dimension (no MPI). */
+    template <typename T> void pUpdate_NOMPI_singleDim(MemoryBlock<T, NDim> &block, size_t dim)
+    {
+      const auto ghostDepth = mLayout.getPadding()[0][0];
+      device::IdxArray<NDim> sizes;
+      for (size_t i = 0; i < NDim; ++i)
+        sizes[i] = mLayout.getSizesInMemory()[i];
+      device::IdxArray<NDim> full_sizes{};
+      for (size_t i = 0; i < NDim; ++i)
+        full_sizes[i] = ghostDepth + sizes[i] + ghostDepth;
+      auto View = block.getNDView(full_sizes);
+
+      for (size_t depth = 1; depth <= (size_t)mGhostDepth; ++depth) {
+        if constexpr (NDim == 1) {
+          device::iteration::foreach (
+              "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
+              DEVICE_LAMBDA(const device::IdxArray<1> &i) {
+                View(ghostDepth - depth) = View(ghostDepth + sizes[0] - depth);
+                View(ghostDepth + sizes[0] + (depth - 1)) = View(ghostDepth + (depth - 1));
+              });
+        } else {
+          device::array<std::pair<device::Idx, device::Idx>, NDim> btf_slicesFrom{};
+          device::array<std::pair<device::Idx, device::Idx>, NDim> btf_slicesTo{};
+          device::array<std::pair<device::Idx, device::Idx>, NDim> ftb_slicesFrom{};
+          device::array<std::pair<device::Idx, device::Idx>, NDim> ftb_slicesTo{};
+
+          for (size_t i = 0; i < NDim; ++i) {
+            btf_slicesFrom[i] = (i == dim)
+                                    ? std::make_pair<device::Idx, device::Idx>(ghostDepth + sizes[i] - depth,
+                                                                               ghostDepth + sizes[i] - depth + 1)
+                                    : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
+            btf_slicesTo[i] =
+                (i == dim) ? std::make_pair<device::Idx, device::Idx>(ghostDepth - depth, ghostDepth - depth + 1)
+                           : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
+            ftb_slicesFrom[i] =
+                (i == dim)
+                    ? std::make_pair<device::Idx, device::Idx>(ghostDepth + (depth - 1), ghostDepth + (depth - 1) + 1)
+                    : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
+            ftb_slicesTo[i] = (i == dim)
+                                  ? std::make_pair<device::Idx, device::Idx>(ghostDepth + sizes[i] + (depth - 1),
+                                                                             ghostDepth + sizes[i] + (depth - 1) + 1)
+                                  : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
+          }
+          auto btf_fromSubView = device::apply(
+              [&](const auto &...args) { return device::memory::subview(View, args...); }, btf_slicesFrom);
+          auto btf_toSubView = device::apply(
+              [&](const auto &...args) { return device::memory::subview(View, args...); }, btf_slicesTo);
+          auto ftb_fromSubView = device::apply(
+              [&](const auto &...args) { return device::memory::subview(View, args...); }, ftb_slicesFrom);
+          auto ftb_toSubView = device::apply(
+              [&](const auto &...args) { return device::memory::subview(View, args...); }, ftb_slicesTo);
+
+          device::memory::copyDeviceToDevice(btf_fromSubView, btf_toSubView);
+          device::memory::copyDeviceToDevice(ftb_fromSubView, ftb_toSubView);
+        }
+      }
     }
 
   public:
