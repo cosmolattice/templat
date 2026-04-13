@@ -72,6 +72,13 @@ namespace TempLat
     return BackDiff<N, R>(pR);
   }
 
+  template <class R, int N>
+    requires(GetNDim::get<std::decay_t<R>>() == 0)
+  DEVICE_INLINE_FUNCTION auto backDiff(R pR, Tag<N>)
+  {
+    return ZeroType();
+  }
+
   template <int NDim, typename R>
     requires(!HasEvalMethod<R> || GetNDim::get<std::decay_t<R>>() == 0)
   DEVICE_INLINE_FUNCTION auto backDiff(R pR)

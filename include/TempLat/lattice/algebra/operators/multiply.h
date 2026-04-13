@@ -104,6 +104,9 @@ namespace TempLat
     return Operators::MultiplicationN<R, N>(r);
   }
 
+  /** @brief Specialize for ZeroType * ZeroType */
+  DEVICE_INLINE_FUNCTION ZeroType operator*(ZeroType, ZeroType) { return {}; }
+
   /** @brief Specialize for possible zero input! */
   template <typename T>
     requires(!std::is_same_v<T, ZeroType>)

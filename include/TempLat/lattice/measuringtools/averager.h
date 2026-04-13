@@ -129,11 +129,20 @@ namespace TempLat
   };
 
   template <typename T>
-    requires(!IsTempLatGettable<0, T> && !std::is_arithmetic_v<T>)
+    requires(!IsTempLatGettable<0, T> && !std::is_arithmetic_v<T> && GetNDim::get<std::decay_t<T>>() > 0)
   auto average(T instance, SpaceStateType spaceType = GetGetReturnType<T>::isComplex ? SpaceStateType::Fourier
                                                                                      : SpaceStateType::Configuration)
   {
     return Averager<T>(instance, spaceType).compute();
+  }
+
+  // 0-dim expressions (Number<T>, pow<2>(Number<T>), etc): evaluate at index 0
+  template <typename T>
+    requires(!std::is_arithmetic_v<T> && !std::is_same_v<std::decay_t<T>, ZeroType> &&
+             GetNDim::get<std::decay_t<T>>() == 0)
+  auto average(T expr)
+  {
+    return DoEval::eval(expr, size_t{0});
   }
 
   template <typename T>
