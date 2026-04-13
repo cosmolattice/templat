@@ -33,8 +33,8 @@ static_assert(false, "No DEVICE_FUNCTION defined.");
 #ifndef DEVICE_INLINE_FUNCTION
 static_assert(false, "No DEVICE_INLINE_FUNCTION defined.");
 #endif
-#ifndef DEVICE_INLINE_FUNCTION
-static_assert(false, "No DEVICE_INLINE_FUNCTION defined.");
+#ifndef DEVICE_FORCEINLINE_FUNCTION
+static_assert(false, "No DEVICE_FORCEINLINE_INLINE_FUNCTION defined.");
 #endif
 #ifndef DEVICE_LAMBDA
 static_assert(false, "No DEVICE_LAMBDA defined.");
