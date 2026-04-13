@@ -17,6 +17,7 @@
 #include "TempLat/lattice/algebra/operators/operators.h"
 #include "TempLat/util/tuple_tools.h"
 #include "TempLat/lattice/algebra/helpers/haseval.h"
+#include "TempLat/lattice/algebra/helpers/getndim.h"
 
 namespace TempLat
 {
@@ -65,14 +66,14 @@ namespace TempLat
   };
 
   template <class R, int N>
-    requires HasEvalMethod<R>
+    requires(HasEvalMethod<R> && GetNDim::get<std::decay_t<R>>() > 0)
   DEVICE_INLINE_FUNCTION auto forwDiff(R pR, Tag<N> t)
   {
     return ForwDiff<N, R>(pR);
   }
 
   template <int NDim, typename R>
-    requires(!HasEvalMethod<R>)
+    requires(!HasEvalMethod<R> || GetNDim::get<std::decay_t<R>>() == 0)
   DEVICE_INLINE_FUNCTION auto forwDiff(R pR)
   {
     return ZeroType();

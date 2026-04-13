@@ -75,7 +75,7 @@ namespace TempLat
   };
 
   template <size_t NDim_ = 0, typename R>
-    requires HasEvalMethod<R>
+    requires(HasEvalMethod<R> && GetNDim::get<std::decay_t<R>>() > 0)
   DEVICE_INLINE_FUNCTION auto LatLapl(R pR)
   {
     static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),
@@ -84,7 +84,7 @@ namespace TempLat
   }
 
   template <size_t NDim_ = 0, typename R>
-    requires(!HasEvalMethod<R>)
+    requires(!HasEvalMethod<R> || GetNDim::get<std::decay_t<R>>() == 0)
   DEVICE_INLINE_FUNCTION auto LatLapl(R pR)
   {
     return ZeroType();
