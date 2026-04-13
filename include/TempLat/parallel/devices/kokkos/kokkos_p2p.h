@@ -9,7 +9,7 @@
 
 #include "TempLat/util/exception.h"
 
-#if (defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)) && defined(HAVE_MPI)
+#if (defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP))
 
 #if defined(KOKKOS_ENABLE_CUDA)
 #include <cuda_runtime.h>
@@ -36,8 +36,7 @@ namespace TempLat::device_kokkos::p2p
   {
     int dev;
     auto err = cudaGetDevice(&dev);
-    if (err != cudaSuccess)
-      throw GpuP2PException("cudaGetDevice failed: ", cudaGetErrorString(err));
+    if (err != cudaSuccess) throw GpuP2PException("cudaGetDevice failed: ", cudaGetErrorString(err));
     return dev;
   }
 
@@ -52,15 +51,13 @@ namespace TempLat::device_kokkos::p2p
   {
     cudaError_t err = cudaDeviceEnablePeerAccess(peerDevice, 0);
     if (err != cudaSuccess && err != cudaErrorPeerAccessAlreadyEnabled)
-      throw GpuP2PException("cudaDeviceEnablePeerAccess failed for device ", peerDevice, ": ",
-                            cudaGetErrorString(err));
+      throw GpuP2PException("cudaDeviceEnablePeerAccess failed for device ", peerDevice, ": ", cudaGetErrorString(err));
   }
 
   inline void ipcGetHandle(void *devPtr, void *handle)
   {
     auto err = cudaIpcGetMemHandle(reinterpret_cast<cudaIpcMemHandle_t *>(handle), devPtr);
-    if (err != cudaSuccess)
-      throw GpuP2PException("cudaIpcGetMemHandle failed: ", cudaGetErrorString(err));
+    if (err != cudaSuccess) throw GpuP2PException("cudaIpcGetMemHandle failed: ", cudaGetErrorString(err));
   }
 
   inline void *ipcOpenHandle(const void *handle)
@@ -68,8 +65,7 @@ namespace TempLat::device_kokkos::p2p
     void *ptr;
     auto err = cudaIpcOpenMemHandle(&ptr, *reinterpret_cast<const cudaIpcMemHandle_t *>(handle),
                                     cudaIpcMemLazyEnablePeerAccess);
-    if (err != cudaSuccess)
-      throw GpuP2PException("cudaIpcOpenMemHandle failed: ", cudaGetErrorString(err));
+    if (err != cudaSuccess) throw GpuP2PException("cudaIpcOpenMemHandle failed: ", cudaGetErrorString(err));
     return ptr;
   }
 
@@ -78,15 +74,13 @@ namespace TempLat::device_kokkos::p2p
   inline void memcpyAsync(void *dst, const void *src, size_t bytes)
   {
     auto err = cudaMemcpyAsync(dst, src, bytes, cudaMemcpyDefault, 0);
-    if (err != cudaSuccess)
-      throw GpuP2PException("cudaMemcpyAsync failed: ", cudaGetErrorString(err));
+    if (err != cudaSuccess) throw GpuP2PException("cudaMemcpyAsync failed: ", cudaGetErrorString(err));
   }
 
   inline void streamSynchronize()
   {
     auto err = cudaStreamSynchronize(0);
-    if (err != cudaSuccess)
-      throw GpuP2PException("cudaStreamSynchronize failed: ", cudaGetErrorString(err));
+    if (err != cudaSuccess) throw GpuP2PException("cudaStreamSynchronize failed: ", cudaGetErrorString(err));
   }
 
 #elif defined(KOKKOS_ENABLE_HIP)
@@ -98,8 +92,7 @@ namespace TempLat::device_kokkos::p2p
   {
     int dev;
     auto err = hipGetDevice(&dev);
-    if (err != hipSuccess)
-      throw GpuP2PException("hipGetDevice failed: ", hipGetErrorString(err));
+    if (err != hipSuccess) throw GpuP2PException("hipGetDevice failed: ", hipGetErrorString(err));
     return dev;
   }
 
@@ -114,15 +107,13 @@ namespace TempLat::device_kokkos::p2p
   {
     hipError_t err = hipDeviceEnablePeerAccess(peerDevice, 0);
     if (err != hipSuccess && err != hipErrorPeerAccessAlreadyEnabled)
-      throw GpuP2PException("hipDeviceEnablePeerAccess failed for device ", peerDevice, ": ",
-                            hipGetErrorString(err));
+      throw GpuP2PException("hipDeviceEnablePeerAccess failed for device ", peerDevice, ": ", hipGetErrorString(err));
   }
 
   inline void ipcGetHandle(void *devPtr, void *handle)
   {
     auto err = hipIpcGetMemHandle(reinterpret_cast<hipIpcMemHandle_t *>(handle), devPtr);
-    if (err != hipSuccess)
-      throw GpuP2PException("hipIpcGetMemHandle failed: ", hipGetErrorString(err));
+    if (err != hipSuccess) throw GpuP2PException("hipIpcGetMemHandle failed: ", hipGetErrorString(err));
   }
 
   inline void *ipcOpenHandle(const void *handle)
@@ -130,8 +121,7 @@ namespace TempLat::device_kokkos::p2p
     void *ptr;
     auto err =
         hipIpcOpenMemHandle(&ptr, *reinterpret_cast<const hipIpcMemHandle_t *>(handle), hipIpcMemLazyEnablePeerAccess);
-    if (err != hipSuccess)
-      throw GpuP2PException("hipIpcOpenMemHandle failed: ", hipGetErrorString(err));
+    if (err != hipSuccess) throw GpuP2PException("hipIpcOpenMemHandle failed: ", hipGetErrorString(err));
     return ptr;
   }
 
@@ -140,15 +130,13 @@ namespace TempLat::device_kokkos::p2p
   inline void memcpyAsync(void *dst, const void *src, size_t bytes)
   {
     auto err = hipMemcpyAsync(dst, src, bytes, hipMemcpyDefault, 0);
-    if (err != hipSuccess)
-      throw GpuP2PException("hipMemcpyAsync failed: ", hipGetErrorString(err));
+    if (err != hipSuccess) throw GpuP2PException("hipMemcpyAsync failed: ", hipGetErrorString(err));
   }
 
   inline void streamSynchronize()
   {
     auto err = hipStreamSynchronize(0);
-    if (err != hipSuccess)
-      throw GpuP2PException("hipStreamSynchronize failed: ", hipGetErrorString(err));
+    if (err != hipSuccess) throw GpuP2PException("hipStreamSynchronize failed: ", hipGetErrorString(err));
   }
 
 #endif
@@ -236,17 +224,22 @@ namespace TempLat::device_kokkos::p2p
       if (fnHandleByPci(busIdA, &devA) == 0 && fnHandleByPci(busIdB, &devB) == 0) {
         // Get device B's PCI info for comparison with NVLink remote endpoints
         // nvmlPciInfo_t layout: char busIdLegacy[16], uint domain, uint bus, uint device, ...
-        struct { char legacy[16]; unsigned int domain, bus, device; } pciB{};
+        struct {
+          char legacy[16];
+          unsigned int domain, bus, device;
+        } pciB{};
         fnGetPciInfo(devB, &pciB);
 
         // Enumerate NVLink ports on device A (up to 18 on recent hardware)
         for (unsigned int link = 0; link < 18 && !found; ++link) {
-          unsigned int state = 0; // nvmlEnableState_t
+          unsigned int state = 0;                                   // nvmlEnableState_t
           if (fnNvLinkState(devA, link, &state) != 0 || state != 1) // NVML_FEATURE_ENABLED = 1
             continue;
-          struct { char legacy[16]; unsigned int domain, bus, device; } remotePci{};
-          if (fnNvLinkRemotePci(devA, link, &remotePci) != 0)
-            continue;
+          struct {
+            char legacy[16];
+            unsigned int domain, bus, device;
+          } remotePci{};
+          if (fnNvLinkRemotePci(devA, link, &remotePci) != 0) continue;
           if (remotePci.domain == pciB.domain && remotePci.bus == pciB.bus && remotePci.device == pciB.device)
             found = true;
         }
@@ -280,6 +273,6 @@ namespace TempLat::device_kokkos::p2p
 
 } // namespace TempLat::device_kokkos::p2p
 
-#endif // (KOKKOS_ENABLE_CUDA || KOKKOS_ENABLE_HIP) && HAVE_MPI
+#endif // (KOKKOS_ENABLE_CUDA || KOKKOS_ENABLE_HIP)
 
 #endif

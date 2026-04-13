@@ -12,6 +12,16 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Complex.hpp>
 
+#if defined(KOKKOS_ENABLE_CUDA) && !defined(DEVICE_CUDA)
+static_assert(false,
+              "KOKKOS_ENABLE_CUDA is defined but DEVICE_CUDA is not. Something is wrong with the device selection.");
+#endif
+
+#if defined(KOKKOS_ENABLE_HIP) && !defined(DEVICE_HIP)
+static_assert(false,
+              "KOKKOS_ENABLE_HIP is defined but DEVICE_HIP is not. Something is wrong with the device selection.");
+#endif
+
 #ifdef KOKKOS_ENABLE_CUDA // CUDA GPU
 
 #include <cuda/std/array>
