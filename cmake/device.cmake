@@ -54,10 +54,15 @@ if(_USER_SPECIFIED_GPU)
   # User explicitly requested a GPU backend — validate it.
 
   if(CUDA)
-    check_language(CUDA)
-    if(NOT CMAKE_CUDA_COMPILER)
-      message(
-        WARNING "CUDA was explicitly requested but no CUDA compiler was found.")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "NVHPC")
+
+    else()
+      check_language(CUDA)
+      if(NOT CMAKE_CUDA_COMPILER)
+        message(
+          WARNING
+            "CUDA was explicitly requested but no CUDA compiler was found.")
+      endif()
     endif()
     # _try_cuda(_CUDA_COMPILES) if(NOT _CUDA_COMPILES) message( FATAL_ERROR
     # "CUDA compiler was found but failed to compile a test program.") endif()

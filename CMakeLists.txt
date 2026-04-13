@@ -126,6 +126,13 @@ target_link_libraries(TempLat INTERFACE ${FFTW_LIBRARIES})
 target_link_directories(TempLat INTERFACE ${FFTW_LIB_DIR})
 target_include_directories(TempLat SYSTEM BEFORE INTERFACE ${FFTW_INCLUDES})
 
+if(FLOAT)
+  # If float support is enabled, we need to define a macro so that TempLat can
+  # conditionally compile the code that uses the single-precision FFTW (or other
+  # backend) API.
+  target_compile_definitions(TempLat INTERFACE HAVE_FFTFLOAT)
+endif()
+
 if(MPI)
   find_package(
     MPI
