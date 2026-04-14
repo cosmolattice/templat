@@ -22,11 +22,11 @@ namespace TempLat
       requires IsVariadicIndex<IDX...>
     DEVICE_INLINE_FUNCTION static constexpr auto eval(const IDX &...i)
     {
-      return 0.5f;
+      return 0.5;
     }
     inline explicit operator double() const { return value; }
     inline explicit operator float() const { return value; }
-    static constexpr float value = 0.5f;
+    static constexpr double value = 0.5;
   };
 } // namespace TempLat
 
