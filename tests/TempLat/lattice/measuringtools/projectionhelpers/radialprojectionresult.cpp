@@ -19,7 +19,7 @@ namespace TempLat
 
   template <typename T> inline void RadialProjectionResultTester<T>::Test(TDDAssertion &tdd)
   {
-    RadialProjectionResult one(10), two(12), three(10);
+    RadialProjectionResult<T> one(10), two(12), three(10);
 
     // tdd.verify(Throws<RadialProjectionResultSizeException>([&]() { one += two; }));
 

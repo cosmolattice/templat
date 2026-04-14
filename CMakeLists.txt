@@ -4,7 +4,7 @@
 #
 # CMake Options: - PARAFAFT: compile TempLat with ParaFaft support for parallel
 # FFTs. Default: OFF - MPI: compile TempLat with MPI support. Default: OFF -
-# HDF5: compile TempLat with HDF5 support. Default: OFF - TEMPLAT_TESTS: enable
+# HDF5: compile TempLat with HDF5 support. Default: OFF - TEMPLAT_TEST: enable
 # TempLat's tests. Default: OFF - DEVICE_PROVIDER: switches the backend for
 # parallelization. Default: Kokkos - CUDA: compile with CUDA support for GPU
 # parallelization. Default: OFF - HIP: compile with HIP support for GPU
@@ -67,7 +67,7 @@ option(AUTOBUILD_HDF5
 option(HDF5 "Use HDF5 for I/O" OFF)
 option(MPI "Use MPI for parallelization" OFF)
 option(PARAFAFT "Use ParaFaft for parallel FFTs" OFF)
-option(TEMPLAT_TESTS "Build TempLat tests" OFF)
+option(TEMPLAT_TEST "Build TempLat tests" OFF)
 option(TEMPLAT_BENCH "Build TempLat benchmarks" OFF)
 
 # ##############################################################################
@@ -196,7 +196,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/system.cmake)
 # Tests (Off by default, see above)
 # ##############################################################################
 
-if(TEMPLAT_TESTS)
+if(TEMPLAT_TEST)
   enable_testing()
   add_subdirectory(tests)
 endif()

@@ -22,7 +22,7 @@ namespace TempLat
       int ComplexFieldGet(Tag<1> t) const { return 2; }
     };
 
-    auto test = MyStruct() * 2;
+    auto test = 2 * MyStruct();
     /* Default is to fail: to remind yourself to implement something here. */
     tdd.verify(test.ComplexFieldGet(0_c) == 2);
     tdd.verify(test.ComplexFieldGet(1_c) == 4);

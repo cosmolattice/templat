@@ -22,6 +22,7 @@
 #include <iostream>
 #include <sstream>
 #include <numeric>
+#include <cmath>
 
 #include "TempLat/util/stringtrimmer.h"
 
@@ -46,7 +47,7 @@ namespace json
     char fmt[64];
     snprintf(fmt, 64, "%%%i.%ie", std::numeric_limits<T>::max_digits10 + 9, std::numeric_limits<T>::max_digits10);
     snprintf(buffer, 64, fmt, value);
-    return buffer;
+    return std::string(buffer);
   }
 
   namespace

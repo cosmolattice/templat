@@ -58,9 +58,9 @@ namespace TempLat
       {
         auto localView = psi.getLocalNDHostView();
         bool all_correct = true;
-        for (ptrdiff_t i = 0; i < localView.extent(0); ++i)
-          for (ptrdiff_t j = 0; j < localView.extent(1); ++j)
-            for (ptrdiff_t k = 0; k < localView.extent(2); ++k) {
+        for (size_t i = 0; i < localView.extent(0); ++i)
+          for (size_t j = 0; j < localView.extent(1); ++j)
+            for (size_t k = 0; k < localView.extent(2); ++k) {
               all_correct &=
                   (AlmostEqual(localView(i, j, k), 42.0 + local_idx.eval(i + nGhost, j + nGhost, k + nGhost)));
               if (!AlmostEqual(localView(i, j, k), 42.0 + local_idx.eval(i + nGhost, j + nGhost, k + nGhost))) {
