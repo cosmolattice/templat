@@ -145,7 +145,7 @@ namespace TempLat
         const ptrdiff_t bin = binComputer(r);
 
         // Add the bin contribution to the workspace.
-        device::apply([&](auto &&...args) { baseWorkSpace.add_device(bin, DoEval::eval(mInstance, args...), r, 1.); },
+        device::apply([&](auto &&...args) { baseWorkSpace.add_device(bin, DoEval::eval(mInstance, args...), r, sType(1.)); },
                       idx);
       };
 
@@ -235,7 +235,7 @@ namespace TempLat
           r2 += global_coords[i] * global_coords[i];
 
         // Add the bin contribution to the workspace.
-        device::apply([&](auto &&...args) { baseWorkSpace.add_device(r2, DoEval::eval(mInstance, args...), 1.); },
+        device::apply([&](auto &&...args) { baseWorkSpace.add_device(r2, DoEval::eval(mInstance, args...), sType(1.)); },
                       idx);
       };
 

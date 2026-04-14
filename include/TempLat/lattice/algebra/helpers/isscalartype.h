@@ -8,6 +8,13 @@
 // File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
 
 #include "TempLat/parallel/device.h"
+#include "TempLat/lattice/algebra/complexalgebra/helpers/hascomplexfieldget.h"
+#include "TempLat/lattice/algebra/su2algebra/helpers/hassu2get.h"
+#include "TempLat/lattice/algebra/su2algebra/helpers/hassu2doubletget.h"
+#include "TempLat/lattice/algebra/matrix3x3algebra/helpers/hasmatrixget.h"
+#include "TempLat/lattice/algebra/matrix3x3algebra/helpers/hassymget.h"
+#include "TempLat/lattice/algebra/matrix3x3algebra/helpers/hassymtracelessget.h"
+#include "TempLat/lattice/algebra/matrix3x3algebra/helpers/hashermget.h"
 
 namespace TempLat
 {

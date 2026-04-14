@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
 
 #include "TempLat/lattice/algebra/complexalgebra/helpers/hascomplexfieldget.h"
+#include "TempLat/lattice/algebra/matrix3x3algebra/helpers/hassymtracelessget.h"
 #include "TempLat/lattice/algebra/conditional/conditionalunarygetter.h"
 #include "TempLat/lattice/algebra/helpers/getgetreturntype.h"
 #include "TempLat/lattice/algebra/operators/unaryoperator.h"

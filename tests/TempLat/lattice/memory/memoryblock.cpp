@@ -21,14 +21,16 @@ namespace TempLat
     {
       MemoryBlock<T, NDim> test(128);
 
-      device::iteration::foreach<1>(
-          "it1", {0}, {128}, DEVICE_LAMBDA(const device::IdxArray<1> i) { test[i[0]] = i[0]; });
+      auto view = test.getRawView();
 
-      const auto view = test.getRawHostView();
+      device::iteration::foreach<1>(
+          "it1", {0}, {128}, DEVICE_LAMBDA(const device::IdxArray<1> i) { view(i[0]) = i[0]; });
+
+      const auto host_view = test.getRawHostView();
 
       bool all_true = true;
       for (size_t i = 0; i < test.size(); ++i) {
-        all_true &= (AlmostEqual(view[i], (T)i));
+        all_true &= (AlmostEqual(host_view[i], (T)i));
       }
       tdd.verify(all_true);
     }

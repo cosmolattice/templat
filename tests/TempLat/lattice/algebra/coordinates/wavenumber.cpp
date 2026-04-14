@@ -14,25 +14,25 @@
 namespace TempLat
 {
 
-  template <size_t NDim> struct WaveNumberTester {
+  template <typename T, size_t NDim> struct WaveNumberTester {
     static void Test(TDDAssertion &tdd);
   };
 
-  template <size_t NDim> inline void WaveNumberTester<NDim>::Test(TDDAssertion &tdd)
+  template <typename T, size_t NDim> inline void WaveNumberTester<T,NDim>::Test(TDDAssertion &tdd)
   {
-    const ptrdiff_t nGrid = 32, nGhost = 0;
+    const ptrdiff_t nGrid = 16, nGhost = 0;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
     // Create fields for each wavenumber component
-    std::vector<Field<double, NDim>> phi_components;
+    std::vector<Field<T, NDim>> phi_components;
     phi_components.reserve(NDim);
     for (size_t d = 0; d < NDim; ++d) {
       phi_components.emplace_back("phi_" + std::to_string(d), toolBox);
     }
 
-    Field<double, NDim> phinorm("phinorm", toolBox);
-    Field<double, NDim> phinorm2("phinorm2", toolBox);
+    Field<T, NDim> phinorm("phinorm", toolBox);
+    Field<T, NDim> phinorm2("phinorm2", toolBox);
 
     WaveNumber<NDim> k(toolBox);
 
@@ -67,24 +67,24 @@ namespace TempLat
       bool this_correct = true;
 
       // Check each wavenumber component - the value should match the global spatial coordinate
-      double norm2 = 0.0;
+      T norm2 = 0.0;
       for (size_t d = 0; d < NDim; ++d) {
-        const double expected_val = static_cast<double>(global_idx[d]);
+        const T expected_val = static_cast<T>(global_idx[d]);
         norm2 += expected_val * expected_val;
 
-        this_correct &= AlmostEqual(phi_views[d](indices...).real(), expected_val);
-        this_correct &= AlmostEqual(phi_views[d](indices...).imag(), 0.);
+        this_correct &= AlmostEqual(T(phi_views[d](indices...).real()), T(expected_val));
+        this_correct &= AlmostEqual(T(phi_views[d](indices...).imag()), T(0.));
       }
 
       std::stringstream ss;
       // Check norm2 and norm
-      this_correct &= AlmostEqual(phinorm2_view(indices...).real(), norm2);
+      this_correct &= AlmostEqual(T(phinorm2_view(indices...).real()), T(norm2));
       ss << "Fail after 1, should: " << norm2 << " is " << phinorm2_view(indices...).real() << "\n";
-      this_correct &= AlmostEqual(phinorm2_view(indices...).imag(), 0.);
+      this_correct &= AlmostEqual(T(phinorm2_view(indices...).imag()), T(0.));
       ss << "Fail after 2, should: " << 0. << " is " << phinorm2_view(indices...).imag() << "\n";
-      this_correct &= AlmostEqual(phinorm_view(indices...).real(), sqrt(norm2));
+      this_correct &= AlmostEqual(T(phinorm_view(indices...).real()), T(sqrt(norm2)));
       ss << "Fail after 3, should: " << sqrt(norm2) << " is " << phinorm_view(indices...).real() << "\n";
-      this_correct &= AlmostEqual(phinorm_view(indices...).imag(), 0.);
+      this_correct &= AlmostEqual(T(phinorm_view(indices...).imag()), T(0.));
       ss << "Fail after 4, should: " << 0. << " is " << phinorm_view(indices...).imag() << "\n";
 
       correct &= this_correct;
@@ -117,10 +117,16 @@ namespace TempLat
 
 namespace
 {
-  // TODO: FFT FAILURES ON D=1 !!! (MPI related.)
-  // TempLat::TDDContainer<TempLat::WaveNumberTester<1>> test1;
-  TempLat::TDDContainer<TempLat::WaveNumberTester<2>> test2;
-  TempLat::TDDContainer<TempLat::WaveNumberTester<3>> test3;
-  TempLat::TDDContainer<TempLat::WaveNumberTester<4>> test4;
-  TempLat::TDDContainer<TempLat::WaveNumberTester<5>> test5;
+#ifndef HAVE_FFTFLOAT
+  TempLat::TDDContainer<TempLat::WaveNumberTester<double, 2>> test2;
+  TempLat::TDDContainer<TempLat::WaveNumberTester<double, 3>> test3;
+  TempLat::TDDContainer<TempLat::WaveNumberTester<double, 4>> test4;
+  TempLat::TDDContainer<TempLat::WaveNumberTester<double, 5>> test5;
+#else
+  TempLat::TDDContainer<TempLat::WaveNumberTester<float, 2>> test6;
+  TempLat::TDDContainer<TempLat::WaveNumberTester<float, 3>> test7;
+  TempLat::TDDContainer<TempLat::WaveNumberTester<float, 4>> test8;
+  TempLat::TDDContainer<TempLat::WaveNumberTester<float, 5>> test9;
+#endif
+
 } // namespace
