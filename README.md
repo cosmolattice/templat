@@ -84,6 +84,21 @@ cmake -DHIP=ON ..
 Specifying the HIP compiler (`hipcc`) is necessary for the correct detection of the HIP toolkit.
 Specifying the architecture is optional for HIP, as Kokkos can usually detect it correctly. However, if you want to specify it manually, you can do so by passing the appropriate flag to Kokkos as described in the section [Offline compilation (Kokkos)](#offline-compilation-kokkos) below.
 
+#### cuFFTMp (multi-GPU FFTs via ParaFaFT)
+
+When `PARAFAFT=ON` and `CUDA=ON`, ParaFaFT can additionally use NVIDIA's
+[cuFFTMp](https://docs.nvidia.com/hpc-sdk/cufftmp/index.html) backend for
+distributed multi-GPU FFTs. To enable it, pass `-DPARAFAFT_CUFFTMP=ON` at
+configure time:
+```bash
+cmake -DMPI=ON -DCUDA=ON -DPARAFAFT=ON -DPARAFAFT_CUFFTMP=ON ..
+```
+The flag is forwarded unchanged to ParaFaFT. cuFFTMp and NVSHMEM must be
+available on the system — they ship with the NVIDIA HPC SDK, or can be
+located via the `CUFFTMP_HOME` / `NVSHMEM_HOME` environment variables (or
+corresponding CMake cache variables). If ParaFaFT cannot find them the
+configure step will fail with a clear error message.
+
 ### Offline compilation (Kokkos)
 
 To compile an application to be run on a different architecture, you can directly pass the target architecture to Kokkos. For a list of supported architectures, see [the Kokkos documentation](https://kokkos.org/kokkos-core-wiki/get-started/configuration-guide.html#gpu-architectures). For example, for an RTX 4070, you would pass 
@@ -114,3 +129,4 @@ All custom CMake flags can be passed when configuring the user project, e.g. `cm
 | `NOTHREADING`     | No parallelization                 | `OFF`                                  |
 | `NATIVE`          | Pass `--march=native` to compiler  | `ON` (non-macOS), `OFF` (macOS)        |
 | `KOKKOSFFT`       | KokkosFFT for single-node GPU FFTs | `ON` when CUDA/HIP enabled, else `OFF` |
+| `PARAFAFT_CUFFTMP`| cuFFTMp backend inside ParaFaFT    | `OFF`                                  |

@@ -4,12 +4,8 @@ message(
 )
 
 # enable FetchContent
-set(PARAFAFT_CUDA
-    ${CUDA}
-    CACHE BOOL "")
-set(PARAFAFT_HIP
-    ${HIP}
-    CACHE BOOL "")
+set(PARAFAFT_CUDA ${CUDA})
+set(PARAFAFT_HIP ${HIP})
 set(PARAFAFT_FFTW_INCLUDE_DIR
     ${FFTW_INCLUDES}
     CACHE PATH "")
