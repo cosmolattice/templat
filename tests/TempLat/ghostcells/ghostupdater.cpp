@@ -211,6 +211,22 @@ namespace TempLat
     static void Test(TDDAssertion &tdd);
   };
 
+  // Largest factor MPI_Dims_create assigns when balancing `size` ranks across
+  // (NDim-1) Cartesian dimensions. ParaFaFT requires every per-axis extent it
+  // redistributes to be >= this number; otherwise it now throws std::runtime_error
+  // (catching the old MPI_ERR_ARG abort with a clearer diagnostic).
+  template <size_t NDim> int max_pencil_dim(int size)
+  {
+    if constexpr (NDim < 2) return 1;
+    std::vector<int> dims(NDim - 1, 0);
+#ifdef HAVE_MPI
+    MPI_Dims_create(size, static_cast<int>(NDim - 1), dims.data());
+#endif
+    int m = 1;
+    for (auto d : dims) m = std::max(m, d);
+    return m;
+  }
+
   template <size_t NDim> void GhostUpdaterTester<NDim>::Test(TDDAssertion &tdd)
   {
     static_assert(NDim > 1, "GhostUpdater test only makes sense in 2 or more dimensions.");
@@ -221,33 +237,54 @@ namespace TempLat
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
+    // Dispatch a single (nGrid, nGhost) case to the right expectation:
+    //   * ParaFaFT throws std::runtime_error when the global grid is too small to
+    //     pencil-decompose across the current MPI comm — the R2C half-axis of size
+    //     nGrid/2 + 1 sets the binding constraint.
+    //   * GhostUpdater throws GhostUpdaterException when the ghost depth exceeds
+    //     the smallest local extent.
+    //   * Otherwise the run must succeed.
+    auto run = [&](ptrdiff_t nGrid, size_t nGhost) {
+      const int maxDim = max_pencil_dim<NDim>(size);
+      const bool parafaft_fails = (nGrid / 2 + 1) < maxDim;
+      if (parafaft_fails) {
+        tdd.verify(Throws<std::runtime_error>(
+            [&]() { TestScratch::test_ghost_updater<NDim>(nGrid, nGhost); }));
+        return;
+      }
+      // Smallest local size across pencil-decomposed axes (last axis is undivided
+      // in stage 0 with extent = nGrid).
+      const ptrdiff_t minLocal = (maxDim > 0) ? (nGrid / maxDim) : nGrid;
+      const bool ghost_too_large = (ptrdiff_t)nGhost > minLocal;
+      if (ghost_too_large) {
+        tdd.verify(Throws<GhostUpdaterException>(
+            [&]() { TestScratch::test_ghost_updater<NDim>(nGrid, nGhost); }));
+      } else {
+        tdd.verify(TestScratch::test_ghost_updater<NDim>(nGrid, nGhost));
+      }
+    };
+
     // restrict the sizes, dimensionality can lead to some huge tests...
 
-    tdd.verify(TestScratch::test_ghost_updater<NDim>(4, 1));
-    if constexpr (NDim < 6) tdd.verify(TestScratch::test_ghost_updater<NDim>(16, 1));
+    run(4, 1);
+    if constexpr (NDim < 6) run(16, 1);
     if constexpr (NDim < 4) {
-      tdd.verify(TestScratch::test_ghost_updater<NDim>(32, 1));
-      tdd.verify(TestScratch::test_ghost_updater<NDim>(128, 1));
+      run(32, 1);
+      run(128, 1);
     }
 
-    if (size > 2)
-      tdd.verify(Throws<GhostUpdaterException>([&]() { TestScratch::test_ghost_updater<NDim>(4, 2); }));
-    else
-      tdd.verify(TestScratch::test_ghost_updater<NDim>(4, 2));
-    if constexpr (NDim < 6) tdd.verify(TestScratch::test_ghost_updater<NDim>(16, 2));
+    run(4, 2);
+    if constexpr (NDim < 6) run(16, 2);
     if constexpr (NDim < 4) {
-      tdd.verify(TestScratch::test_ghost_updater<NDim>(32, 2));
-      tdd.verify(TestScratch::test_ghost_updater<NDim>(128, 2));
+      run(32, 2);
+      run(128, 2);
     }
 
-    if (size > 1)
-      tdd.verify(Throws<GhostUpdaterException>([&]() { TestScratch::test_ghost_updater<NDim>(4, 3); }));
-    else
-      tdd.verify(TestScratch::test_ghost_updater<NDim>(4, 3));
-    if constexpr (NDim < 6) tdd.verify(TestScratch::test_ghost_updater<NDim>(16, 3));
+    run(4, 3);
+    if constexpr (NDim < 6) run(16, 3);
     if constexpr (NDim < 4) {
-      tdd.verify(TestScratch::test_ghost_updater<NDim>(32, 3));
-      tdd.verify(TestScratch::test_ghost_updater<NDim>(128, 3));
+      run(32, 3);
+      run(128, 3);
     }
   }
 
