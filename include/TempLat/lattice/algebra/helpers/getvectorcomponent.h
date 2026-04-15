@@ -37,14 +37,14 @@ namespace TempLat
       return DoEval::eval(mR, jdx...)[N];
     }
 
-    void doWeNeedGhosts() const { GhostsHunter::apply(mR, N); }
+    void doWeNeedGhosts() const { GhostsHunter::apply(mR, Tag<N>{}); }
 
     template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
-      ConfirmSpace::apply(mR, N, newLayout, spaceType);
+      ConfirmSpace::apply(mR, Tag<N>{}, newLayout, spaceType);
     }
 
-    ptrdiff_t confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR, N); }
+    ptrdiff_t confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR, Tag<N>{}); }
 
     inline auto getToolBox() const
     { // just take toolbox from first component

@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
 
 #include "TempLat/parallel/device.h"
+#include "TempLat/lattice/algebra/helpers/haseval.h"
 #include "TempLat/lattice/algebra/complexalgebra/helpers/hascomplexfieldget.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/hassu2get.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/hassu2doubletget.h"
