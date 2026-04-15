@@ -267,17 +267,21 @@ namespace TempLat::device_kokkos
 
       mNeighborDevices[idx] = neighborDevice;
 
-      if (neighborDevice == mMyDevice) return;
-
-      if (!p2p::canAccessPeer(mMyDevice, neighborDevice)) return;
-
-      p2p::enablePeerAccess(neighborDevice);
+      if (neighborDevice != mMyDevice) {
+        if (!p2p::canAccessPeer(mMyDevice, neighborDevice)) return;
+        p2p::enablePeerAccess(neighborDevice);
+        mFullDuplex[idx] = p2p::isFullDuplexLink(mMyDevice, neighborDevice);
+      } else {
+        // Two ranks sharing the same GPU (e.g. GPU_NOCONSTRAIN oversubscription):
+        // IPC between processes on the same device is valid and has no bus contention.
+        // enablePeerAccess would error on self; skip it.
+        mFullDuplex[idx] = true;
+      }
       mP2PAvailable[idx] = true;
-      mFullDuplex[idx] = p2p::isFullDuplexLink(mMyDevice, neighborDevice);
 
       sayMPI << "Ghost exchange: P2P enabled for dimension " << dim << (dir == 0 ? " (up)" : " (down)") << " to rank "
              << neighborRank << " (device " << neighborDevice << ", "
-             << (mFullDuplex[idx] ? "NVLink/xGMI" : "PCIe") << ")\n";
+             << (neighborDevice == mMyDevice ? "same GPU" : (mFullDuplex[idx] ? "NVLink/xGMI" : "PCIe")) << ")\n";
     }
 
     void exchangeIpcHandles(char *sendUpPtr, char *sendDownPtr, uint64_t version)

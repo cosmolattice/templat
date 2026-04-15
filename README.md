@@ -130,3 +130,9 @@ All custom CMake flags can be passed when configuring the user project, e.g. `cm
 | `NATIVE`          | Pass `--march=native` to compiler  | `ON` (non-macOS), `OFF` (macOS)        |
 | `KOKKOSFFT`       | KokkosFFT for single-node GPU FFTs | `ON` when CUDA/HIP enabled, else `OFF` |
 | `PARAFAFT_CUFFTMP`| cuFFTMp backend inside ParaFaFT    | `OFF`                                  |
+
+### Runtime Environment Variables
+
+| Variable          | Description                                                                                                                                                                                                                                                                      |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GPU_NOCONSTRAIN` | Set to `1` to allow more MPI ranks per node than GPUs (oversubscription, e.g. via CUDA MPS). By default the session aborts if `local_ranks > num_devices`. Device assignment wraps via `shmrank % num_devices`; same-GPU peers use CUDA IPC directly with no MPI on the halo path. |
