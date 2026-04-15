@@ -8,6 +8,8 @@
 // File info: Main contributor(s): Franz R. Sattler,  Year: 2025
 
 #include "TempLat/fft/external/kokkosfft/kokkosfftmemorylayout.h"
+#include "TempLat/fft/fftdecomposition.h"
+#include "TempLat/parallel/mpi/comm/mpicommreference.h"
 
 namespace TempLat
 {
@@ -27,6 +29,14 @@ namespace TempLat
     {
       return std::max((ptrdiff_t)1, nDimensions - 1);
     };
+
+    /** @brief KokkosFFT does not run under MPI: the entire lattice is local. Report "no split".
+     *  The selector only reaches this backend when `baseComm.size() == 1`. */
+    static FFTDecomposition<NDim> decomposition(MPICommReference /*baseComm*/,
+                                                device::IdxArray<NDim> /*nGridPoints*/)
+    {
+      return FFTDecomposition<NDim>{/*nDimsToSplit=*/0, {}};
+    }
 
     virtual IntrinsicScales getIntrinsicRescaleToGetUnnormalizedFFT(ptrdiff_t nGridPoints)
     {

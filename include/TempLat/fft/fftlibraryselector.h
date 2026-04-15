@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
 
 #include "TempLat/fft/external/fftw/fftwinterface.h"
+#include "TempLat/fft/fftdecomposition.h"
 
 #ifndef NOFFT
 
@@ -26,6 +27,7 @@
 namespace TempLat
 {
   MakeException(FFTLibraryDoubleInitializationException);
+  MakeException(FFTLibraryDecompositionMismatchException);
 
   /**
    * @brief I wrapped this in a struct for a very specific case: If we have multiple translation units (cpp files)
@@ -82,54 +84,9 @@ namespace TempLat
         : mGroup(group), mNGridPoints(nGridPoints), theLibrary(nullptr), mLayout(mNGridPoints), madePlansFloat(false),
           madePlansDouble(false), verbose(false)
     {
-      /* here we take the decisions, although the decision to split the group has been made already. */
-      [[maybe_unused]] const ptrdiff_t nDimSplit = group.getNumberOfDividedDimensions();
-
-#ifdef HAVE_PARAFAFT
-      [[maybe_unused]] constexpr bool haveParafaft = true;
-#else
-      [[maybe_unused]] constexpr bool haveParafaft = false;
-#endif
-
-#ifdef HAVE_KOKKOSFFT
-      [[maybe_unused]] constexpr bool haveKOKKOSFFT = true;
-#else
-      [[maybe_unused]] constexpr bool haveKOKKOSFFT = false;
-#endif
-
-      // Priority: ParaFaFT > KokkosFFT > FFTW (when multi-dimensional split needed)
-
-      // First, the MPI case (ParaFaFT)
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARAFAFT
-      if constexpr (haveParafaft && (NDim >= 2)) {
-        if (group.size() > 1) {
-          theLibrary = std::make_shared<ParafaftInterface<NDim>>();
-          backend = "Parafaft";
-        }
-      }
-#endif
-#endif // HAVE_MPI
-
-      // KokkosFFT for single rank, if available and supported dimension
-
-#ifdef HAVE_KOKKOSFFT
-      if (theLibrary == nullptr && group.size() == 1) {
-        if constexpr (haveKOKKOSFFT && (NDim <= 3)) {
-          theLibrary = std::make_shared<KokkosFFTInterface<NDim>>();
-          backend = "KokkosFFT";
-        }
-      }
-#endif // HAVE_KOKKOSFFT
-
-      // Final fallback to FFTW
-
-      if (theLibrary == nullptr) {
-        theLibrary = std::make_shared<FFTWInterface<NDim>>();
-        backend = "FFTW";
-      }
+      std::tie(theLibrary, backend) = selectBackend(group.size());
       if (mGroup.getRank() == 0) sayShort << "Using " << backend << " backend for FFTs.\n";
+      verifyDecompositionMatchesBackend(group, nGridPoints);
       mLayout = theLibrary->computeLocalSizes(mGroup, mNGridPoints, forbidTransposition);
     }
 
@@ -139,17 +96,32 @@ namespace TempLat
 
     void setVerbose() { verbose = true; }
 
-    /* forward all the library calls */
-    static ptrdiff_t getMaximumNumberOfDimensionsToDivide(ptrdiff_t nDimensions)
+    /** @brief The decomposition the runtime-selected FFT backend will use for this setup.
+     *
+     *  Used by `FFTMPIDomainSplit` to build the MPI Cartesian group so that the group and the
+     *  backend always agree. The priority chain here must stay in lockstep with `selectBackend`
+     *  below — both call the same set of backends in the same order under the same `#ifdef`s,
+     *  so the pre-topology query and the post-topology selection cannot pick different backends.
+     */
+    static FFTDecomposition<NDim> decomposition(MPICommReference baseComm,
+                                                const device::IdxArray<NDim> &nGridPoints)
     {
-      ptrdiff_t result = FFTWInterface<NDim>().getMaximumNumberOfDimensionsToDivide(nDimensions);
+      const ptrdiff_t nProcesses = baseComm.size();
 #ifdef HAVE_MPI
 #ifdef HAVE_PARAFAFT
-      result = ParafaftInterface<NDim>().getMaximumNumberOfDimensionsToDivide(nDimensions);
+      if constexpr (NDim >= 2) {
+        if (nProcesses > 1) return ParafaftInterface<NDim>::decomposition(baseComm, nGridPoints);
+      }
 #endif
 #endif
-      return result;
-    };
+#ifdef HAVE_KOKKOSFFT
+      if (nProcesses == 1) {
+        if constexpr (NDim <= 3) return KokkosFFTInterface<NDim>::decomposition(baseComm, nGridPoints);
+      }
+#endif
+      (void) nProcesses;
+      return FFTWInterface<NDim>::decomposition(baseComm, nGridPoints);
+    }
 
     void r2c(MemoryBlock<double, NDim> &mBlock)
     {
@@ -201,6 +173,90 @@ namespace TempLat
     }
 
   private:
+    /** @brief Reject a user-supplied `MPICartesianGroup` whose shape the selected backend cannot use.
+     *
+     *  Backends fall into two classes:
+     *  - No explicit grid (`dims` all zero): only `nDimsToSplit` is constrained — the rank count
+     *    must be factored over at most that many leading dimensions. Groups that split more
+     *    dimensions (or, for FFTW, any secondary dimension) are rejected.
+     *  - Explicit grid: every entry of the provided decomposition must match the probed dims.
+     *  Auto-built groups from `FFTMPIDomainSplit::makeMPIGroup` always pass.
+     */
+    void verifyDecompositionMatchesBackend(const MPICartesianGroup &group,
+                                           const device::IdxArray<NDim> &nGridPoints) const
+    {
+      const FFTDecomposition<NDim> expected = decomposition(group.getBaseComm(), nGridPoints);
+      const std::vector<int> &actual = group.getDecomposition();
+      if (actual.size() != NDim)
+        throw FFTLibraryDecompositionMismatchException("Cartesian group decomposition has ", actual.size(),
+                                                       " entries, expected ", NDim, ".");
+
+      bool explicitGrid = expected.nDimsToSplit > 0;
+      for (ptrdiff_t i = 0; i < expected.nDimsToSplit; ++i)
+        if (expected.dims[i] <= 0) { explicitGrid = false; break; }
+
+      if (explicitGrid) {
+        for (size_t i = 0; i < NDim; ++i) {
+          if (actual[i] != expected.dims[i])
+            throw FFTLibraryDecompositionMismatchException(
+                "FFT backend ", backend, " requires MPI decomposition {",
+                expectedDimsToString(expected), "} but the provided MPICartesianGroup has {",
+                actualDimsToString(actual),
+                "}. Use FFTMPIDomainSplit::makeMPIGroup to build a matching group.");
+        }
+      } else {
+        ptrdiff_t actualSplits = 0;
+        for (size_t i = 0; i < NDim; ++i)
+          if (actual[i] > 1) ++actualSplits;
+        if (actualSplits > expected.nDimsToSplit)
+          throw FFTLibraryDecompositionMismatchException(
+              "FFT backend ", backend, " supports splitting at most ", expected.nDimsToSplit,
+              " dimension(s) but the provided MPICartesianGroup splits ", actualSplits,
+              ". Use FFTMPIDomainSplit::makeMPIGroup to build a matching group.");
+      }
+    }
+
+    static std::string expectedDimsToString(const FFTDecomposition<NDim> &d)
+    {
+      std::string s;
+      for (size_t i = 0; i < NDim; ++i) {
+        if (i) s += ",";
+        s += std::to_string(d.dims[i]);
+      }
+      return s;
+    }
+    static std::string actualDimsToString(const std::vector<int> &v)
+    {
+      std::string s;
+      for (size_t i = 0; i < v.size(); ++i) {
+        if (i) s += ",";
+        s += std::to_string(v[i]);
+      }
+      return s;
+    }
+
+    /** @brief Shared backend-selection priority chain. Structure must stay in lockstep with the
+     *  `decomposition` static above so that the decomposition query and the runtime backend pick
+     *  never disagree. Any change to the order or predicates here must be mirrored there.
+     */
+    static std::pair<std::shared_ptr<FFTLibraryInterface<NDim>>, std::string> selectBackend(ptrdiff_t nProcesses)
+    {
+#ifdef HAVE_MPI
+#ifdef HAVE_PARAFAFT
+      if constexpr (NDim >= 2) {
+        if (nProcesses > 1) return {std::make_shared<ParafaftInterface<NDim>>(), "Parafaft"};
+      }
+#endif
+#endif
+#ifdef HAVE_KOKKOSFFT
+      if (nProcesses == 1) {
+        if constexpr (NDim <= 3) return {std::make_shared<KokkosFFTInterface<NDim>>(), "KokkosFFT"};
+      }
+#endif
+      (void) nProcesses;
+      return {std::make_shared<FFTWInterface<NDim>>(), "FFTW"};
+    }
+
     /* Put all member variables and private methods here. These may change arbitrarily. */
     MPICartesianGroup mGroup;
     device::IdxArray<NDim> mNGridPoints;

@@ -47,7 +47,8 @@ namespace TempLat
 
     /** @brief Constructor with default MPI layout and MPI_COMM_WORLD. */
     MemoryToolBox(device::Idx nGridPoints, device::Idx ghostDepth, bool forbidTransposition = false)
-        : MemoryToolBox(FFTMPIDomainSplit<NDim>::makeMPIGroup(NDim), nGridPoints, ghostDepth, forbidTransposition)
+        : MemoryToolBox(FFTMPIDomainSplit<NDim>::makeMPIGroup(makeUniformArray<device::Idx, NDim>(nGridPoints)),
+                        nGridPoints, ghostDepth, forbidTransposition)
     {
     }
     /** @brief Shared-pointer constructor with default MPI layout and MPI_COMM_WORLD. */
@@ -59,7 +60,7 @@ namespace TempLat
 
     /** @brief Constructor with default MPI layout and MPI_COMM_WORLD. */
     MemoryToolBox(device::IdxArray<NDim> nGrid, device::Idx ghostDepth, bool forbidTransposition = false)
-        : MemoryToolBox(FFTMPIDomainSplit<NDim>::makeMPIGroup(NDim), nGrid, ghostDepth, forbidTransposition)
+        : MemoryToolBox(FFTMPIDomainSplit<NDim>::makeMPIGroup(nGrid), nGrid, ghostDepth, forbidTransposition)
     {
     }
     /** @brief Shared-pointer constructor with default MPI layout and MPI_COMM_WORLD. */
@@ -71,8 +72,8 @@ namespace TempLat
 
     /** @brief Constructor with default MPI layout and MPI_COMM_WORLD but custom number of threads. */
     MemoryToolBox(device::Idx nGridPoints, device::Idx ghostDepth, device::Idx nThreads, bool forbidTransposition)
-        : MemoryToolBox(FFTMPIDomainSplit<NDim>::makeMPIGroup(NDim), nGridPoints, ghostDepth, nThreads,
-                        forbidTransposition)
+        : MemoryToolBox(FFTMPIDomainSplit<NDim>::makeMPIGroup(makeUniformArray<device::Idx, NDim>(nGridPoints)),
+                        nGridPoints, ghostDepth, nThreads, forbidTransposition)
     {
     }
     /** @brief Shared-pointer constructor with default MPI layout and MPI_COMM_WORLD. */
@@ -84,7 +85,7 @@ namespace TempLat
 
     /** @brief Constructor with default MPI layout and MPI_COMM_WORLD but custom number of threads. */
     MemoryToolBox(device::IdxArray<NDim> nGrid, device::Idx ghostDepth, device::Idx nThreads, bool forbidTransposition)
-        : MemoryToolBox(FFTMPIDomainSplit<NDim>::makeMPIGroup(NDim), nGrid, ghostDepth, nThreads, forbidTransposition)
+        : MemoryToolBox(FFTMPIDomainSplit<NDim>::makeMPIGroup(nGrid), nGrid, ghostDepth, nThreads, forbidTransposition)
     {
     }
     /** @brief Shared-pointer constructor with default MPI layout and MPI_COMM_WORLD. */
@@ -98,7 +99,8 @@ namespace TempLat
     /** @brief Constructor with default MPI layout and but custom MPI_Comm. */
     MemoryToolBox(MPICommReference comm, device::Idx nGridPoints, device::Idx ghostDepth,
                   bool forbidTransposition = false)
-        : MemoryToolBox(FFTMPIDomainSplit<NDim>::makeMPIGroup(comm, NDim), nGridPoints, ghostDepth, forbidTransposition)
+        : MemoryToolBox(FFTMPIDomainSplit<NDim>::makeMPIGroup(comm, makeUniformArray<device::Idx, NDim>(nGridPoints)),
+                        nGridPoints, ghostDepth, forbidTransposition)
     {
     }
     /** @brief Shared-pointer constructor with default MPI layout and but custom MPI_Comm. */
@@ -111,7 +113,7 @@ namespace TempLat
     /** @brief Constructor with default MPI layout and but custom MPI_Comm. */
     MemoryToolBox(MPICommReference comm, device::IdxArray<NDim> nGrid, device::Idx ghostDepth,
                   bool forbidTransposition = false)
-        : MemoryToolBox(FFTMPIDomainSplit<NDim>::makeMPIGroup(comm, NDim), nGrid, ghostDepth, forbidTransposition)
+        : MemoryToolBox(FFTMPIDomainSplit<NDim>::makeMPIGroup(comm, nGrid), nGrid, ghostDepth, forbidTransposition)
     {
     }
     /** @brief Shared-pointer constructor with default MPI layout and but custom MPI_Comm. */

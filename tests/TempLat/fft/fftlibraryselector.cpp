@@ -86,7 +86,7 @@ namespace TempLat
   template <size_t NDim, typename T>
   void test_r2c_c2r(TempLat::TDDAssertion &tdd, const TempLat::device::IdxArray<NDim> nGrid)
   {
-    auto split = FFTMPIDomainSplit<NDim>::makeDomainDecomposition(MPICommReference().size(), NDim);
+    auto split = FFTMPIDomainSplit<NDim>::makeDomainDecomposition(MPICommReference(), nGrid);
     auto mGroup_ = MPICartesianGroup(NDim, split);
 
     device::IdxArray<NDim> nGridPoints;

@@ -9,6 +9,8 @@
 
 #include "TempLat/fft/external/fftw/fftwguard.h"
 #include "TempLat/fft/external/fftw/fftwmemorylayout.h"
+#include "TempLat/fft/fftdecomposition.h"
+#include "TempLat/parallel/mpi/comm/mpicommreference.h"
 
 namespace TempLat
 {
@@ -32,6 +34,14 @@ namespace TempLat
     }
 
     virtual ptrdiff_t getMaximumNumberOfDimensionsToDivide(ptrdiff_t nDimensions) { return 1; };
+
+    /** @brief FFTW (including fftw-mpi) uses a slab decomposition: split only the leading dimension.
+     *  `dims` is left as zeros so MPI_Dims_create can fill the single nonzero slot. */
+    static FFTDecomposition<NDim> decomposition(MPICommReference /*baseComm*/,
+                                                device::IdxArray<NDim> /*nGridPoints*/)
+    {
+      return FFTDecomposition<NDim>{/*nDimsToSplit=*/1, {}};
+    }
 
     virtual IntrinsicScales getIntrinsicRescaleToGetUnnormalizedFFT(ptrdiff_t nGridPoints) { return {}; }
 

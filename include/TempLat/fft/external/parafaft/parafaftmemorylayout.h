@@ -76,15 +76,24 @@ namespace TempLat
       // Use the base communicator - parafaft will create its own Cartesian topology
       parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend> temp(globalShape, group.getBaseComm());
 
-      // Verify that the decomposition matches the library's expectations
+      // Regression guard: if the MPI group was built via FFTMPIDomainSplit, its shape was
+      // derived from ParafaftInterface::decomposition — the same probe used here — so these
+      // dims must agree. A mismatch means either the user bypassed FFTMPIDomainSplit::makeMPIGroup
+      // with a hand-built group (FFTLibrarySelector's verifyDecompositionMatchesBackend should
+      // have caught that earlier), or ParaFaFT's probe decision is non-deterministic across
+      // planner objects built from the same (baseComm.size(), nGridPoints) — which would be a
+      // ParaFaFT-side bug.
       const auto &decomposition = group.getDecomposition();
       int parafaftDecomposition[NDim];
       temp.get_domain_decomposition(parafaftDecomposition);
       for (size_t i = 0; i < NDim; ++i) {
         if (decomposition[i] != parafaftDecomposition[i]) {
           throw ParafaftMemoryLayoutException(
-              "Parafaft decomposition does not match the provided MPI Cartesian group decomposition. Dimension ", i,
-              ": expected ", parafaftDecomposition[i], ", got ", decomposition[i], ".");
+              "ParaFaFT probe disagrees with the MPICartesianGroup shape at dimension ", i, ": probe says ",
+              parafaftDecomposition[i], ", group has ", decomposition[i],
+              ". Build the group via FFTMPIDomainSplit::makeMPIGroup(baseComm, nGridPoints); "
+              "if you did, this indicates ParaFaFT's decomposition heuristic is not deterministic "
+              "for these inputs.");
         }
       }
 

@@ -22,7 +22,7 @@ namespace TempLat
 
       const double baseNorm = std::pow(nGrid[0], 3);
 
-      auto split = FFTMPIDomainSplit<3>::makeDomainDecomposition(MPICommReference().size(), 3);
+      auto split = FFTMPIDomainSplit<3>::makeDomainDecomposition(MPICommReference(), nGrid);
       FFTLibrarySelector<3> ffter(MPICartesianGroup(3, split), nGrid);
 
       FFTLayoutStruct layout = ffter.getLayout();

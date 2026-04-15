@@ -115,7 +115,7 @@ namespace TempLat
       auto toolBox = MemoryToolBox<nd>::makeShared(nGrid, nGhost);
       toolBox->unsetVerbose();
 
-      MPICartesianGroup mGroup(FFTMPIDomainSplit<nd>::makeMPIGroup(nd));
+      MPICartesianGroup mGroup(FFTMPIDomainSplit<nd>::makeMPIGroup(toolBox->mNGridPointsVec));
       FFTLibrarySelector<nd> fftlib(mGroup, toolBox->mNGridPointsVec);
       TripleStateLayouts fullLayout(fftlib.getLayout(), nGhost);
       GhostUpdater<nd> ghostUpdater(mGroup, fullLayout.getConfigSpaceLayout());

@@ -8,6 +8,8 @@
 // File info: Main contributor(s): Adrien Florio,  Year: 2026
 
 #include "TempLat/fft/external/parafaft/parafaftmemorylayout.h"
+#include "TempLat/fft/fftdecomposition.h"
+#include "TempLat/parallel/mpi/comm/mpicommreference.h"
 
 namespace TempLat
 {
@@ -37,6 +39,35 @@ namespace TempLat
     {
       // Pencil decomposition: all but one dimension can be distributed
       return std::max((ptrdiff_t)1, nDimensions - 1);
+    }
+
+    /** @brief Pencil decomposition for ParaFaFT, probed from a temporary `ParaFaFT_R2C` planner.
+     *
+     *  ParaFaFT's own heuristic (which may pick slab or pencil depending on rank count and
+     *  lattice extents in the current/in-progress extension) is the source of truth. We build
+     *  a throwaway planner on the base comm and query `get_domain_decomposition` to lock in
+     *  the exact grid shape that ParaFaFT will use later on the real comm. Because ParaFaFT's
+     *  choice is a deterministic function of `(baseComm.size(), nGridPoints)`, the same probe
+     *  on every rank yields identical dims.
+     */
+    static FFTDecomposition<NDim> decomposition(MPICommReference baseComm, device::IdxArray<NDim> nGridPoints)
+    {
+      FFTDecomposition<NDim> result{};
+      int globalShape[NDim];
+      for (size_t i = 0; i < NDim; ++i) globalShape[i] = static_cast<int>(nGridPoints[i]);
+
+      parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend> probe(globalShape, baseComm);
+
+      int probeDims[NDim];
+      probe.get_domain_decomposition(probeDims);
+
+      ptrdiff_t nSplit = 0;
+      for (size_t i = 0; i < NDim; ++i) {
+        result.dims[i] = probeDims[i];
+        if (probeDims[i] > 1) ++nSplit;
+      }
+      result.nDimsToSplit = nSplit;
+      return result;
     }
 
     /**

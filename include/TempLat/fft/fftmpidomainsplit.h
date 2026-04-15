@@ -22,24 +22,39 @@ namespace TempLat
   public:
     // Put public methods here. These should change very little over time.
 
-    static std::vector<int> makeDomainDecomposition(ptrdiff_t groupSize, ptrdiff_t nDimensions)
+    /** @brief Build the MPI domain decomposition that matches the FFT backend selected for this
+     *  `(baseGroup.size(), nGridPoints)` combination. If the backend pinned an explicit grid shape
+     *  (e.g. ParaFaFT's probe), that shape is honoured verbatim; otherwise `MPIDomainSplit` factors
+     *  the rank count over the backend's allowed number of split dimensions.
+     */
+    static std::vector<int> makeDomainDecomposition(MPICommReference baseGroup,
+                                                    const device::IdxArray<NDim> &nGridPoints)
     {
-      ptrdiff_t nDimensionsToSplit =
-          TempLat::FFTLibrarySelector<NDim>::getMaximumNumberOfDimensionsToDivide(nDimensions);
+      FFTDecomposition<NDim> d = FFTLibrarySelector<NDim>::decomposition(baseGroup, nGridPoints);
 
-      MPIDomainSplit theSplit(groupSize, nDimensions, nDimensionsToSplit);
+      bool explicitGrid = d.nDimsToSplit > 0;
+      for (ptrdiff_t i = 0; i < d.nDimsToSplit; ++i)
+        if (d.dims[i] <= 0) { explicitGrid = false; break; }
 
+      if (explicitGrid) {
+        std::vector<int> out(NDim, 1);
+        for (size_t i = 0; i < NDim; ++i) out[i] = std::max(1, d.dims[i]);
+        return out;
+      }
+
+      MPIDomainSplit theSplit(baseGroup.size(), static_cast<ptrdiff_t>(NDim), d.nDimsToSplit);
       return theSplit;
     }
 
-    static MPICartesianGroup makeMPIGroup(MPICommReference baseGroup, ptrdiff_t nDimensions)
+    static MPICartesianGroup makeMPIGroup(MPICommReference baseGroup, const device::IdxArray<NDim> &nGridPoints)
     {
-      return MPICartesianGroup(baseGroup, nDimensions, makeDomainDecomposition(baseGroup.size(), nDimensions));
+      return MPICartesianGroup(baseGroup, static_cast<ptrdiff_t>(NDim),
+                               makeDomainDecomposition(baseGroup, nGridPoints));
     }
     /* default using comm_world */
-    static MPICartesianGroup makeMPIGroup(ptrdiff_t nDimensions)
+    static MPICartesianGroup makeMPIGroup(const device::IdxArray<NDim> &nGridPoints)
     {
-      return makeMPIGroup(MPICommReference(), nDimensions);
+      return makeMPIGroup(MPICommReference(), nGridPoints);
     }
 
   private:
