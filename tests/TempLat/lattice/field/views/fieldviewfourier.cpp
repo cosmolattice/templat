@@ -69,13 +69,18 @@ namespace TempLat
 
 namespace
 {
-  // TempLat::TDDContainer<TempLat::FourierViewTester<double, 1>> test1;
+  // 1D MemoryToolBox is rejected at compile time in MPI builds (see memorytoolbox.h static_assert).
+#ifndef HAVE_MPI
+  TempLat::TDDContainer<TempLat::FourierViewTester<double, 1>> test1;
+#endif
   TempLat::TDDContainer<TempLat::FourierViewTester<double, 2>> test2;
   TempLat::TDDContainer<TempLat::FourierViewTester<double, 3>> test3;
   TempLat::TDDContainer<TempLat::FourierViewTester<double, 4>> test4;
 
 #ifdef HAVE_FFTFLOAT
+#ifndef HAVE_MPI
   TempLat::TDDContainer<TempLat::FourierViewTester<float, 1>> test1f;
+#endif
   TempLat::TDDContainer<TempLat::FourierViewTester<float, 2>> test2f;
   TempLat::TDDContainer<TempLat::FourierViewTester<float, 3>> test3f;
   TempLat::TDDContainer<TempLat::FourierViewTester<float, 4>> test4f;

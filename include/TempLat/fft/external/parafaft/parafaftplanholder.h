@@ -28,13 +28,14 @@ namespace TempLat
   // Depending on the device, we alias ParaFaFT_Backend to the appropriate backend type. Parafaft supports multiple
   // backends (FFTW, cuFFT, HIPFFT), and we select the one based on compile-time definitions set by CMake when detecting
   // the device and available libraries. This allows us to write device-agnostic code in the ParafaftPlanHolder, while
-  // still leveraging the performance benefits of the appropriate backend for the target platform.
+  // still leveraging the performance benefits of the appropriate backend for the target platform. Each backend is
+  // itself a class template parameterized on the floating-point precision, so the alias is a template alias.
 #ifdef DEVICE_CUDA
-  using ParaFaFT_Backend = parafaft::CuFFTBackend;
+  template <typename T> using ParaFaFT_Backend = parafaft::CuFFTBackend<T>;
 #elif defined(CL_HIP)
-  using ParaFaFT_Backend = parafaft::HipFFTBackend;
+  template <typename T> using ParaFaFT_Backend = parafaft::HipFFTBackend<T>;
 #else
-  using ParaFaFT_Backend = parafaft::FFTWBackend;
+  template <typename T> using ParaFaFT_Backend = parafaft::FFTWBackend<T>;
 #endif
 
   MakeException(ParafaftPlanHolderException);
@@ -44,8 +45,6 @@ namespace TempLat
    *
    * This class holds a parafaft::ParaFaFT_R2C object and implements the
    * PlanInterface<T> methods for r2c and c2r transforms.
-   *
-   * Note: Parafaft only supports double precision currently.
    *
    * Unit test: ctest -R test-parafaftplanholder
    **/
@@ -62,7 +61,7 @@ namespace TempLat
      * We store the MPICartesianGroup to keep the MPI communicator alive.
      */
     ParafaftPlanHolder(MPICartesianGroup group,
-                       std::shared_ptr<parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend>> parafaftObj)
+                       std::shared_ptr<parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend<T>>> parafaftObj)
         : mGroup(group), mParafaft(parafaftObj)
     {
     }
@@ -97,15 +96,12 @@ namespace TempLat
     MPICartesianGroup mGroup;
 
     // Shared pointer to parafaft object
-    std::shared_ptr<parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend>> mParafaft;
+    std::shared_ptr<parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend<T>>> mParafaft;
 
 #endif
 #endif
 
-    // Double precision implementation using in-place padded buffer API
-    template <typename S = T>
-      requires std::is_same<S, double>::value
-    void execute_r2c(MemoryBlock<S, NDim> &mBlock)
+    void execute_r2c(MemoryBlock<T, NDim> &mBlock)
     {
 #ifdef HAVE_MPI
 #ifdef HAVE_PARAFAFT
@@ -116,10 +112,7 @@ namespace TempLat
 #endif
     }
 
-    // Double precision implementation using in-place padded buffer API
-    template <typename S = T>
-      requires std::is_same<S, double>::value
-    void execute_c2r(MemoryBlock<S, NDim> &mBlock)
+    void execute_c2r(MemoryBlock<T, NDim> &mBlock)
     {
 #ifdef HAVE_MPI
 #ifdef HAVE_PARAFAFT
@@ -129,23 +122,6 @@ namespace TempLat
 #endif
 #endif
     }
-
-    // Float precision - not supported
-#ifdef HAVE_FFTFLOAT
-    template <typename S = T>
-      requires std::is_same_v<float, S>
-    void execute_r2c(MemoryBlock<S, NDim> &mBlock)
-    {
-      throw ParafaftCompiledWithoutSinglePrecisionSupport("Parafaft does not support single precision.");
-    }
-
-    template <typename S = T>
-      requires std::is_same_v<float, S>
-    void execute_c2r(MemoryBlock<S, NDim> &mBlock)
-    {
-      throw ParafaftCompiledWithoutSinglePrecisionSupport("Parafaft does not support single precision.");
-    }
-#endif
   };
 } // namespace TempLat
 

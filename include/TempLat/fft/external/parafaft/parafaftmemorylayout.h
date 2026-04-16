@@ -73,8 +73,11 @@ namespace TempLat
       for (size_t i = 0; i < NDim; ++i)
         globalShape[i] = static_cast<int>(nGridPoints[i]);
 
-      // Use the base communicator - parafaft will create its own Cartesian topology
-      parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend> temp(globalShape, group.getBaseComm());
+      // Use the base communicator - parafaft will create its own Cartesian topology.
+      // Pin the probe to double: the local-size / decomposition queries below are
+      // precision-independent, and double is always available whereas float depends on
+      // PARAFAFT_FFTW3F_AVAILABLE / libfftw3f.
+      parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend<double>> temp(globalShape, group.getBaseComm());
 
       // Regression guard: if the MPI group was built via FFTMPIDomainSplit, its shape was
       // derived from ParafaftInterface::decomposition — the same probe used here — so these

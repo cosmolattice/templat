@@ -40,6 +40,13 @@ namespace TempLat
    **/
   template <size_t _NDim> class MemoryToolBox
   {
+#ifdef HAVE_MPI
+    static_assert(_NDim > 1,
+                  "MPI builds do not support 1D lattices. FFTW's MPI interface returns a NULL plan "
+                  "for rank=1 R2C transforms (which would segfault on execute), and ParaFaFT requires "
+                  "NDim >= 2. Use NDim >= 2, or build TempLat without MPI for 1D problems.");
+#endif
+
   public:
     // Put public methods here. These should change very little over time.
 

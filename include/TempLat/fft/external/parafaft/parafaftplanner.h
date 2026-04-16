@@ -29,7 +29,7 @@ namespace TempLat
   /** @brief Plan creation for parafaft FFT transforms.
    *
    * Creates parafaft::ParaFaFT_R2C objects wrapped in ParafaftPlanHolder.
-   * Currently only supports 3D and double precision.
+   * Supports both double and (when HAVE_FFTFLOAT is defined) single precision.
    *
    * Unit test: ctest -R test-parafaftplanner
    **/
@@ -53,56 +53,59 @@ namespace TempLat
     /**
      * @brief Create float-precision plans.
      *
-     * Not supported - parafaft only supports double precision.
+     * Enabled when HAVE_FFTFLOAT is defined (CMake FLOAT=ON). Requires libfftw3f
+     * on CPU/FFTW builds (parafaft's PARAFAFT_FFTW3F_AVAILABLE); TempLat's CMake
+     * already enforces this at configure time when FLOAT=ON.
      */
     virtual std::shared_ptr<FFTPlanInterface<float, NDim>> getPlans_float(const MPICartesianGroup &group,
                                                                           const FFTLayoutStruct<NDim> &layout) override
     {
 #ifndef HAVE_FFTFLOAT
       throw ParafaftCompiledWithoutSinglePrecisionSupport("CosmoLattice compiled without float FFT support.");
-#else
-      throw ParafaftCompiledWithoutSinglePrecisionSupport("Parafaft does not support single precision FFTs.");
-#endif
       return std::shared_ptr<FFTPlanInterface<float, NDim>>();
+#elif !defined(HAVE_MPI) || !defined(HAVE_PARAFAFT)
+      throw ParafaftPlannerException("Parafaft requires MPI and HAVE_PARAFAFT.");
+      return std::shared_ptr<FFTPlanInterface<float, NDim>>();
+#else
+      return make_plans<float>(group, layout);
+#endif
     }
 
     /**
      * @brief Create double-precision plans.
      *
-     * Creates a parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend> object and wraps it in ParafaftPlanHolder.
+     * Creates a parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend<double>> object and wraps it in ParafaftPlanHolder.
      * Parafaft's in-place API accepts padded buffers matching CosmoLattice's layout.
      */
     virtual std::shared_ptr<FFTPlanInterface<double, NDim>>
     getPlans_double(const MPICartesianGroup &group, const FFTLayoutStruct<NDim> &layout) override
     {
-#ifdef HAVE_MPI
-#ifdef HAVE_PARAFAFT
-      // Get global sizes
+#if defined(HAVE_MPI) && defined(HAVE_PARAFAFT)
+      return make_plans<double>(group, layout);
+#else
+      throw ParafaftPlannerException("Parafaft requires MPI and HAVE_PARAFAFT.");
+      return std::shared_ptr<FFTPlanInterface<double, NDim>>();
+#endif
+    }
+
+  private:
+#if defined(HAVE_MPI) && defined(HAVE_PARAFAFT)
+    /** @brief Shared plan-creation path for any supported precision T. */
+    template <typename T>
+    std::shared_ptr<ParafaftPlanHolder<T, NDim>> make_plans(const MPICartesianGroup &group,
+                                                            const FFTLayoutStruct<NDim> &layout)
+    {
       auto globalSizes = layout.configurationSpace.getGlobalSizes();
-
-      // if (globalSizes.size() != 3) {
-      //   throw ParafaftPlannerException("Parafaft integration currently only supports 3D. Got ", globalSizes.size(),
-      //                                  " dimensions.");
-      // }
-
       int globalShape[NDim];
       for (size_t i = 0; i < NDim; ++i)
         globalShape[i] = static_cast<int>(globalSizes[i]);
 
-      // Create parafaft object using base communicator
       auto parafaftObj =
-          std::make_shared<parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend>>(globalShape, group.getBaseComm());
+          std::make_shared<parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend<T>>>(globalShape, group.getBaseComm());
 
-      return std::make_shared<ParafaftPlanHolder<double, NDim>>(group, parafaftObj);
-#else
-      throw ParafaftPlannerException("Parafaft is disabled (HAVE_PARAFAFT not defined).");
-      return std::shared_ptr<FFTPlanInterface<double, NDim>>();
-#endif
-#else
-      throw ParafaftPlannerException("Parafaft requires MPI.");
-      return std::shared_ptr<FFTPlanInterface<double, NDim>>();
-#endif
+      return std::make_shared<ParafaftPlanHolder<T, NDim>>(group, parafaftObj);
     }
+#endif
   };
 } // namespace TempLat
 

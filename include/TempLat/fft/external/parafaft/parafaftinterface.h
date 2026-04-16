@@ -56,7 +56,11 @@ namespace TempLat
       int globalShape[NDim];
       for (size_t i = 0; i < NDim; ++i) globalShape[i] = static_cast<int>(nGridPoints[i]);
 
-      parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend> probe(globalShape, baseComm);
+      // Pin the probe to double: get_domain_decomposition returns an int[] that depends
+      // only on (baseComm.size(), nGridPoints), not on the floating-point precision, and
+      // this static method is called from FFTMPIDomainSplit::makeMPIGroup before any T is
+      // known. Double is always available; float depends on PARAFAFT_FFTW3F_AVAILABLE.
+      parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend<double>> probe(globalShape, baseComm);
 
       int probeDims[NDim];
       probe.get_domain_decomposition(probeDims);
