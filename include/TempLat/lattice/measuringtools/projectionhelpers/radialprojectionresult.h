@@ -43,6 +43,8 @@ namespace TempLat
   public:
     using floatType = typename GetFloatType<T>::type;
 
+    template <typename U> friend class RadialProjectionResult;
+
     // Put public methods here. These should change very little over time.
     RadialProjectionResult(size_t nBins, bool pUseBinCentralValues = false, bool pIsInFourier = false):
     std::vector<RadialProjectionSingleBinAndValue<T>>(),
@@ -53,6 +55,27 @@ namespace TempLat
     mUseBinCentralValues(pUseBinCentralValues),
     mIsInFourier(pIsInFourier)
     {
+      mMultiplicitiesDevice = DeviceView("RadialProjectionResult::mMultiplicitiesDevice", mNBins);
+      mMultiplicities = device::memory::createMirrorView(mMultiplicitiesDevice);
+    }
+
+    /** @brief Converting constructor: build a RadialProjectionResult<T> from a
+     *  RadialProjectionResult<U> by per-element static_cast. Only the parent vector
+     *  (filled by finalize) and centralBinBounds are migrated — workspace members
+     *  (mValues, mBinBounds, device mirrors) are re-initialized empty, mirroring
+     *  the default ctor. Intended for the post-finalize conversion that happens
+     *  when an expression's sType differs from the declared return type of the
+     *  enclosing powerSpectrum call. */
+    template <typename U>
+    RadialProjectionResult(const RadialProjectionResult<U> &other)
+        : std::vector<RadialProjectionSingleBinAndValue<T>>(), finalizedOnce(other.finalizedOnce),
+          mNBins(other.mNBins), mValues(other.mNBins), mBinBounds(other.mNBins),
+          mUseBinCentralValues(other.mUseBinCentralValues), mIsInFourier(other.mIsInFourier)
+    {
+      this->reserve(other.size());
+      for (const auto &bv : other) this->emplace_back(bv);
+      centralBinBounds.reserve(other.centralBinBounds.size());
+      for (const auto &b : other.centralBinBounds) centralBinBounds.push_back(static_cast<T>(b));
       mMultiplicitiesDevice = DeviceView("RadialProjectionResult::mMultiplicitiesDevice", mNBins);
       mMultiplicities = device::memory::createMirrorView(mMultiplicitiesDevice);
     }

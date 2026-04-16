@@ -41,6 +41,14 @@ namespace TempLat
     {
     }
 
+    template <typename U>
+    RadialProjectionSingleDatum(const RadialProjectionSingleDatum<U> &o)
+        : multiplicity(static_cast<floatType>(o.multiplicity)), average(static_cast<T>(o.average)),
+          sampleVariance(static_cast<T>(o.sampleVariance)), minVal(static_cast<T>(o.minVal)),
+          maxVal(static_cast<T>(o.maxVal))
+    {
+    }
+
     floatType multiplicity;
     T average;
     T sampleVariance;

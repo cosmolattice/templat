@@ -31,6 +31,12 @@ namespace TempLat
     {
     }
 
+    template <typename U>
+    RadialProjectionSingleBinAndValue(const RadialProjectionSingleBinAndValue<U> &o)
+        : mBinInformation(o.getBin()), mValueInformation(o.getValue())
+    {
+    }
+
     std::string toString(bool withBinInfo = true, bool withMultiplicity = true, int verbosity = 0) const
     { // these booleans will allow to save multiple spectra in the same file.
       std::stringstream sstream;
