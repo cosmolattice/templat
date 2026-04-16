@@ -58,12 +58,12 @@ namespace TempLat
 
         std::stringstream ss;
         ss << "Mismatch at local (";
-        for (device::Idx d = 0; d < NDim; ++d) {
+        for (device::Idx d = 0; d < static_cast<device::Idx>(NDim); ++d) {
           ss << local_idx[d];
           if (d < (device::Idx)NDim - 1) ss << ", ";
         }
         ss << "), global (";
-        for (device::Idx d = 0; d < NDim; ++d) {
+        for (device::Idx d = 0; d < static_cast<device::Idx>(NDim); ++d) {
           ss << global_idx[d];
           if (d < (device::Idx)NDim - 1) ss << ", ";
         }

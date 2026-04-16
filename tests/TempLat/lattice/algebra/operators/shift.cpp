@@ -62,7 +62,7 @@ namespace TempLat
           NDLoop<NDim>(view, [&](const auto... idx) {
             if (i == j) {
               bool local = (view(idx...) == 1);
-              for (int i = 0; i < NDim; ++i)
+              for (size_t k = 0; k < NDim; ++k)
                 local = local || (view(idx...) == -(nGrid - 1));
 
               all_right &= local;

@@ -112,16 +112,16 @@ namespace TempLat
       auto toolBox = MemoryToolBox<2>::makeShared(8, 0);
       Field<double, 2> rField("rField", toolBox);
       const auto layout = toolBox->mLayouts.getConfigSpaceLayout();
-      for (size_t i = 0; i < layout.getLocalSizes()[0]; ++i) {
-        for (size_t j = 0; j < layout.getLocalSizes()[1]; ++j) {
+      for (size_t i = 0; i < static_cast<size_t>(layout.getLocalSizes()[0]); ++i) {
+        for (size_t j = 0; j < static_cast<size_t>(layout.getLocalSizes()[1]); ++j) {
           device_kokkos::memory::setAtOnePoint(rField, device_kokkos::IdxArray<2>{(int64_t)i, (int64_t)j}, i + j);
         }
       }
       {
         auto host_view = rField.getLocalNDHostView();
         bool all_correct = true;
-        for (size_t i = 0; i < layout.getLocalSizes()[0]; ++i) {
-          for (size_t j = 0; j < layout.getLocalSizes()[1]; ++j) {
+        for (size_t i = 0; i < static_cast<size_t>(layout.getLocalSizes()[0]); ++i) {
+          for (size_t j = 0; j < static_cast<size_t>(layout.getLocalSizes()[1]); ++j) {
             all_correct &= host_view(i, j) == i + j;
           }
         }
@@ -129,8 +129,8 @@ namespace TempLat
       }
       {
         bool all_correct = true;
-        for (size_t i = 0; i < layout.getLocalSizes()[0]; ++i) {
-          for (size_t j = 0; j < layout.getLocalSizes()[1]; ++j) {
+        for (size_t i = 0; i < static_cast<size_t>(layout.getLocalSizes()[0]); ++i) {
+          for (size_t j = 0; j < static_cast<size_t>(layout.getLocalSizes()[1]); ++j) {
             all_correct &= device_kokkos::memory::getAtOnePoint(
                                rField, device_kokkos::IdxArray<2>{(int64_t)i, (int64_t)j}) == i + j;
           }
