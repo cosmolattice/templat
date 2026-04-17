@@ -59,6 +59,12 @@ namespace TempLat
       return std::get<M - Q::SHIFTIND>(fs);
     }
 
+    template <int M> const auto &operator()(Tag<M> t) const
+    {
+      static_assert(M >= Q::SHIFTIND && M < size + Q::SHIFTIND, "Index out of bounds in field collection.");
+      return std::get<M - Q::SHIFTIND>(fs);
+    }
+    
   protected:
     std::tuple<Args...> fs;
   };
