@@ -30,6 +30,15 @@ set(Kokkos_ENABLE_TESTS
 set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION
     ON
     CACHE BOOL "")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(Kokkos_ENABLE_DEBUG
+      ON
+      CACHE BOOL "")
+else()
+  set(Kokkos_ENABLE_DEBUG
+      OFF
+      CACHE BOOL "")
+endif()
 
 FetchContent_Declare(
   Kokkos
