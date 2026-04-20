@@ -150,8 +150,7 @@ if(MPI)
   if(NOT PARAFAFT)
     set(PARAFAFT
         ON
-        CACHE BOOL "Enable ParaFaFT support (recommended if MPI is enabled)"
-              FORCE)
+        CACHE BOOL "Enable ParaFaFT support (recommended if MPI is enabled)")
   endif()
 endif()
 
