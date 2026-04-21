@@ -18,7 +18,7 @@ namespace TempLat
   class SU2DoubletGetter
   {
   public:
-    template <typename R, int N> static DEVICE_INLINE_FUNCTION auto get(R &&r, Tag<N> t) { return r.SU2DoubletGet(t); }
+    template <typename R, int N> static auto get(R &&r, Tag<N> t) { return r.SU2DoubletGet(t); }
   };
 
 } // namespace TempLat
