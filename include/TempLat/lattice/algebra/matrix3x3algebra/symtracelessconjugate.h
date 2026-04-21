@@ -59,9 +59,12 @@ namespace TempLat
     DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<2> t2) const { return (*this).SymTracelessGet(4_c); }
     DEVICE_FORCEINLINE_FUNCTION
-    auto SymTracelessGet(Tag<3> t1, Tag<3> t2) const { return - (*this).SymTracelessGet(0_c) - (*this).SymTracelessGet(3_c); }
+    auto SymTracelessGet(Tag<3> t1, Tag<3> t2) const
+    {
+      return -(*this).SymTracelessGet(0_c) - (*this).SymTracelessGet(3_c);
+    }
 
-    template <int N, int M> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t1, Tag<M> t2) const
+    template <int N, int M> auto operator()(Tag<N> t1, Tag<M> t2) const
     {
       static_assert(N >= 1 && N <= 3 && M >= 1 && M <= 3, "Operator(): N and M must be between 1 and 3 for SymWrapper");
       return SymTracelessGet(t1, t2);
@@ -75,7 +78,9 @@ namespace TempLat
     DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto cL = DoEval::eval(mR, idx...);
-      device::array<decltype(conj(cL[0])), 5> result; //TODE: Jorge: For now this assummes cL[0] is already a complex. I only plan to use this in Fourier space, where i know it is, but this should no taken for granted.
+      device::array<decltype(conj(cL[0])), 5>
+          result; // TODE: Jorge: For now this assummes cL[0] is already a complex. I only plan to use this in Fourier
+                  // space, where i know it is, but this should no taken for granted.
       result[0] = conj(cL[0]);
       result[1] = conj(cL[1]);
       result[2] = conj(cL[2]);
@@ -91,7 +96,7 @@ namespace TempLat
   };
 
   template <typename R>
-  requires HasSymTracelessGet<R>
+    requires HasSymTracelessGet<R>
   DEVICE_FORCEINLINE_FUNCTION auto conj(const R &r)
   {
     return SymTracelessConjugate<R>(r);

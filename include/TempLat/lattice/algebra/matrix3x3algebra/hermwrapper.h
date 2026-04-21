@@ -24,8 +24,10 @@ namespace TempLat
    *
    * Unit test: ctest -R test-complexwrapper
    **/
-  /*TODO: Jorge: Maybe it would be great to check the diagonal elements are real. For now, I assumme this is checked by the user */
-  template <typename R11, typename R12, typename R13, typename R22, typename R23, typename R33> class HermWrapper : public HermOperator
+  /*TODO: Jorge: Maybe it would be great to check the diagonal elements are real. For now, I assumme this is checked by
+   * the user */
+  template <typename R11, typename R12, typename R13, typename R22, typename R23, typename R33>
+  class HermWrapper : public HermOperator
   {
   public:
     // Put public methods here. These should change very little over time.
@@ -34,14 +36,10 @@ namespace TempLat
     HermWrapper() = default;
 
     DEVICE_FUNCTION
-    HermWrapper(const R11 &pR11,const R12 &pR12,const R13 &pR13,const R22 &pR22,const R23 &pR23,const R33 &pR33):
-    mR11(pR11),
-    mR12(pR12),
-    mR13(pR13),
-    mR22(pR22),
-    mR23(pR23),
-    mR33(pR33)
-    {}
+    HermWrapper(const R11 &pR11, const R12 &pR12, const R13 &pR13, const R22 &pR22, const R23 &pR23, const R33 &pR33)
+        : mR11(pR11), mR12(pR12), mR13(pR13), mR22(pR22), mR23(pR23), mR33(pR33)
+    {
+    }
 
     DEVICE_FUNCTION
     HermWrapper(const HermWrapper &) = default;
@@ -78,20 +76,22 @@ namespace TempLat
     DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<3> t1, Tag<3> t2) const { return mR33; }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const
+    template <int N> auto operator()(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 5, "Operator(): N must be between 0 and 5 for HermWrapper");
       return HermGet(t);
     }
 
-    template <int N, int M> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t1, Tag<M> t2) const
+    template <int N, int M> auto operator()(Tag<N> t1, Tag<M> t2) const
     {
-      static_assert(N >= 1 && N <= 3 && M >= 1 && M <= 3, "Operator(): N and M must be between 1 and 3 for HermWrapper");
+      static_assert(N >= 1 && N <= 3 && M >= 1 && M <= 3,
+                    "Operator(): N and M must be between 1 and 3 for HermWrapper");
       return HermGet(t1, t2);
     }
 
     template <typename... IDX>
-      requires requires(std::decay_t<R11> r11, std::decay_t<R12> r12, std::decay_t<R13> r13, std::decay_t<R22> r22, std::decay_t<R23> r23, std::decay_t<R33> r33, IDX... idx) {
+      requires requires(std::decay_t<R11> r11, std::decay_t<R12> r12, std::decay_t<R13> r13, std::decay_t<R22> r22,
+                        std::decay_t<R23> r23, std::decay_t<R33> r33, IDX... idx) {
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r11, idx...);
         DoEval::eval(r12, idx...);
@@ -100,7 +100,8 @@ namespace TempLat
         DoEval::eval(r23, idx...);
         DoEval::eval(r33, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const //TODO: Jorge: I need to discuss if the use of aux here takes time or if it is fine.
+    DEVICE_FORCEINLINE_FUNCTION auto
+    eval(const IDX &...idx) const // TODO: Jorge: I need to discuss if the use of aux here takes time or if it is fine.
     {
       device::array<complex<decltype(DoEval::eval(mR11, idx...))>, 6> result;
       result[0] = complex(DoEval::eval(mR11, idx...), static_cast<decltype(DoEval::eval(mR11, idx...))>(0));
@@ -135,7 +136,12 @@ namespace TempLat
       PostGet::apply(mR33);
     }
 
-    std::string toString() const { return "Herm( (" + GetString::get(mR11) + "," + GetString::get(mR12) + "," + GetString::get(mR13) + ") , (" + GetString::get(conj(mR12)) + "," + GetString::get(mR22) + "," + GetString::get(mR23) + ") , (" + GetString::get(conj(mR13)) + "," + GetString::get(conj(mR23)) + "," + GetString::get(mR33) + ") "; }
+    std::string toString() const
+    {
+      return "Herm( (" + GetString::get(mR11) + "," + GetString::get(mR12) + "," + GetString::get(mR13) + ") , (" +
+             GetString::get(conj(mR12)) + "," + GetString::get(mR22) + "," + GetString::get(mR23) + ") , (" +
+             GetString::get(conj(mR13)) + "," + GetString::get(conj(mR23)) + "," + GetString::get(mR33) + ") ";
+    }
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
@@ -148,7 +154,8 @@ namespace TempLat
   };
 
   template <typename R11, typename R12, typename R13, typename R22, typename R23, typename R33>
-  DEVICE_FORCEINLINE_FUNCTION HermWrapper<R11, R12, R13, R22, R23, R33> ConstructHerm(const R11 &r11, const R12 &r12, const R13 &r13, const R22 &r22, const R23 &r23, const R33 &r33)
+  DEVICE_FORCEINLINE_FUNCTION HermWrapper<R11, R12, R13, R22, R23, R33>
+  ConstructHerm(const R11 &r11, const R12 &r12, const R13 &r13, const R22 &r22, const R23 &r23, const R33 &r33)
   {
     return {r11, r12, r13, r22, r23, r33};
   }

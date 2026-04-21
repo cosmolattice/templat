@@ -37,7 +37,7 @@ namespace TempLat
     DEVICE_FUNCTION
     SU2GroupWrapper(const SU2GroupWrapper &) = default;
 
-    template <int N> DEVICE_INLINE_FUNCTION auto SU2Get(Tag<N> t) const
+    template <int N> auto SU2Get(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3,
                     "SU2Get: N must be greater than 0 and less than or equal to 3 for SU2GroupWrapper");

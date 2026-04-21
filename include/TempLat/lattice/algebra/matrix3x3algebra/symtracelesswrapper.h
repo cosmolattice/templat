@@ -22,7 +22,8 @@ namespace TempLat
    *
    * Unit test: ctest -R test-symtracelesswrapperwrapper
    **/
-  template <class R0, class R1, class R2, class R3, class R4, class R5> class SymTracelessWrapper : public SymTracelessOperator
+  template <class R0, class R1, class R2, class R3, class R4, class R5>
+  class SymTracelessWrapper : public SymTracelessOperator
   {
   public:
     // Put public methods here. These should change very little over time.
@@ -31,30 +32,26 @@ namespace TempLat
     SymTracelessWrapper() = default;
 
     DEVICE_FUNCTION
-    SymTracelessWrapper(const R0 &pR0,const R1 &pR1,const R2 &pR2,const R3 &pR3,const R4 &pR4,const R5 &pR5):
-    mR0(pR0),
-    mR1(pR1),
-    mR2(pR2),
-    mR3(pR3),
-    mR4(pR4),
-    mR5(pR5)
-    {}
+    SymTracelessWrapper(const R0 &pR0, const R1 &pR1, const R2 &pR2, const R3 &pR3, const R4 &pR4, const R5 &pR5)
+        : mR0(pR0), mR1(pR1), mR2(pR2), mR3(pR3), mR4(pR4), mR5(pR5)
+    {
+    }
 
     DEVICE_FUNCTION
     SymTracelessWrapper(const SymTracelessWrapper &) = default;
 
     DEVICE_FORCEINLINE_FUNCTION
-    auto SymTracelessGet(Tag<0> t) const { return (2. / 3.) * mR0 - (1. / 3.) * mR3 - (1. / 3.) * mR5 ; }
+    auto SymTracelessGet(Tag<0> t) const { return (2. / 3.) * mR0 - (1. / 3.) * mR3 - (1. / 3.) * mR5; }
     DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t) const { return mR1; }
     DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t) const { return mR2; }
     DEVICE_FORCEINLINE_FUNCTION
-    auto SymTracelessGet(Tag<3> t) const { return - (1. / 3.) * mR0 + (2. / 3.) * mR3 - (1. / 3.) * mR5 ; }
+    auto SymTracelessGet(Tag<3> t) const { return -(1. / 3.) * mR0 + (2. / 3.) * mR3 - (1. / 3.) * mR5; }
     DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<4> t) const { return mR4; }
     DEVICE_FORCEINLINE_FUNCTION
-    auto SymTracelessGet(Tag<5> t) const { return -(1. / 3.) * mR0 - (1. / 3.) * mR3 + (2. / 3.) * mR5 ; }
+    auto SymTracelessGet(Tag<5> t) const { return -(1. / 3.) * mR0 - (1. / 3.) * mR3 + (2. / 3.) * mR5; }
 
     DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<1> t2) const { return SymTracelessGet(0_c); }
@@ -75,14 +72,15 @@ namespace TempLat
     DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<3> t2) const { return SymTracelessGet(5_c); }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const
+    template <int N> auto operator()(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 4, "Operator(): N must be 0 or 4 for SymTracelessWrapper");
       return SymTracelessGet(t);
     }
 
     template <typename... IDX>
-      requires requires(std::decay_t<R0> r0, std::decay_t<R1> r1, std::decay_t<R2> r2, std::decay_t<R3> r3, std::decay_t<R4> r4, std::decay_t<R5> r5, IDX... idx) {
+      requires requires(std::decay_t<R0> r0, std::decay_t<R1> r1, std::decay_t<R2> r2, std::decay_t<R3> r3,
+                        std::decay_t<R4> r4, std::decay_t<R5> r5, IDX... idx) {
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r0, idx...);
         DoEval::eval(r1, idx...);
@@ -125,7 +123,11 @@ namespace TempLat
       PostGet::apply(mR5);
     }
 
-    std::string toString() const { return "SymTraceless(" + GetString::get(mR0) + "," + GetString::get(mR1) + "," + GetString::get(mR2) + "," + GetString::get(mR3) + "," + GetString::get(mR4) + ")"; }
+    std::string toString() const
+    {
+      return "SymTraceless(" + GetString::get(mR0) + "," + GetString::get(mR1) + "," + GetString::get(mR2) + "," +
+             GetString::get(mR3) + "," + GetString::get(mR4) + ")";
+    }
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
@@ -138,7 +140,8 @@ namespace TempLat
   };
 
   template <typename R0, typename R1, typename R2, typename R3, typename R4, typename R5>
-  DEVICE_FORCEINLINE_FUNCTION SymTracelessWrapper<R0, R1, R2, R3, R4, R5> ConstructSymTraceless(const R0 &r0, const R1 &r1, const R2 &r2, const R3 &r3, const R4 &r4, const R5 &r5)
+  DEVICE_FORCEINLINE_FUNCTION SymTracelessWrapper<R0, R1, R2, R3, R4, R5>
+  ConstructSymTraceless(const R0 &r0, const R1 &r1, const R2 &r2, const R3 &r3, const R4 &r4, const R5 &r5)
   {
     return {r0, r1, r2, r3, r4, r5};
   }

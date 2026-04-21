@@ -29,7 +29,7 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     SU2DoubletSubtract(const R &pR, const T &pT) : SU2DoubletBinaryOperator<R, T>(pR, pT) {}
 
-    template <int N> DEVICE_INLINE_FUNCTION auto SU2DoubletGet(Tag<N> t) const
+    template <int N> auto SU2DoubletGet(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3, "SU2DoubletGet: N must be between 0 and 3 for SU2DoubletSubtraction");
       return mR.SU2DoubletGet(t) - mT.SU2DoubletGet(t);

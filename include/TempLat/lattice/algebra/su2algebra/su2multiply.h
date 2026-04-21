@@ -38,28 +38,21 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     SU2Multiplication(const R &pR, const T &pT) : SU2BinaryOperator<R, T>(pR, pT) {}
 
-    DEVICE_FUNCTION
-    SU2Multiplication(const SU2Multiplication &) = default;
-
-    DEVICE_INLINE_FUNCTION
     auto SU2Get(Tag<0> t) const
     {
       return mR.SU2Get(0_c) * mT.SU2Get(0_c) - mR.SU2Get(1_c) * mT.SU2Get(1_c) - mR.SU2Get(2_c) * mT.SU2Get(2_c) -
              mR.SU2Get(3_c) * mT.SU2Get(3_c);
     }
-    DEVICE_INLINE_FUNCTION
     auto SU2Get(Tag<1> t) const
     {
       return mR.SU2Get(0_c) * mT.SU2Get(1_c) + mR.SU2Get(3_c) * mT.SU2Get(2_c) + mR.SU2Get(1_c) * mT.SU2Get(0_c) -
              mR.SU2Get(2_c) * mT.SU2Get(3_c);
     }
-    DEVICE_INLINE_FUNCTION
     auto SU2Get(Tag<2> t) const
     {
       return mR.SU2Get(0_c) * mT.SU2Get(2_c) + mR.SU2Get(2_c) * mT.SU2Get(0_c) + mR.SU2Get(1_c) * mT.SU2Get(3_c) -
              mR.SU2Get(3_c) * mT.SU2Get(1_c);
     }
-    DEVICE_INLINE_FUNCTION
     auto SU2Get(Tag<3> t) const
     {
       return mR.SU2Get(0_c) * mT.SU2Get(3_c) + mR.SU2Get(3_c) * mT.SU2Get(0_c) + mR.SU2Get(2_c) * mT.SU2Get(1_c) -
