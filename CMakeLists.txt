@@ -66,7 +66,6 @@ option(AUTOBUILD_HDF5
 
 option(HDF5 "Use HDF5 for I/O" OFF)
 option(MPI "Use MPI for parallelization" OFF)
-option(PARAFAFT "Use ParaFaft for parallel FFTs" OFF)
 option(TEMPLAT_TEST "Build TempLat tests" OFF)
 option(TEMPLAT_BENCH "Build TempLat benchmarks" OFF)
 
@@ -152,6 +151,10 @@ if(MPI)
         ON
         CACHE BOOL "Enable ParaFaFT support (recommended if MPI is enabled)")
   endif()
+else()
+    set(PARAFAFT
+        OFF
+        CACHE BOOL "Enable ParaFaFT support (recommended if MPI is enabled)")
 endif()
 
 if(KOKKOSFFT)
