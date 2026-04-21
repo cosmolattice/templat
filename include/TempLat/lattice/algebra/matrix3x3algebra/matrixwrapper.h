@@ -22,7 +22,9 @@ namespace TempLat
    *
    * Unit test: ctest -R test-complexwrapper
    **/
-  template <typename R11, typename R12, typename R13, typename R21, typename R22, typename R23, typename R31, typename R32, typename R33> class MatrixWrapper : public MatrixOperator
+  template <typename R11, typename R12, typename R13, typename R21, typename R22, typename R23, typename R31,
+            typename R32, typename R33>
+  class MatrixWrapper : public MatrixOperator
   {
   public:
     // Put public methods here. These should change very little over time.
@@ -31,17 +33,11 @@ namespace TempLat
     MatrixWrapper() = default;
 
     DEVICE_FUNCTION
-    MatrixWrapper(const R11 &pR11, const R12 &pR12,const R13 &pR13, const R21 &pR21, const R22 &pR22, const R23 &pR23, const R31 &pR31, const R32 &pR32, const R33 &pR33):
-    mR11(pR11),
-    mR12(pR12),
-    mR13(pR13),
-    mR21(pR21),
-    mR22(pR22),
-    mR23(pR23),
-    mR31(pR31),
-    mR32(pR32),
-    mR33(pR33)
-    {}
+    MatrixWrapper(const R11 &pR11, const R12 &pR12, const R13 &pR13, const R21 &pR21, const R22 &pR22, const R23 &pR23,
+                  const R31 &pR31, const R32 &pR32, const R33 &pR33)
+        : mR11(pR11), mR12(pR12), mR13(pR13), mR21(pR21), mR22(pR22), mR23(pR23), mR31(pR31), mR32(pR32), mR33(pR33)
+    {
+    }
 
     DEVICE_FUNCTION
     MatrixWrapper(const MatrixWrapper &) = default;
@@ -84,20 +80,23 @@ namespace TempLat
     DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<3> t1, Tag<3> t2) const { return mR33; }
 
-    template <int N> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t) const
+    template <int N> auto operator()(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 8, "Operator(): N must be between 0 and 8 for MatrixWrapper");
       return MatrixGet(t);
     }
 
-    template <int N, int M> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t1, Tag<M> t2) const
+    template <int N, int M> auto operator()(Tag<N> t1, Tag<M> t2) const
     {
-      static_assert(N >= 1 && N <= 3 && M >= 1 && M <= 3, "Operator(): N and M must be between 1 and 3 for MatrixWrapper");
+      static_assert(N >= 1 && N <= 3 && M >= 1 && M <= 3,
+                    "Operator(): N and M must be between 1 and 3 for MatrixWrapper");
       return MatrixGet(t1, t2);
     }
 
     template <typename... IDX>
-      requires requires(std::decay_t<R11> r11, std::decay_t<R12> r12, std::decay_t<R13> r13, std::decay_t<R21> r21, std::decay_t<R22> r22, std::decay_t<R23> r23, std::decay_t<R31> r31, std::decay_t<R32> r32, std::decay_t<R33> r33, IDX... idx) {
+      requires requires(std::decay_t<R11> r11, std::decay_t<R12> r12, std::decay_t<R13> r13, std::decay_t<R21> r21,
+                        std::decay_t<R22> r22, std::decay_t<R23> r23, std::decay_t<R31> r31, std::decay_t<R32> r32,
+                        std::decay_t<R33> r33, IDX... idx) {
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r11, idx...);
         DoEval::eval(r12, idx...);
@@ -150,7 +149,12 @@ namespace TempLat
       PostGet::apply(mR33);
     }
 
-    std::string toString() const { return "Matrix( (" + GetString::get(mR11) + "," + GetString::get(mR12) + "," + GetString::get(mR13) + ") , (" + GetString::get(mR21) + "," + GetString::get(mR22) + "," + GetString::get(mR23) + ") , (" + GetString::get(mR31) + "," + GetString::get(mR32) + "," + GetString::get(mR33) + ") "; }
+    std::string toString() const
+    {
+      return "Matrix( (" + GetString::get(mR11) + "," + GetString::get(mR12) + "," + GetString::get(mR13) + ") , (" +
+             GetString::get(mR21) + "," + GetString::get(mR22) + "," + GetString::get(mR23) + ") , (" +
+             GetString::get(mR31) + "," + GetString::get(mR32) + "," + GetString::get(mR33) + ") ";
+    }
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
@@ -165,8 +169,11 @@ namespace TempLat
     R33 mR33;
   };
 
-  template <typename R11, typename R12, typename R13, typename R21, typename R22, typename R23, typename R31, typename R32, typename R33>
-  DEVICE_FORCEINLINE_FUNCTION MatrixWrapper<R11, R12, R13, R21, R22, R23, R31, R32, R33> ConstructMatrix3x3(const R11 &r11, const R12 &r12, const R13 &r13, const R21 &r21, const R22 &r22, const R23 &r23, const R31 &r31, const R32 &r32, const R33 &r33)
+  template <typename R11, typename R12, typename R13, typename R21, typename R22, typename R23, typename R31,
+            typename R32, typename R33>
+  DEVICE_FORCEINLINE_FUNCTION MatrixWrapper<R11, R12, R13, R21, R22, R23, R31, R32, R33>
+  ConstructMatrix3x3(const R11 &r11, const R12 &r12, const R13 &r13, const R21 &r21, const R22 &r22, const R23 &r23,
+                     const R31 &r31, const R32 &r32, const R33 &r33)
   {
     return {r11, r12, r13, r21, r22, r23, r31, r32, r33};
   }

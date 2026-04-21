@@ -59,7 +59,7 @@ namespace TempLat
       return result;
     }
 
-    template <int N> DEVICE_INLINE_FUNCTION auto operator()(Tag<N> t) const { return SU2DoubletGet(t); }
+    template <int N> auto operator()(Tag<N> t) const { return SU2DoubletGet(t); }
 
     std::string toString() const
     {

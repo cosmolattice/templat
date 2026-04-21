@@ -29,7 +29,7 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     SU2Dagger(const R &pR) : SU2UnaryOperator<R>(pR) {}
 
-    template <int N> DEVICE_INLINE_FUNCTION auto SU2Get(Tag<N> t) const
+    template <int N> auto SU2Get(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3, "SU2Get: N must be between 0 and 3 for SU2Dagger");
       if constexpr (N == 0) {
@@ -39,7 +39,7 @@ namespace TempLat
       }
     }
 
-    template <int N> DEVICE_INLINE_FUNCTION auto operator()(Tag<N> t) const
+    template <int N> auto operator()(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3, "Operator(): N must be between 0 and 3 for SU2Dagger");
       return SU2Get(t);

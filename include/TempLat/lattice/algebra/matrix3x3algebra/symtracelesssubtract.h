@@ -57,9 +57,12 @@ namespace TempLat
     DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<2> t2) const { return (*this).SymTracelessGet(4_c); }
     DEVICE_FORCEINLINE_FUNCTION
-    auto SymTracelessGet(Tag<3> t1, Tag<3> t2) const { return - (*this).SymTracelessGet(0_c) - (*this).SymTracelessGet(3_c); }
+    auto SymTracelessGet(Tag<3> t1, Tag<3> t2) const
+    {
+      return -(*this).SymTracelessGet(0_c) - (*this).SymTracelessGet(3_c);
+    }
 
-    template <int N, int M> DEVICE_FORCEINLINE_FUNCTION auto operator()(Tag<N> t1, Tag<M> t2) const
+    template <int N, int M> auto operator()(Tag<N> t1, Tag<M> t2) const
     {
       static_assert(N >= 1 && N <= 3 && M >= 1 && M <= 3, "Operator(): N and M must be between 1 and 3 for SymWrapper");
       return SymTracelessGet(t1, t2);

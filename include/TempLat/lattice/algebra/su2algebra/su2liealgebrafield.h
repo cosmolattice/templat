@@ -41,15 +41,15 @@ namespace TempLat
     {
     }
 
-    template <int N> DEVICE_INLINE_FUNCTION auto SU2Get(Tag<N> t) const
+    template <int N> auto SU2Get(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3, "SU2Get: N must be between 0 and 3 for SU2LieAlgebraField");
       return operator()(t);
     }
 
-    template <int N> DEVICE_INLINE_FUNCTION auto SU2LieAlgebraGet(Tag<N> t) const { return 2 * SU2Get(t); }
+    template <int N> auto SU2LieAlgebraGet(Tag<N> t) const { return 2 * SU2Get(t); }
 
-    DEVICE_INLINE_FUNCTION ZeroType operator()(Tag<0> t) const { return {}; }
+    ZeroType operator()(Tag<0> t) const { return {}; }
 
     template <int M> auto &operator()(Tag<M> t)
     {

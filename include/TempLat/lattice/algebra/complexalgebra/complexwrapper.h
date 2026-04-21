@@ -42,7 +42,7 @@ namespace TempLat
     DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<1> t) const { return mT; }
 
-    template <int N> DEVICE_INLINE_FUNCTION auto operator()(Tag<N> t) const
+    template <int N> auto operator()(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 1, "Operator(): N must be 0 or 1 for ComplexFieldWrapper");
       return ComplexFieldGet(t);

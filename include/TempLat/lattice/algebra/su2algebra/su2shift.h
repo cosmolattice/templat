@@ -31,7 +31,7 @@ namespace TempLat
 
     SU2Shifter(const R &pR) : SU2UnaryOperator<R>(pR) {}
 
-    template <int M> DEVICE_INLINE_FUNCTION auto SU2Get(Tag<M> t) const { return shift<N...>(mR.SU2Get(t)); }
+    template <int M> auto SU2Get(Tag<M> t) const { return shift<N...>(mR.SU2Get(t)); }
 
     template <typename... IDX>
       requires requires(std::decay_t<R> r, IDX... idx) {
@@ -64,7 +64,7 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     SU2ShifterByOne(const R &pR) : SU2UnaryOperator<R>(pR) {}
 
-    template <int M> DEVICE_INLINE_FUNCTION auto SU2Get(Tag<M> t) const { return shift<_N>(mR.SU2Get(t)); }
+    template <int M> auto SU2Get(Tag<M> t) const { return shift<_N>(mR.SU2Get(t)); }
 
     template <typename... IDX>
       requires requires(std::decay_t<R> r, IDX... idx) {

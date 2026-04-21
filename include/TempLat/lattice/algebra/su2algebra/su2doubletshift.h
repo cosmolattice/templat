@@ -31,7 +31,7 @@ namespace TempLat
 
     SU2DoubletShifter(const R &pR) : SU2DoubletUnaryOperator<R>(pR) {}
 
-    template <int M> DEVICE_INLINE_FUNCTION auto SU2DoubletGet(Tag<M> t) const
+    template <int M> auto SU2DoubletGet(Tag<M> t) const
     {
       static_assert(M >= 0 && M <= 3, "SU2DoubletGet: M must be between 0 and 3 for SU2DoubletShifter");
       return shift<N...>(mR.SU2DoubletGet(t));
@@ -68,7 +68,7 @@ namespace TempLat
 
     SU2DoubletShifterByOne(const R &pR) : SU2DoubletUnaryOperator<R>(pR) {}
 
-    template <int M> DEVICE_INLINE_FUNCTION auto SU2DoubletGet(Tag<M> t) const
+    template <int M> auto SU2DoubletGet(Tag<M> t) const
     {
       static_assert(M >= 0 && M <= 3, "SU2DoubletGet: M must be between 0 and 3 for SU2DoubletShifterByOne");
       return shift<_N>(mR.SU2DoubletGet(t));
