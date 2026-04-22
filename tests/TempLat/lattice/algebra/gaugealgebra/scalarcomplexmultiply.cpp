@@ -16,9 +16,7 @@ namespace TempLat
   void ScalarComplexFieldMultiplyTester::Test(TDDAssertion &tdd)
   {
     struct MyStruct {
-      DEVICE_INLINE_FUNCTION
       int ComplexFieldGet(Tag<0> t) const { return 1; }
-      DEVICE_INLINE_FUNCTION
       int ComplexFieldGet(Tag<1> t) const { return 2; }
     };
 

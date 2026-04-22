@@ -35,7 +35,6 @@ namespace TempLat
       // Put public methods here. These should change very little over time.
       using UnaryOperator<T>::mR;
 
-      DEVICE_FUNCTION
       ACos(const T &a) : UnaryOperator<T>(a) {}
 
       template <typename... IDX>
@@ -43,16 +42,13 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(t, idx...);
         }
-      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return acos(DoEval::eval(mR, idx...));
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
-      {
-        return -GetDeriv::get(mR, other) * (1.0 / sqrt(1 - pow<2>(mR)));
-      }
+      template <typename U> auto d(const U &other) { return -GetDeriv::get(mR, other) * (1.0 / sqrt(1 - pow<2>(mR))); }
 
       virtual std::string operatorString() const override { return "acos"; }
     };
@@ -61,14 +57,13 @@ namespace TempLat
   /** @brief Exposing our newly defined acos operation to the world. */
   template <typename T>
     requires ConditionalUnaryGetter<T>
-  DEVICE_INLINE_FUNCTION auto acos(T a)
+  auto acos(T a)
   {
     return Operators::ACos<T>(a);
   }
 
   /** @brief Specialize for possible unit input! acos(1) = 0. */
-  DEVICE_INLINE_FUNCTION
-  ZeroType acos(OneType a) { return {}; }
+  constexpr inline ZeroType acos(OneType a) { return {}; }
 } // namespace TempLat
 
 #endif

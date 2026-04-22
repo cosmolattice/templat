@@ -27,149 +27,96 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    SymTracelessFieldFourierView(FourierView<T, NDim> c0, FourierView<T, NDim> c1, FourierView<T, NDim> c2, FourierView<T, NDim> c3, FourierView<T, NDim> c4):
-    m0(c0),
-    m1(c1),
-    m2(c2),
-    m3(c3),
-    m4(c4),
-    mToolBox(m0.getToolBox()),
-    mLayout(mToolBox->mLayouts.getFourierSpaceLayout())
+    SymTracelessFieldFourierView(FourierView<T, NDim> c0, FourierView<T, NDim> c1, FourierView<T, NDim> c2,
+                                 FourierView<T, NDim> c3, FourierView<T, NDim> c4)
+        : m0(c0), m1(c1), m2(c2), m3(c3), m4(c4), mToolBox(m0.getToolBox()),
+          mLayout(mToolBox->mLayouts.getFourierSpaceLayout())
     {
     }
 
-    std::string toString() const { return "(" + m0.toString() + ", " + m1.toString() + ", " + m2.toString() + ", " + m3.toString() + ", " + m4.toString() + ")"; }
+    std::string toString() const
+    {
+      return "(" + m0.toString() + ", " + m1.toString() + ", " + m2.toString() + ", " + m3.toString() + ", " +
+             m4.toString() + ")";
+    }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto &SymTracelessGet(Tag<0> t) { return m0; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &SymTracelessGet(Tag<0> t) const { return m0; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto &operator()(Tag<0> t) { return m0; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<0> t) const { return m0; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto &SymTracelessGet(Tag<1> t) { return m1; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &SymTracelessGet(Tag<1> t) const { return m1; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto &operator()(Tag<1> t) { return m1; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<1> t) const { return m1; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto &SymTracelessGet(Tag<2> t) { return m2; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &SymTracelessGet(Tag<2> t) const { return m2; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto &operator()(Tag<2> t) { return m2; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<2> t) const { return m2; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto &SymTracelessGet(Tag<3> t) { return m3; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &SymTracelessGet(Tag<3> t) const { return m3; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto &operator()(Tag<3> t) { return m3; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<3> t) const { return m3; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto &SymTracelessGet(Tag<4> t) { return m4; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &SymTracelessGet(Tag<4> t) const { return m4; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto &operator()(Tag<4> t) { return m4; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<4> t) const { return m4; }
 
-
-    DEVICE_FORCEINLINE_FUNCTION
     auto &SymTracelessGet(Tag<1> t1, Tag<1> t2) { return m0; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &SymTracelessGet(Tag<1> t1, Tag<1> t2) const { return m0; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto &operator()(Tag<1> t1, Tag<1> t2) { return m0; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<1> t1, Tag<1> t2) const { return m0; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto &SymTracelessGet(Tag<1> t1, Tag<2> t2) { return m1; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &SymTracelessGet(Tag<1> t1, Tag<2> t2) const { return m1; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto &operator()(Tag<1> t1, Tag<2> t2) { return m1; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<1> t1, Tag<2> t2) const { return m1; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto &SymTracelessGet(Tag<1> t1, Tag<3> t2) { return m2; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &SymTracelessGet(Tag<1> t1, Tag<3> t2) const { return m2; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto &operator()(Tag<1> t1, Tag<3> t2) { return m2; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<1> t1, Tag<3> t2) const { return m2; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto &SymTracelessGet(Tag<2> t1, Tag<1> t2) { return m1; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &SymTracelessGet(Tag<2> t1, Tag<1> t2) const { return m1; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto &operator()(Tag<2> t1, Tag<1> t2) { return m1; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<2> t1, Tag<1> t2) const { return m1; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto &SymTracelessGet(Tag<2> t1, Tag<2> t2) { return m3; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &SymTracelessGet(Tag<2> t1, Tag<2> t2) const { return m3; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto &operator()(Tag<2> t1, Tag<2> t2) { return m3; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<2> t1, Tag<2> t2) const { return m3; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto &SymTracelessGet(Tag<2> t1, Tag<3> t2) { return m4; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &SymTracelessGet(Tag<2> t1, Tag<3> t2) const { return m4; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto &operator()(Tag<2> t1, Tag<3> t2) { return m4; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<2> t1, Tag<3> t2) const { return m4; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto &SymTracelessGet(Tag<3> t1, Tag<1> t2) { return m2; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &SymTracelessGet(Tag<3> t1, Tag<1> t2) const { return m2; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto &operator()(Tag<3> t1, Tag<1> t2) { return m2; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<3> t1, Tag<1> t2) const { return m2; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto &SymTracelessGet(Tag<3> t1, Tag<2> t2) { return m4; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &SymTracelessGet(Tag<3> t1, Tag<2> t2) const { return m4; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto &operator()(Tag<3> t1, Tag<2> t2) { return m4; }
-    DEVICE_FORCEINLINE_FUNCTION
     const auto &operator()(Tag<3> t1, Tag<2> t2) const { return m4; }
 
-    DEVICE_FORCEINLINE_FUNCTION
-    auto SymTracelessGet(Tag<3> t1, Tag<3> t2) { return - m0 - m3; } //TODO: Jorge: I have been forced to remove the & to do assignements. I do not like this, so we should discuss about this.
-    DEVICE_FORCEINLINE_FUNCTION
-    const auto SymTracelessGet(Tag<3> t1, Tag<3> t2) const { return - m0 - m3; }
-    DEVICE_FORCEINLINE_FUNCTION
-    auto operator()(Tag<3> t1, Tag<3> t2) { return - m0 - m3; }
-    DEVICE_FORCEINLINE_FUNCTION
-    const auto operator()(Tag<3> t1, Tag<3> t2) const { return - m0 - m3; }
+    auto SymTracelessGet(Tag<3> t1, Tag<3> t2)
+    {
+      return -m0 - m3;
+    } // TODO: Jorge: I have been forced to remove the & to do assignements. I do not like this, so we should discuss
+      // about this.
+    const auto SymTracelessGet(Tag<3> t1, Tag<3> t2) const { return -m0 - m3; }
+    auto operator()(Tag<3> t1, Tag<3> t2) { return -m0 - m3; }
+    const auto operator()(Tag<3> t1, Tag<3> t2) const { return -m0 - m3; }
 
     template <typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       device::array<decltype(m0.eval(idx...)), 5> result;
       result[0] = m0.eval(idx...);
@@ -220,10 +167,7 @@ namespace TempLat
       PostGet::apply(g);
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto getDx() const { return m0.getDx(); }
-
-    DEVICE_FORCEINLINE_FUNCTION
     auto getKIR() const { return m0.getKIR(); }
 
     using Getter = SymTracelessGetter;

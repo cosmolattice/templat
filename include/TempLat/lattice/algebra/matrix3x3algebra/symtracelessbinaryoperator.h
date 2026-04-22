@@ -30,30 +30,20 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    DEVICE_FUNCTION
     SymTracelessBinaryOperator(const R &pR, const T &pT) : mR(pR), mT(pT) {}
 
-    DEVICE_FUNCTION
-    SymTracelessBinaryOperator(const SymTracelessBinaryOperator &) = default;
-
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessFieldGet(Tag<1> t1, Tag<1> t2) const { return SymTracelessFieldGet(0_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessFieldGet(Tag<1> t1, Tag<2> t2) const { return SymTracelessFieldGet(1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessFieldGet(Tag<1> t1, Tag<3> t2) const { return SymTracelessFieldGet(2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessFieldGet(Tag<2> t1, Tag<1> t2) const { return SymTracelessFieldGet(1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessFieldGet(Tag<2> t1, Tag<2> t2) const { return SymTracelessFieldGet(3_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessFieldGet(Tag<2> t1, Tag<3> t2) const { return SymTracelessFieldGet(4_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessFieldGet(Tag<3> t1, Tag<1> t2) const { return SymTracelessFieldGet(2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessFieldGet(Tag<3> t1, Tag<2> t2) const { return SymTracelessFieldGet(4_c); }
-    DEVICE_FORCEINLINE_FUNCTION
-    auto SymTracelessFieldGet(Tag<3> t1, Tag<3> t2) const { return - SymTracelessFieldGet(0_c) - SymTracelessFieldGet(3_c); }
+    auto SymTracelessFieldGet(Tag<3> t1, Tag<3> t2) const
+    {
+      return -SymTracelessFieldGet(0_c) - SymTracelessFieldGet(3_c);
+    }
 
     static consteval size_t getNDim() { return std::max(GetNDim::get<R>(), GetNDim::get<T>()); }
 
@@ -77,10 +67,7 @@ namespace TempLat
       return result;
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto getDx() const { return GetDx::getDx(mR); }
-
-    DEVICE_FORCEINLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
     void preGet()

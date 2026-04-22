@@ -31,11 +31,7 @@ namespace TempLat
     using SU2BinaryOperator<R, T>::mR;
     using SU2BinaryOperator<R, T>::mT;
 
-    DEVICE_FUNCTION
     ScalarSU2Multiplication(const R &pR, const T &pT) : SU2BinaryOperator<R, T>(pR, pT) {}
-
-    DEVICE_FUNCTION
-    ScalarSU2Multiplication(const ScalarSU2Multiplication &) = default;
 
     using SV = typename SU2GetGetReturnType<T>::type;
 

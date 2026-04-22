@@ -37,9 +37,6 @@ namespace TempLat
 
     SU2UnaryOperator(const R &pR) : mR(pR) {}
 
-    DEVICE_FUNCTION
-    SU2UnaryOperator(const SU2UnaryOperator &) = default;
-
     /** @brief Override this method in your derived class, to have an easy implementation of your toString method. */
     virtual std::string operatorString() const { return " "; }
 
@@ -53,10 +50,7 @@ namespace TempLat
       return this->operatorString() + result;
     }
 
-    DEVICE_INLINE_FUNCTION
     auto getDx() const { return GetDx::getDx(mR); }
-
-    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
     void preGet() { PreGet::apply(mR); }

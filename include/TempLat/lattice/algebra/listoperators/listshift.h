@@ -33,10 +33,7 @@ namespace TempLat
     using ListUnaryOperator<R>::mR;
     ListShifter(const R &pR) : ListUnaryOperator<R>(pR) {}
 
-    template <int M> DEVICE_INLINE_FUNCTION auto getComp(Tag<M> t) const
-    {
-      return shift<N...>(GetComponent::get(mR, t));
-    }
+    template <int M> auto getComp(Tag<M> t) const { return shift<N...>(GetComponent::get(mR, t)); }
 
     virtual std::string operatorString() const override { return ""; }
     template <int M> void doWeNeedGhosts(Tag<M> i) { GetComponent::get(mR, i).confirmGhostsUpToDate(); }
@@ -50,7 +47,7 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     ListShifterByOne(const R &pR) : ListUnaryOperator<R>(pR), mR(pR) {}
 
-    template <int M> DEVICE_INLINE_FUNCTION auto getComp(Tag<M> t) const { return shift<N>(GetComponent::get(mR, t)); }
+    template <int M> auto getComp(Tag<M> t) const { return shift<N>(GetComponent::get(mR, t)); }
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
@@ -59,21 +56,21 @@ namespace TempLat
 
   template <typename R, int... N>
     requires(IsSTDGettable<0, R> || IsTempLatGettable<0, R>)
-  DEVICE_INLINE_FUNCTION auto shift(const R &r)
+  auto shift(const R &r)
   {
     return ListShifter<R, N...>(r);
   }
 
   template <int N, class R>
     requires(IsSTDGettable<0, R> || IsTempLatGettable<0, R>)
-  DEVICE_INLINE_FUNCTION auto shift(const R &pR)
+  auto shift(const R &pR)
   {
     return ListShifterByOne<R, N>(pR);
   }
 
   template <class R, int N>
     requires(IsSTDGettable<0, R> || IsTempLatGettable<0, R>)
-  DEVICE_INLINE_FUNCTION auto shift(const R &pR, const Tag<N> &t)
+  auto shift(const R &pR, const Tag<N> &t)
   {
     return ListShifterByOne<R, N>(pR);
   }

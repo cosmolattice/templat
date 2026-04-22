@@ -13,6 +13,10 @@
 #include "TempLat/lattice/algebra/helpers/getgetreturntype.h"
 #include "TempLat/lattice/algebra/operators/unaryoperator.h"
 
+#include "TempLat/lattice/algebra/constants/halftype.h"
+#include "TempLat/lattice/algebra/constants/zerotype.h"
+#include "TempLat/lattice/algebra/constants/onetype.h"
+
 namespace TempLat
 {
   /** @brief Enable use of this operator without prefixing std:: or TempLat::.
@@ -31,7 +35,6 @@ namespace TempLat
       // Put public methods here. These should change very little over time.
       using UnaryOperator<R>::mR;
 
-      DEVICE_FUNCTION
       ComplexConjugate(const R &a) : UnaryOperator<R>(a) {}
 
       template <typename... IDX>
@@ -39,13 +42,13 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(r, idx...);
         }
-      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return conj(DoEval::eval(mR, idx...));
       }
 
       /** @brief Complex conjugation and copmlex differentiation aren't friends. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other) = delete;
+      template <typename U> auto d(const U &other) = delete;
     };
   } // namespace Operators
 
@@ -53,11 +56,14 @@ namespace TempLat
    *  Excluded for complex field types (HasComplexFieldGet) which have their own conj overload. */
   template <typename T>
     requires(ConditionalUnaryGetter<T> && !HasComplexFieldGet<T> && !HasSymTracelessGet<T>)
-  DEVICE_FORCEINLINE_FUNCTION auto conj(const T &a)
-
+  auto conj(const T &a)
   {
     return Operators::ComplexConjugate<T>(a);
   }
+
+  constexpr inline ZeroType conj(ZeroType a) { return ZeroType(); }
+  constexpr inline OneType conj(OneType a) { return OneType(); }
+  constexpr inline HalfType conj(HalfType a) { return HalfType(); }
 
 } // namespace TempLat
 

@@ -37,7 +37,7 @@ namespace TempLat
     memVec[1] = 2;
     memVec[2] = 8;
 
-    for (ptrdiff_t i = 0; i < 3; ++i)
+    for (device::Idx i = 0; i < 3; ++i)
       posVec[i] = a.memoryIndexToSpatialCoordinate(memVec[i], i);
 
     say << "memVec " << memVec << " -> posVec " << posVec << "\n";
@@ -48,7 +48,7 @@ namespace TempLat
 
     tdd.verify(posVec[2] == -2);
 
-    for (ptrdiff_t i = 0; i < 3; ++i)
+    for (device::Idx i = 0; i < 3; ++i)
       memVec2[i] = a.spatialCoordinateToMemoryIndex(posVec[i], i);
 
     say << "posVec " << posVec << " -> memVec2 " << memVec2 << "\n";
@@ -64,7 +64,7 @@ namespace TempLat
     memVec[1] = 12;
     memVec[2] = 16;
 
-    for (ptrdiff_t i = 0; i < 3; ++i)
+    for (device::Idx i = 0; i < 3; ++i)
       posVec[i] = a.memoryIndexToSpatialCoordinate(memVec[i], i);
 
     say << "memVec " << memVec << " -> posVec " << posVec << "\n";
@@ -75,7 +75,7 @@ namespace TempLat
 
     tdd.verify(posVec[2] == -2);
 
-    for (ptrdiff_t i = 0; i < 3; ++i)
+    for (device::Idx i = 0; i < 3; ++i)
       memVec2[i] = a.spatialCoordinateToMemoryIndex(posVec[i], i);
 
     say << "posVec " << posVec << " -> memVec2 " << memVec2 << "\n";

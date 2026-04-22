@@ -10,6 +10,8 @@
 #include <thread>
 #include <algorithm>
 
+#include "TempLat/parallel/device.h"
+
 #include "TempLat/util/log/saycomplete.h"
 
 namespace TempLat
@@ -34,13 +36,13 @@ namespace TempLat
       return store;
     }
 
-    static void setMPILocalSize(ptrdiff_t newSize) { getInstance().pSetMPILocalSize(newSize); }
+    static void setMPILocalSize(device::Idx newSize) { getInstance().pSetMPILocalSize(newSize); }
 
-    static ptrdiff_t getMPILocalSize() { return getInstance().pGetMPILocalSize(); }
+    static device::Idx getMPILocalSize() { return getInstance().pGetMPILocalSize(); }
 
     static void setMPIThreadsNotOK() { getInstance().pSetMPIThreadsNotOK(); }
 
-    static ptrdiff_t getMaxThreadCount() { return getInstance().pGetMaxThreadCount(); }
+    static device::Idx getMaxThreadCount() { return getInstance().pGetMaxThreadCount(); }
 
     friend std::ostream &operator<<(std::ostream &stream, const ThreadSettings &fts)
     {
@@ -56,22 +58,22 @@ namespace TempLat
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
-    ptrdiff_t mMPILocalSize;
-    ptrdiff_t mHardwareNumCores;
-    ptrdiff_t mHardwareAllowedThreadsPerProcess;
-    ptrdiff_t mUserAllowedThreadsPerProcess;
+    device::Idx mMPILocalSize;
+    device::Idx mHardwareNumCores;
+    device::Idx mHardwareAllowedThreadsPerProcess;
+    device::Idx mUserAllowedThreadsPerProcess;
 
     ThreadSettings()
         : mMPILocalSize(1), mHardwareNumCores(std::thread::hardware_concurrency()),
           mHardwareAllowedThreadsPerProcess(mHardwareNumCores / mMPILocalSize),
           mUserAllowedThreadsPerProcess(mHardwareAllowedThreadsPerProcess)
     {
-      mHardwareAllowedThreadsPerProcess = std::max(mHardwareAllowedThreadsPerProcess, ptrdiff_t{1});
+      mHardwareAllowedThreadsPerProcess = std::max(mHardwareAllowedThreadsPerProcess, device::Idx{1});
 
-      ptrdiff_t kokkosThreads = 0;
+      device::Idx kokkosThreads = 0;
       if (const char *env_p = std::getenv("KOKKOS_NUM_THREADS")) kokkosThreads = std::stoi(env_p);
 
-      ptrdiff_t ompThreads = 0;
+      device::Idx ompThreads = 0;
       if (const char *env_p = std::getenv("OMP_NUM_THREADS")) ompThreads = std::stoi(env_p);
 
       mUserAllowedThreadsPerProcess = std::max(kokkosThreads, ompThreads);
@@ -89,20 +91,20 @@ namespace TempLat
       //           << ", mHardwareAllowedThreadsPerProcess = " << mHardwareAllowedThreadsPerProcess << "\n";
     }
 
-    void pSetMPILocalSize(ptrdiff_t newSize)
+    void pSetMPILocalSize(device::Idx newSize)
     {
       mMPILocalSize = newSize > 0 ? newSize : 1;
-      mHardwareAllowedThreadsPerProcess = std::max(mHardwareNumCores / mMPILocalSize, ptrdiff_t{1});
+      mHardwareAllowedThreadsPerProcess = std::max(mHardwareNumCores / mMPILocalSize, device::Idx{1});
 
       if (mUserAllowedThreadsPerProcess > 0)
         mHardwareAllowedThreadsPerProcess = std::min(mUserAllowedThreadsPerProcess, mHardwareAllowedThreadsPerProcess);
     }
 
-    ptrdiff_t pGetMPILocalSize() const { return mMPILocalSize; }
+    device::Idx pGetMPILocalSize() const { return mMPILocalSize; }
 
     void pSetMPIThreadsNotOK() { mUserAllowedThreadsPerProcess = 1; }
 
-    ptrdiff_t pGetMaxThreadCount() const { return mHardwareAllowedThreadsPerProcess; }
+    device::Idx pGetMaxThreadCount() const { return mHardwareAllowedThreadsPerProcess; }
   };
 } // namespace TempLat
 

@@ -29,9 +29,6 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     SU2DoubletBinaryOperator(const R &pR, const T &pT) : mR(pR), mT(pT) {}
 
-    DEVICE_FUNCTION
-    SU2DoubletBinaryOperator(const SU2DoubletBinaryOperator &) = default;
-
     static constexpr size_t size = 4;
     using Getter = SU2DoubletGetter;
 
@@ -54,10 +51,7 @@ namespace TempLat
       return result;
     }
 
-    DEVICE_INLINE_FUNCTION
     auto getDx() const { return GetDx::getDx(mR); }
-
-    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
     inline auto getToolBox() const

@@ -23,11 +23,11 @@ namespace TempLat
   {
   public:
     static std::vector<RadialProjectionSingleBinAndValue<T>>
-    rebin(const std::vector<RadialProjectionSingleBinAndValue<T>> &old, ptrdiff_t newNBins,
+    rebin(const std::vector<RadialProjectionSingleBinAndValue<T>> &old, device::Idx newNBins,
           std::vector<T> &oldCentralValues, T customRange)
     {
       std::vector<RadialProjectionSingleBinAndValue<T>> result;
-      if (newNBins >= (ptrdiff_t)old.size()) {
+      if (newNBins >= (device::Idx)old.size()) {
         result = old;
       } else {
         T minVal = old[0].getBin().minVal;

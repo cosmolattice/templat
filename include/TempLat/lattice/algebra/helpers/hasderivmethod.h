@@ -16,7 +16,7 @@ namespace TempLat
    *
    **/
   template <class T>
-  concept HasDerivMethod = requires(std::decay_t<T> t, ptrdiff_t idx) { t.d(idx); };
+  concept HasDerivMethod = requires(std::decay_t<T> t, int idx) { t.d(idx); };
 
   /** @brief a mini tester class... */
 

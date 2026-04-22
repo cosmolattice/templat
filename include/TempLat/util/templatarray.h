@@ -44,42 +44,42 @@ namespace TempLat
       return mVec[M];
     }
 
-    T operator[](ptrdiff_t i) const
+    T operator[](device::Idx i) const
     {
       // Index checking here makes sense:
       // - access happens very few times (accessing fields, not lattice sites)
       // - user errors are very likely here, so it's nice to tell them when they do something wrong
-      if (i < 0 || i >= ptrdiff_t(N)) {
+      if (i < 0 || i >= device::Idx(N)) {
         throw std::out_of_range("Index out of bounds in TempLatArray::operator[], bounds are [0," + std::to_string(N) +
                                 "), got " + std::to_string(i));
       }
       return mVec[i];
     }
 
-    T operator()(ptrdiff_t i) const
+    T operator()(device::Idx i) const
     {
       // see above
-      if (i < shift || i >= ptrdiff_t(N) + shift) {
+      if (i < shift || i >= device::Idx(N) + shift) {
         throw std::out_of_range("Index out of bounds in TempLatArray::operator[], bounds are [0," + std::to_string(N) +
                                 "), got " + std::to_string(i));
       }
       return mVec[i - shift];
     }
 
-    T &operator[](ptrdiff_t i)
+    T &operator[](device::Idx i)
     {
       // see above
-      if (i < 0 || i >= ptrdiff_t(N)) {
+      if (i < 0 || i >= device::Idx(N)) {
         throw std::out_of_range("Index out of bounds in TempLatArray::operator[], bounds are [0," + std::to_string(N) +
                                 "), got " + std::to_string(i));
       }
       return mVec[i];
     }
 
-    T &operator()(ptrdiff_t i)
+    T &operator()(device::Idx i)
     {
       // see above
-      if (i < shift || i >= ptrdiff_t(N) + shift) {
+      if (i < shift || i >= device::Idx(N) + shift) {
         throw std::out_of_range("Index out of bounds in TempLatArray::operator[], bounds are [0," + std::to_string(N) +
                                 "), got " + std::to_string(i));
       }

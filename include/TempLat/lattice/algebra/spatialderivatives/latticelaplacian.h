@@ -37,7 +37,6 @@ namespace TempLat
     using GetReturnType = typename GetGetReturnType<R>::type;
     using FloatType = typename GetFloatType<GetReturnType>::type;
 
-    DEVICE_FUNCTION
     LatticeLaplacian(R pR) : UnaryOperator<R>(pR), dx2(pow(GetDx::getDx(pR), 2)) {}
 
     void doWeNeedGhosts() const { mR.confirmGhostsUpToDate(); }
@@ -52,7 +51,7 @@ namespace TempLat
       if constexpr (UnaryOperator<R>::getNDim() == 0)
         return ZeroType();
       else {
-        auto result = (-2 * static_cast<ptrdiff_t>(NDim) * DoEval::eval(mR, idx...));
+        auto result = (-2 * static_cast<device::Idx>(NDim) * DoEval::eval(mR, idx...));
         constexpr_for<0, NDim>([&](const auto _d) {
           constexpr size_t d = decltype(_d)::value;
           device::apply([&](const auto &...shifted_idx) { result += DoEval::eval(mR, shifted_idx...); },
@@ -67,7 +66,7 @@ namespace TempLat
     virtual std::string operatorString() const override { return "Laplacian"; }
 
     /** @brief Symbolic derivatives. */
-    template <typename S> DEVICE_INLINE_FUNCTION auto d(const S &other) { return LatLapl(GetDeriv::get(mR, other)); }
+    template <typename S> auto d(const S &other) { return LatLapl(GetDeriv::get(mR, other)); }
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
@@ -76,7 +75,7 @@ namespace TempLat
 
   template <size_t NDim_ = 0, typename R>
     requires(HasEvalMethod<R> && GetNDim::get<std::decay_t<R>>() > 0)
-  DEVICE_INLINE_FUNCTION auto LatLapl(R pR)
+  auto LatLapl(R pR)
   {
     static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),
                   "Explicit NDim does not match the NDim deduced from expression type R.");
@@ -85,9 +84,9 @@ namespace TempLat
 
   template <size_t NDim_ = 0, typename R>
     requires(!HasEvalMethod<R> || GetNDim::get<std::decay_t<R>>() == 0)
-  DEVICE_INLINE_FUNCTION auto LatLapl(R pR)
+  constexpr auto LatLapl(R)
   {
-    return ZeroType();
+    return ZeroType{};
   }
 } // namespace TempLat
 

@@ -35,7 +35,7 @@ namespace TempLat
     for (size_t i = 0; i < NDim; ++i)
       hermitianPartnerCoordinate[i] = spaceCoordinate[i];
 
-    ptrdiff_t imaginaryPartSign = 1;
+    device::Idx imaginaryPartSign = 1;
 
     auto hermQual = currentLayout.getHermitianPartners().qualify(spaceCoordinate);
     currentLayout.getHermitianPartners().putHermitianPartner(spaceCoordinate, hermitianPartnerCoordinate);
@@ -163,7 +163,7 @@ namespace TempLat
       {
         constexpr size_t NDim = 2;
         sayMPI << "Testing FFTLibrarySelector for NDim = " << NDim << "\n";
-        for (ptrdiff_t inGrid : device::IdxArray<4>{3, 4, 7, 10}) {
+        for (device::Idx inGrid : device::IdxArray<4>{3, 4, 7, 10}) {
           device::IdxArray<NDim> nGrid;
           for (auto &it : nGrid)
             it = std::pow(2, inGrid);
@@ -173,7 +173,7 @@ namespace TempLat
       {
         constexpr size_t NDim = 3;
         sayMPI << "Testing FFTLibrarySelector for NDim = " << NDim << "\n";
-        for (ptrdiff_t inGrid : device::IdxArray<3>{2, 3, 6}) {
+        for (device::Idx inGrid : device::IdxArray<3>{2, 3, 6}) {
           device::IdxArray<NDim> nGrid;
           for (auto &it : nGrid)
             it = std::pow(2, inGrid);
@@ -183,7 +183,7 @@ namespace TempLat
       {
         constexpr size_t NDim = 4;
         sayMPI << "Testing FFTLibrarySelector for NDim = " << NDim << "\n";
-        for (ptrdiff_t inGrid : device::IdxArray<2>{2, 3}) {
+        for (device::Idx inGrid : device::IdxArray<2>{2, 3}) {
           device::IdxArray<NDim> nGrid;
           for (auto &it : nGrid)
             it = std::pow(2, inGrid);

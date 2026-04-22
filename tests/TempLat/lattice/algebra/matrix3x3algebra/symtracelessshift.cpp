@@ -12,7 +12,6 @@
 #include "TempLat/util/tdd/tdd.h"
 #include "TempLat/util/ndloop.h"
 
-
 namespace TempLat
 {
 
@@ -20,12 +19,10 @@ namespace TempLat
     static void Test(TDDAssertion &tdd);
   };
 
-
   void SymTracelessShiftTester::Test(TDDAssertion &tdd)
   {
-
     constexpr size_t NDim = 5;
-    ptrdiff_t nGrid = 8, nGhost = 2;
+    device::Idx nGrid = 8, nGhost = 2;
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
     toolBox->setVerbose();
 
@@ -61,21 +58,20 @@ namespace TempLat
               bool local = (view(idx...) == 1) || (view(idx...) == -(nGrid - 1));
               all_right &= local;
               if (!local)
-                std::cout << "ST component " << comp + 1 << " direction " << dir << " value at " << device::IdxArray<NDim>{idx...}
-                << " is " << view(idx...) << ", should be 1" << std::endl;
+                std::cout << "ST component " << comp + 1 << " direction " << dir << " value at "
+                          << device::IdxArray<NDim>{idx...} << " is " << view(idx...) << ", should be 1" << std::endl;
             } else {
               bool local = (view(idx...) == 0);
               all_right &= local;
               if (!local)
-                std::cout << "ST component " << comp + 1 << " direction " << dir << " value at " << device::IdxArray<NDim>{idx...}
-                << " is " << view(idx...) << ", should be 0" << std::endl;
+                std::cout << "ST component " << comp + 1 << " direction " << dir << " value at "
+                          << device::IdxArray<NDim>{idx...} << " is " << view(idx...) << ", should be 0" << std::endl;
             }
           });
           tdd.verify(all_right);
         });
       });
     }
-
   }
 
 } // namespace TempLat

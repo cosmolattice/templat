@@ -20,7 +20,6 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    DEVICE_FUNCTION
     ComplexFieldOperator() = default;
 
     static constexpr size_t size = 2;

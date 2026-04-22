@@ -17,7 +17,7 @@ namespace TempLat
   void HasGhostMethodTester::Test(TDDAssertion &tdd)
   {
     struct MyTestOne {
-      ptrdiff_t confirmGhostsUpToDate()
+      device::Idx confirmGhostsUpToDate()
       {
         std::cerr << "Hell yeah.\n";
         return 0;
@@ -25,7 +25,7 @@ namespace TempLat
     };
 
     struct MyTestTwo {
-      ptrdiff_t notConfirmGhostsUpToDate()
+      device::Idx notConfirmGhostsUpToDate()
       {
         std::cerr << "Hell no.\n";
         return 0;
@@ -33,7 +33,7 @@ namespace TempLat
     };
 
     struct MyTestThree {
-      ptrdiff_t confirmGhostsUpToDate(Tag<3> i)
+      device::Idx confirmGhostsUpToDate(Tag<3> i)
       {
         std::cerr << "Hell yeah.\n";
         return 0;

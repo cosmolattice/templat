@@ -29,7 +29,6 @@ namespace TempLat
     static constexpr size_t dim = sizeof...(SHIFTS);
     static constexpr auto shifts = device::make_tuple(SHIFTS...);
 
-    DEVICE_FUNCTION
     ExpressionShifter(const R &pR) : UnaryOperator<R>(pR) {}
 
     template <typename... IDX>
@@ -70,7 +69,6 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     using UnaryOperator<R>::mR;
 
-    DEVICE_FUNCTION
     ExpressionShifterByOne(const R &pR) : UnaryOperator<R>(pR) {}
 
     template <typename... IDX>
@@ -91,30 +89,30 @@ namespace TempLat
 
   template <int... shifts, class R>
     requires((sizeof...(shifts) > 1) && tuple_size<R>::value == 1)
-  DEVICE_INLINE_FUNCTION auto shift(const R &pR)
+  auto shift(const R &pR)
   {
     return ExpressionShifter<R, shifts...>(pR);
   }
 
   template <int N, class R>
     requires(tuple_size<R>::value == 1)
-  DEVICE_INLINE_FUNCTION auto shift(const R &pR)
+  auto shift(const R &pR)
   {
     return ExpressionShifterByOne<R, N>(pR);
   }
 
   template <class R, int N>
     requires(tuple_size<R>::value == 1)
-  DEVICE_INLINE_FUNCTION auto shift(const R &pR, Tag<N> t)
+  auto shift(const R &pR, Tag<N> t)
   {
     return ExpressionShifterByOne<R, N>(pR);
   }
 
-  template <int N> DEVICE_INLINE_FUNCTION OneType shift(OneType) { return OneType(); }
-  template <int N> DEVICE_INLINE_FUNCTION OneType shift(OneType, Tag<N>) { return OneType(); }
+  template <int N> constexpr OneType shift(OneType) { return OneType(); }
+  template <int N> constexpr OneType shift(OneType, Tag<N>) { return OneType(); }
 
-  template <int N> ZeroType shift(ZeroType) { return ZeroType(); }
-  template <int N> ZeroType shift(ZeroType, Tag<N>) { return ZeroType(); }
+  template <int N> constexpr ZeroType shift(ZeroType) { return ZeroType(); }
+  template <int N> constexpr ZeroType shift(ZeroType, Tag<N>) { return ZeroType(); }
 } // namespace TempLat
 
 #endif

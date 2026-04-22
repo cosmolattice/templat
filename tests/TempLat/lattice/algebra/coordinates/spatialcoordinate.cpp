@@ -20,7 +20,7 @@ namespace TempLat
 
   template <size_t NDim> inline void SpatialCoordinateTester<NDim>::Test(TDDAssertion &tdd)
   {
-    const ptrdiff_t nGrid = 8, nGhost = 2;
+    const device::Idx nGrid = 8, nGhost = 2;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 

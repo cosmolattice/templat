@@ -31,7 +31,6 @@ namespace TempLat
       using BinaryOperator<R, T>::mR;
       using BinaryOperator<R, T>::mT;
 
-      DEVICE_FUNCTION
       Division(const R &pR, const T &pT) : BinaryOperator<R, T>(pR, pT) {}
 
       template <typename... IDX>
@@ -48,7 +47,7 @@ namespace TempLat
       virtual std::string operatorString() const override { return "/"; }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
+      template <typename U> auto d(const U &other)
       {
         /* not using pow for mT * mT, because pow imports log which imports us, divide.h */
         return GetDeriv::get(mR, other) / mT - GetDeriv::get(mT, other) * mR / (mT * mT);
@@ -63,7 +62,6 @@ namespace TempLat
       using BinaryOperator<R, T>::mR;
       using BinaryOperator<R, T>::mT;
 
-      DEVICE_FUNCTION
       SafeDivision(const R &pR, const T &pT) : BinaryOperator<R, T>(pR, pT) {}
 
       template <typename... IDX>
@@ -85,7 +83,7 @@ namespace TempLat
       virtual std::string operatorString() const override { return "/safe/"; }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
+      template <typename U> auto d(const U &other)
       {
         /* not using pow for mT * mT, because pow imports log which imports us, divide.h */
         return GetDeriv::get(mR, other) / mT - GetDeriv::get(mT, other) * mR / (mT * mT);
@@ -96,27 +94,27 @@ namespace TempLat
   /** @brief Exposing our newly define multiplication operation to the world. */
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
-  DEVICE_INLINE_FUNCTION auto operator/(const R &r, const T &t)
+  auto operator/(const R &r, const T &t)
   {
     return Operators::Division<R, T>(r, t);
   }
 
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
-  DEVICE_INLINE_FUNCTION auto safeDivide(const R &r, const T &t)
+  auto safeDivide(const R &r, const T &t)
   {
     return Operators::SafeDivision<R, T>(r, t);
   }
 
   /** @brief Specialize for possible unit input! Simplify derivatives for example. */
-  template <typename T> DEVICE_INLINE_FUNCTION T operator/(const T &a, OneType b) { return a; }
+  template <typename T> constexpr T operator/(const T &a, OneType b) { return a; }
 
   /** @brief Specialize for possible zero input! Need to disable one of these for two ZeroTypes as input. */
   template <typename T>
     requires std::is_same_v<T, ZeroType>
-  DEVICE_INLINE_FUNCTION auto operator/(const ZeroType &a, const T &b)
+  constexpr auto operator/(const ZeroType &a, const T &)
   {
-    return a;
+    return ZeroType{};
   }
 } // namespace TempLat
 

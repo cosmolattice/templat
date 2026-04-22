@@ -36,7 +36,6 @@ namespace TempLat
       using BinaryOperator<R, T>::mR;
       using BinaryOperator<R, T>::mT;
 
-      DEVICE_FUNCTION
       Power(const R &pR, const T &pT) : BinaryOperator<R, T>(pR, pT) {}
 
       template <typename... IDX>
@@ -56,19 +55,18 @@ namespace TempLat
       virtual std::string operatorString() const override { return "^"; }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
+      template <typename U> auto d(const U &other)
       {
         /* so the compiler chooses without problems between std::log and TempLat::Operators::log */
         return GetDeriv::get(mR, other) * pow(mR, mT - OneType()) + GetDeriv::get(mT, other) * (*this) * log(mT);
       }
     };
 
-    template <ptrdiff_t N, typename R> class PowerN : public UnaryOperator<R>
+    template <int N, typename R> class PowerN : public UnaryOperator<R>
     {
     public:
       using UnaryOperator<R>::mR;
 
-      DEVICE_INLINE_FUNCTION
       PowerN(const R &pR) : UnaryOperator<R>(pR) {}
 
       template <typename... IDX>
@@ -84,7 +82,7 @@ namespace TempLat
       std::string toString() const { return "(" + GetString::get(mR) + ")^" + std::to_string(2); }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other) const
+      template <typename U> auto d(const U &other) const
       {
         /* so the compiler chooses without problems between std::log and TempLat::Operators::log */
         return Tag<N>() * PowerN<N - 1, R>(mR) * GetDeriv::get(mR, other);
@@ -94,33 +92,33 @@ namespace TempLat
 
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
-  DEVICE_INLINE_FUNCTION auto pow(const R &r, const T &t)
+  auto pow(const R &r, const T &t)
   {
     return Operators::Power<R, T>(r, t);
   }
 
-  template <ptrdiff_t N> DEVICE_INLINE_FUNCTION ZeroType pow(ZeroType) { return {}; }
+  template <int N> constexpr ZeroType pow(ZeroType) { return {}; }
 
-  template <typename T> DEVICE_INLINE_FUNCTION OneType pow(const T &a, ZeroType b) { return {}; }
+  template <typename T> constexpr OneType pow(const T &a, ZeroType b) { return {}; }
 
   /** @brief Specialize for possible zero input! Need to disable one of these for two ZeroTypes as input. */
   template <typename T>
     requires std::is_same_v<T, ZeroType>
-  DEVICE_INLINE_FUNCTION auto pow(ZeroType a, const T &b)
+  constexpr auto pow(ZeroType a, const T &)
   {
-    return ZeroType();
+    return ZeroType{};
   }
 
   // enable if is just so that we can overload to consitently write pow<3>(4)  for std::pow(4,3);
-  template <ptrdiff_t N, typename R>
+  template <int N, typename R>
     requires(HasEvalMethod<R> && N != 1 && N != 0)
-  DEVICE_INLINE_FUNCTION auto pow(const R &r)
+  auto pow(const R &r)
   {
     return Operators::PowerN<N, R>(r);
   }
 
   // overload so that we can sonsitently write pow<3>(4)  for std::pow(4,3);
-  template <ptrdiff_t N, typename R>
+  template <int N, typename R>
     requires requires(R r) {
       requires !HasEvalMethod<R>;
       requires N != 0;
@@ -128,23 +126,23 @@ namespace TempLat
       requires !(IsTempLatGettable<0, R> || IsSTDGettable<0, R>);
       powr<N>(r);
     }
-  DEVICE_INLINE_FUNCTION auto pow(const R &r)
+  auto pow(const R &r)
   {
     return powr<N>(r);
   }
 
   /** @brief Specialize for possible zero input! */
-  template <ptrdiff_t N, typename T>
+  template <int N, typename T>
     requires(N == 0)
-  constexpr DEVICE_INLINE_FUNCTION auto pow(const T &a)
+  constexpr auto pow(const T &a)
   {
-    return OneType();
+    return OneType{};
   }
 
   /** @brief Specialize for possible one input! */
-  template <ptrdiff_t N, typename T>
+  template <int N, typename T>
     requires(N == 1)
-  DEVICE_INLINE_FUNCTION T pow(const T &a)
+  T pow(const T &a)
   {
     return a;
   }

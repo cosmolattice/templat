@@ -4,7 +4,6 @@
    Released under the MIT license, see LICENSE.md. */
 
 // File info: Main contributor(s): Adrien Florio,  Year: 2020
-#include "TempLat/lattice/algebra/complexalgebra/complexfieldtester.h"
 #include "TempLat/util/tdd/tdd.h"
 #include "TempLat/lattice/algebra/complexalgebra/complexfield.h"
 #include "TempLat/lattice/algebra/complexalgebra/complexalgebra.h"

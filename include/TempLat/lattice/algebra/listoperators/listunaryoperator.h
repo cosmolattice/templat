@@ -32,10 +32,7 @@ namespace TempLat
 
     ListUnaryOperator(const R &pR) : mR(pR) {}
 
-    DEVICE_FUNCTION
-    ListUnaryOperator(const ListUnaryOperator &) = default;
-
-    template <int N> ptrdiff_t confirmGhostsUpToDate(Tag<N> i) const { return ConfirmGhosts::apply(mR, i); }
+    template <int N> device::Idx confirmGhostsUpToDate(Tag<N> i) const { return ConfirmGhosts::apply(mR, i); }
 
     template <int N, size_t NDim>
     void confirmSpace(Tag<N> i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const

@@ -18,9 +18,9 @@ namespace TempLat
     static void Test(TDDAssertion &tdd);
   };
 
-  template <typename T, size_t NDim> inline void WaveNumberTester<T,NDim>::Test(TDDAssertion &tdd)
+  template <typename T, size_t NDim> inline void WaveNumberTester<T, NDim>::Test(TDDAssertion &tdd)
   {
-    const ptrdiff_t nGrid = 16, nGhost = 0;
+    const device::Idx nGrid = 16, nGhost = 0;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 

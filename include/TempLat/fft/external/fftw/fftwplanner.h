@@ -63,8 +63,8 @@ namespace TempLat
       MemoryBlock<float, NDim> temp(layout.getMinimalMemorySize());
       std::vector<int> globalSizes_INT(layout.configurationSpace.getGlobalSizes().begin(),
                                        layout.configurationSpace.getGlobalSizes().end());
-      std::vector<ptrdiff_t> globalSizes_PTRDIFF(layout.configurationSpace.getGlobalSizes().begin(),
-                                                 layout.configurationSpace.getGlobalSizes().end());
+      std::vector<device::Idx> globalSizes_PTRDIFF(layout.configurationSpace.getGlobalSizes().begin(),
+                                                   layout.configurationSpace.getGlobalSizes().end());
       auto c2r =
 #ifdef HAVE_MPI
           fftwf_mpi_plan_dft_c2r(
@@ -117,8 +117,8 @@ namespace TempLat
       std::vector<int> globalSizes_INT(layout.configurationSpace.getGlobalSizes().size());
       for (size_t i = 0; i < layout.configurationSpace.getGlobalSizes().size(); ++i)
         globalSizes_INT[i] = (int)layout.configurationSpace.getGlobalSizes()[i];
-      std::vector<ptrdiff_t> globalSizes_PTRDIFF(layout.configurationSpace.getGlobalSizes().begin(),
-                                                 layout.configurationSpace.getGlobalSizes().end());
+      std::vector<device::Idx> globalSizes_PTRDIFF(layout.configurationSpace.getGlobalSizes().begin(),
+                                                   layout.configurationSpace.getGlobalSizes().end());
 
       auto c2r =
 #ifdef HAVE_MPI

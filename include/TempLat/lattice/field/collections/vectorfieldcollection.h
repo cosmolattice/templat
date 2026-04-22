@@ -50,7 +50,7 @@ namespace TempLat
           [&](auto i) { (*this).getComp(i) = (*this).getComp(i) + std::decay_t<R>::Getter::get(r, i); });
     }
 
-    std::string toString(ptrdiff_t i) const { return fs[i - SHIFTIND].toString(); }
+    std::string toString(device::Idx i) const { return fs[i - SHIFTIND].toString(); }
 
     using Getter = GetComponent;
     static constexpr size_t size = N;

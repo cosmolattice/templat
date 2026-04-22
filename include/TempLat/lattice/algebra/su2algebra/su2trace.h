@@ -18,7 +18,7 @@ namespace TempLat
    **/
   template <typename R> auto trace(R &&r) { return 2 * r.SU2Get(0_c); }
 
-  auto trace(ZeroType r) { return ZeroType(); }
+  constexpr inline auto trace(ZeroType r) { return ZeroType(); }
 } // namespace TempLat
 
 #endif

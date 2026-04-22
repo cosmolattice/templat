@@ -27,7 +27,7 @@ namespace TempLat
     RandomGaussian<T> prng("Hello CosmoLattice world!");
     say << prng << "\n";
 
-    static constexpr ptrdiff_t measure_center = 10;
+    static constexpr device::Idx measure_center = 10;
 
     double x = 0;
 
@@ -37,8 +37,8 @@ namespace TempLat
         DEVICE_LAMBDA(device::IdxArray<1> i, double &sum) {
           const double next = prng.get(i[0], i[0], 0);
           sum += next;
-          ptrdiff_t index = measure_center + std::round(next * measure_center / 3); /* 5 ? yes, 5 i_sigma happens. */
-          index = std::max(ptrdiff_t(0), std::min(2 * measure_center - 1, index));
+          device::Idx index = measure_center + std::round(next * measure_center / 3); /* 5 ? yes, 5 i_sigma happens. */
+          index = std::max(device::Idx(0), std::min(2 * measure_center - 1, index));
           device::atomic_inc(&measure[index]);
         },
         x);

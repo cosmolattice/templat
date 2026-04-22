@@ -103,10 +103,9 @@ namespace TempLat
      *  below — both call the same set of backends in the same order under the same `#ifdef`s,
      *  so the pre-topology query and the post-topology selection cannot pick different backends.
      */
-    static FFTDecomposition<NDim> decomposition(MPICommReference baseComm,
-                                                const device::IdxArray<NDim> &nGridPoints)
+    static FFTDecomposition<NDim> decomposition(MPICommReference baseComm, const device::IdxArray<NDim> &nGridPoints)
     {
-      const ptrdiff_t nProcesses = baseComm.size();
+      const device::Idx nProcesses = baseComm.size();
 #ifdef HAVE_MPI
 #ifdef HAVE_PARAFAFT
       if constexpr (NDim >= 2) {
@@ -119,7 +118,7 @@ namespace TempLat
         if constexpr (NDim <= 3) return KokkosFFTInterface<NDim>::decomposition(baseComm, nGridPoints);
       }
 #endif
-      (void) nProcesses;
+      (void)nProcesses;
       return FFTWInterface<NDim>::decomposition(baseComm, nGridPoints);
     }
 
@@ -192,20 +191,22 @@ namespace TempLat
                                                        " entries, expected ", NDim, ".");
 
       bool explicitGrid = expected.nDimsToSplit > 0;
-      for (ptrdiff_t i = 0; i < expected.nDimsToSplit; ++i)
-        if (expected.dims[i] <= 0) { explicitGrid = false; break; }
+      for (device::Idx i = 0; i < expected.nDimsToSplit; ++i)
+        if (expected.dims[i] <= 0) {
+          explicitGrid = false;
+          break;
+        }
 
       if (explicitGrid) {
         for (size_t i = 0; i < NDim; ++i) {
           if (actual[i] != expected.dims[i])
             throw FFTLibraryDecompositionMismatchException(
-                "FFT backend ", backend, " requires MPI decomposition {",
-                expectedDimsToString(expected), "} but the provided MPICartesianGroup has {",
-                actualDimsToString(actual),
+                "FFT backend ", backend, " requires MPI decomposition {", expectedDimsToString(expected),
+                "} but the provided MPICartesianGroup has {", actualDimsToString(actual),
                 "}. Use FFTMPIDomainSplit::makeMPIGroup to build a matching group.");
         }
       } else {
-        ptrdiff_t actualSplits = 0;
+        device::Idx actualSplits = 0;
         for (size_t i = 0; i < NDim; ++i)
           if (actual[i] > 1) ++actualSplits;
         if (actualSplits > expected.nDimsToSplit)
@@ -239,7 +240,7 @@ namespace TempLat
      *  `decomposition` static above so that the decomposition query and the runtime backend pick
      *  never disagree. Any change to the order or predicates here must be mirrored there.
      */
-    static std::pair<std::shared_ptr<FFTLibraryInterface<NDim>>, std::string> selectBackend(ptrdiff_t nProcesses)
+    static std::pair<std::shared_ptr<FFTLibraryInterface<NDim>>, std::string> selectBackend(device::Idx nProcesses)
     {
 #ifdef HAVE_MPI
 #ifdef HAVE_PARAFAFT
@@ -253,7 +254,7 @@ namespace TempLat
         if constexpr (NDim <= 3) return {std::make_shared<KokkosFFTInterface<NDim>>(), "KokkosFFT"};
       }
 #endif
-      (void) nProcesses;
+      (void)nProcesses;
       return {std::make_shared<FFTWInterface<NDim>>(), "FFTW"};
     }
 

@@ -30,7 +30,6 @@ namespace TempLat
       // Put public methods here. These should change very little over time.
       using UnaryOperator<T>::mR;
 
-      DEVICE_FUNCTION
       ASinh(const T &a) : UnaryOperator<T>(a) {}
 
       template <typename... IDX>
@@ -38,13 +37,13 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(t, idx...);
         }
-      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return asinh(DoEval::eval(mR, idx...));
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
+      template <typename U> auto d(const U &other)
       {
         return 1 / sqrt(1 + (*this) * (*this)) * GetDeriv::get(mR, other);
       }
@@ -56,7 +55,7 @@ namespace TempLat
   /** @brief Exposing our newly define exp operation to the world. */
   template <typename T>
     requires ConditionalUnaryGetter<T>
-  DEVICE_INLINE_FUNCTION auto asinh(T a)
+  auto asinh(T a)
   {
     return Operators::ASinh<T>(a);
   }

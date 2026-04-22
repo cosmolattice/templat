@@ -96,7 +96,7 @@ namespace TempLat
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
     FFTLayoutStruct<NDim> mLayout;
-    ptrdiff_t mN;
+    device::Idx mN;
     double mNorm;
     int mType;
   };

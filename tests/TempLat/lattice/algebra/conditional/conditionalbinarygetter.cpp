@@ -33,8 +33,8 @@ namespace TempLat
     public:
       MyClass(int b) : a(b) {}
 
-      auto get(ptrdiff_t i) { return a; }
-      auto eval(ptrdiff_t i) { return a; }
+      DEVICE_INLINE_FUNCTION
+      auto eval(device::Idx i) { return a; }
 
     private:
       int a;
@@ -55,8 +55,8 @@ namespace TempLat
     public:
       MyClass2(int b) : a(b) {}
 
-      auto get(ptrdiff_t i, ptrdiff_t j, ptrdiff_t k) const { return a; }
-      auto eval(ptrdiff_t i, ptrdiff_t j, ptrdiff_t k) const { return a; }
+      DEVICE_INLINE_FUNCTION
+      auto eval(device::Idx i, device::Idx j, device::Idx k) const { return a; }
 
     private:
       int a;

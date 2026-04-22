@@ -22,14 +22,14 @@ namespace TempLat
 
     template <typename U>
       requires HasDx<U>
-    DEVICE_INLINE_FUNCTION static auto getDx(U &&obj)
+    static auto getDx(U &&obj)
     {
       return obj.getDx();
     }
 
     template <typename U>
       requires(!HasDx<U>)
-    DEVICE_INLINE_FUNCTION static constexpr int getDx(U &obj)
+    static constexpr int getDx(U &obj)
     {
       return 1;
     }

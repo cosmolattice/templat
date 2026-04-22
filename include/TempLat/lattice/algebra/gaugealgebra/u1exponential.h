@@ -27,9 +27,7 @@ namespace TempLat
 
     U1Exponential(const R &pR) : ComplexFieldUnaryOperator<R>(pR) {}
 
-    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<0> t) const { return cos(mR); }
-    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<1> t) const { return sin(mR); }
 
     template <typename... IDX>

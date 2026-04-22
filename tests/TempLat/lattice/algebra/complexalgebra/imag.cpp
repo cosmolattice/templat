@@ -18,9 +18,7 @@ namespace TempLat
   void ImagTester::Test(TDDAssertion &tdd)
   {
     struct MyStruct {
-      DEVICE_INLINE_FUNCTION
       double ComplexFieldGet(Tag<0> t) { return 87; };
-      DEVICE_INLINE_FUNCTION
       int ComplexFieldGet(Tag<1> t) { return 870; };
     };
 
@@ -31,7 +29,7 @@ namespace TempLat
     // Test whether it works with complex fields.
     constexpr size_t NDim = 2;
     using T = double;
-    ptrdiff_t nGrid = 16, nGhost = 2;
+    device::Idx nGrid = 16, nGhost = 2;
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
     toolBox->setVerbose();
 

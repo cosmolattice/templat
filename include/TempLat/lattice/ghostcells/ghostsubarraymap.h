@@ -24,7 +24,7 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     GhostSubarrayMap(LayoutStruct<NDim> layout, device::Idx ghostDepth) : mLayout(layout), mGhostDepth(ghostDepth) {}
 
-    template <typename T> GhostSubarray<NDim> getSubArray(ptrdiff_t dimension) { return pGetSubArray<T>(dimension); }
+    template <typename T> GhostSubarray<NDim> getSubArray(device::Idx dimension) { return pGetSubArray<T>(dimension); }
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
@@ -32,7 +32,7 @@ namespace TempLat
     device::Idx mGhostDepth;
     std::map<MPI_Datatype, std::vector<GhostSubarray<NDim>>> mSubArrays;
 
-    template <typename T> GhostSubarray<NDim> pGetSubArray(ptrdiff_t dimension)
+    template <typename T> GhostSubarray<NDim> pGetSubArray(device::Idx dimension)
     {
       MPI_Datatype dataType = MPITypeSelect<T>();
       if (mSubArrays.count(dataType) < 1) {

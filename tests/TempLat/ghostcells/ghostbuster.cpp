@@ -21,7 +21,7 @@ namespace TempLat
   {
     /* single datum on a grid: 24 bytes making up x, y, and z. */
     struct datum {
-      ptrdiff_t x, y, z;
+      device::Idx x, y, z;
     };
   } // namespace Testing
 
@@ -57,7 +57,7 @@ namespace TempLat
 
     auto testGhostTransformation = [&](const auto &nGhostFrom, const auto &nGhostTo) {
       // Calculate memory sizes needed for both layouts
-      ptrdiff_t memSize1 = 1, memSize2 = 1;
+      device::Idx memSize1 = 1, memSize2 = 1;
       for (size_t i = 0; i < NDim; ++i) {
         memSize1 *= (nGrid[i] + nGhostFrom[i][0] + nGhostFrom[i][1]);
         memSize2 *= (nGrid[i] + nGhostTo[i][0] + nGhostTo[i][1]);
@@ -75,8 +75,8 @@ namespace TempLat
         auto memory_view = memory.getRawHostView();
 
         // Use a lambda to handle N-dimensional initialization recursively
-        std::function<void(device::IdxArray<NDim> &, size_t, ptrdiff_t)> initMemory =
-            [&](device::IdxArray<NDim> &coords, size_t dim, ptrdiff_t offset) {
+        std::function<void(device::IdxArray<NDim> &, size_t, device::Idx)> initMemory =
+            [&](device::IdxArray<NDim> &coords, size_t dim, device::Idx offset) {
               if (dim == NDim) {
                 // Base case: set the memory value
                 memory_view[offset].x = coords[0];
@@ -85,14 +85,14 @@ namespace TempLat
                 return;
               }
 
-              ptrdiff_t stride = 1;
+              device::Idx stride = 1;
               for (size_t j = dim + 1; j < NDim; ++j) {
                 stride *= (nGrid[j] + nGhostFrom[j][0] + nGhostFrom[j][1]);
               }
 
-              for (ptrdiff_t i = -nGhostFrom[dim][0]; i < nGrid[dim] + nGhostFrom[dim][1]; ++i) {
+              for (device::Idx i = -nGhostFrom[dim][0]; i < nGrid[dim] + nGhostFrom[dim][1]; ++i) {
                 coords[dim] = i;
-                ptrdiff_t newOffset = offset + (i + nGhostFrom[dim][0]) * stride;
+                device::Idx newOffset = offset + (i + nGhostFrom[dim][0]) * stride;
                 initMemory(coords, dim + 1, newOffset);
               }
             };
@@ -117,7 +117,7 @@ namespace TempLat
                                                                                size_t dim) {
         if (dim == NDim) {
           // Base case: check this coordinate
-          ptrdiff_t pos = layoutTo.getOrigin();
+          device::Idx pos = layoutTo.getOrigin();
           for (size_t i = 0; i < NDim; ++i) {
             pos += layoutTo.stride(i) * coords[i];
           }
@@ -129,7 +129,7 @@ namespace TempLat
           return;
         }
 
-        for (ptrdiff_t i = 0; i < nGrid[dim]; ++i) {
+        for (device::Idx i = 0; i < nGrid[dim]; ++i) {
           coords[dim] = i;
           verifyMemory(coords, dim + 1);
         }
@@ -179,11 +179,11 @@ namespace TempLat
       layout.setLocalSizes(nGrid);
 
       auto &&myLittleLambda = [&](auto nGhost, auto nGhostB) {
-        ptrdiff_t memSize1 = (nGrid[0] + nGhost[0][0] + nGhost[0][1]) * (nGrid[1] + nGhost[1][0] + nGhost[1][1]) *
-                             (nGrid[2] + nGhost[2][0] + nGhost[2][1]);
+        device::Idx memSize1 = (nGrid[0] + nGhost[0][0] + nGhost[0][1]) * (nGrid[1] + nGhost[1][0] + nGhost[1][1]) *
+                               (nGrid[2] + nGhost[2][0] + nGhost[2][1]);
 
-        ptrdiff_t memSize2 = (nGrid[0] + nGhostB[0][0] + nGhostB[0][1]) * (nGrid[1] + nGhostB[1][0] + nGhostB[1][1]) *
-                             (nGrid[2] + nGhostB[2][0] + nGhostB[2][1]);
+        device::Idx memSize2 = (nGrid[0] + nGhostB[0][0] + nGhostB[0][1]) * (nGrid[1] + nGhostB[1][0] + nGhostB[1][1]) *
+                               (nGrid[2] + nGhostB[2][0] + nGhostB[2][1]);
 
         LayoutStruct<3> layoutFrom(layout);
         layoutFrom.setPadding(nGhost);
@@ -195,14 +195,14 @@ namespace TempLat
         // setup the controlled known memory; each entry equals its position
         {
           auto memory_view = memory.getRawHostView();
-          for (ptrdiff_t i = -nGhost[0][0]; i < nGrid[0] + nGhost[0][1]; ++i) {
-            ptrdiff_t iPos = (i + nGhost[0][0]) * (nGrid[1] + nGhost[1][0] + nGhost[1][1]) *
-                             (nGrid[2] + nGhost[2][0] + nGhost[2][1]);
-            for (ptrdiff_t j = -nGhost[1][0]; j < nGrid[1] + nGhost[1][1]; ++j) {
-              ptrdiff_t jPos = (j + nGhost[1][0]) * (nGrid[2] + nGhost[2][0] + nGhost[2][1]);
-              for (ptrdiff_t k = -nGhost[2][0]; k < nGrid[2] + nGhost[2][1]; ++k) {
-                ptrdiff_t kPos = k + nGhost[2][0];
-                ptrdiff_t pos = iPos + jPos + kPos;
+          for (device::Idx i = -nGhost[0][0]; i < nGrid[0] + nGhost[0][1]; ++i) {
+            device::Idx iPos = (i + nGhost[0][0]) * (nGrid[1] + nGhost[1][0] + nGhost[1][1]) *
+                               (nGrid[2] + nGhost[2][0] + nGhost[2][1]);
+            for (device::Idx j = -nGhost[1][0]; j < nGrid[1] + nGhost[1][1]; ++j) {
+              device::Idx jPos = (j + nGhost[1][0]) * (nGrid[2] + nGhost[2][0] + nGhost[2][1]);
+              for (device::Idx k = -nGhost[2][0]; k < nGrid[2] + nGhost[2][1]; ++k) {
+                device::Idx kPos = k + nGhost[2][0];
+                device::Idx pos = iPos + jPos + kPos;
                 // std::cerr << "Hoi " << pos << " " << i << " " << j << " " << k << "\n";
                 memory_view[pos].x = i;
                 memory_view[pos].y = j;
@@ -232,7 +232,7 @@ namespace TempLat
                                                   std::make_pair(gh[2][0], gh[2][0] + nGrid[2]));
 
           // print a 2D slice of the 3D data, for x=0
-          for (ptrdiff_t x = 0; x < nGrid[0]; ++x) {
+          for (device::Idx x = 0; x < nGrid[0]; ++x) {
             std::cout << "x=" << x << "  ";
             for (int i = 0; i < nGrid[2]; ++i) {
               if (i == 0)
@@ -241,13 +241,13 @@ namespace TempLat
                 std::cout << "   -    ";
             }
             std::cout << "\n";
-            for (ptrdiff_t i = 0; i < nGrid[1]; ++i) {
+            for (device::Idx i = 0; i < nGrid[1]; ++i) {
               if (i == 0)
                 std::cout << "  y  ";
               else
                 std::cout << "  |  ";
 
-              for (ptrdiff_t j = 0; j < nGrid[2]; ++j) {
+              for (device::Idx j = 0; j < nGrid[2]; ++j) {
                 std::cerr << "(" << sub_view(x, i, j).x << "," << sub_view(x, i, j).y << "," << sub_view(x, i, j).z
                           << ") ";
               }
@@ -283,10 +283,10 @@ namespace TempLat
 
           // verify the setup, assuming strides are correct (tested elsewhere),
           // verify that the GhostBuster did not damage the memory, and put stuff in their new correct place.
-          for (ptrdiff_t i = 0; i < nGrid[0]; ++i) {
-            for (ptrdiff_t j = 0; j < nGrid[1]; ++j) {
-              for (ptrdiff_t k = 0; k < nGrid[2]; ++k) {
-                ptrdiff_t pos =
+          for (device::Idx i = 0; i < nGrid[0]; ++i) {
+            for (device::Idx j = 0; j < nGrid[1]; ++j) {
+              for (device::Idx k = 0; k < nGrid[2]; ++k) {
+                device::Idx pos =
                     curLayout.getOrigin() + curLayout.stride(0) * i + curLayout.stride(1) * j + curLayout.stride(2) * k;
                 const Testing::datum &dat = memory_view[pos];
                 const bool thisPosRight = dat.x == i && dat.y == j && dat.z == k;

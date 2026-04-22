@@ -29,34 +29,20 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     SymTracelessSubtraction(const R &pR, const T &pT) : SymTracelessBinaryOperator<R, T>(pR, pT) {}
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<0> t) const { return getComponent(mR, 0_c) - getComponent(mT, 0_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t) const { return getComponent(mR, 1_c) - getComponent(mT, 1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t) const { return getComponent(mR, 2_c) - getComponent(mT, 2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t) const { return getComponent(mR, 3_c) - getComponent(mT, 3_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<4> t) const { return getComponent(mR, 4_c) - getComponent(mT, 4_c); }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<1> t2) const { return (*this).SymTracelessGet(0_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<2> t2) const { return (*this).SymTracelessGet(1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<3> t2) const { return (*this).SymTracelessGet(2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<1> t2) const { return (*this).SymTracelessGet(1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<2> t2) const { return (*this).SymTracelessGet(3_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<3> t2) const { return (*this).SymTracelessGet(4_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<1> t2) const { return (*this).SymTracelessGet(2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<2> t2) const { return (*this).SymTracelessGet(4_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<3> t2) const
     {
       return -(*this).SymTracelessGet(0_c) - (*this).SymTracelessGet(3_c);
@@ -74,7 +60,7 @@ namespace TempLat
         DoEval::eval(r, idx...);
         DoEval::eval(t, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto cL = DoEval::eval(mR, idx...);
       auto cR = DoEval::eval(mT, idx...);

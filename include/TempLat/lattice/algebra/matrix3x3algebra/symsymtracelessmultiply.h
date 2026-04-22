@@ -27,66 +27,56 @@ namespace TempLat
     using MatrixBinaryOperator<R, T>::mR;
     using MatrixBinaryOperator<R, T>::mT;
 
-    DEVICE_FUNCTION
     SymSymTracelessMultiplication(const R &pR, const T &pT) : MatrixBinaryOperator<R, T>(pR, pT) {}
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<1> t1, Tag<1> t2) const
     {
       return getComponent(mR, 1_c, 1_c) * getComponent(mT, 1_c, 1_c) +
              getComponent(mR, 1_c, 2_c) * getComponent(mT, 2_c, 1_c) +
              getComponent(mR, 1_c, 3_c) * getComponent(mT, 3_c, 1_c);
     }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<1> t1, Tag<2> t2) const
     {
       return getComponent(mR, 1_c, 1_c) * getComponent(mT, 1_c, 2_c) +
              getComponent(mR, 1_c, 2_c) * getComponent(mT, 2_c, 2_c) +
              getComponent(mR, 1_c, 3_c) * getComponent(mT, 3_c, 2_c);
     }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<1> t1, Tag<3> t2) const
     {
       return getComponent(mR, 1_c, 1_c) * getComponent(mT, 1_c, 3_c) +
              getComponent(mR, 1_c, 2_c) * getComponent(mT, 2_c, 3_c) +
              getComponent(mR, 1_c, 3_c) * getComponent(mT, 3_c, 3_c);
     }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<2> t1, Tag<1> t2) const
     {
       return getComponent(mR, 2_c, 1_c) * getComponent(mT, 1_c, 1_c) +
              getComponent(mR, 2_c, 2_c) * getComponent(mT, 2_c, 1_c) +
              getComponent(mR, 2_c, 3_c) * getComponent(mT, 3_c, 1_c);
     }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<2> t1, Tag<2> t2) const
     {
       return getComponent(mR, 2_c, 1_c) * getComponent(mT, 1_c, 2_c) +
              getComponent(mR, 2_c, 2_c) * getComponent(mT, 2_c, 2_c) +
              getComponent(mR, 2_c, 3_c) * getComponent(mT, 3_c, 2_c);
     }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<2> t1, Tag<3> t2) const
     {
       return getComponent(mR, 2_c, 1_c) * getComponent(mT, 1_c, 3_c) +
              getComponent(mR, 2_c, 2_c) * getComponent(mT, 2_c, 3_c) +
              getComponent(mR, 2_c, 3_c) * getComponent(mT, 3_c, 3_c);
     }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<3> t1, Tag<1> t2) const
     {
       return getComponent(mR, 3_c, 1_c) * getComponent(mT, 1_c, 1_c) +
              getComponent(mR, 3_c, 2_c) * getComponent(mT, 2_c, 1_c) +
              getComponent(mR, 3_c, 3_c) * getComponent(mT, 3_c, 1_c);
     }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<3> t1, Tag<2> t2) const
     {
       return getComponent(mR, 3_c, 1_c) * getComponent(mT, 1_c, 2_c) +
              getComponent(mR, 3_c, 2_c) * getComponent(mT, 2_c, 2_c) +
              getComponent(mR, 3_c, 3_c) * getComponent(mT, 3_c, 2_c);
     }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<3> t1, Tag<3> t2) const
     {
       return getComponent(mR, 3_c, 1_c) * getComponent(mT, 1_c, 3_c) +
@@ -106,7 +96,7 @@ namespace TempLat
         DoEval::eval(r, idx...);
         DoEval::eval(t, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto cL = DoEval::eval(mR, idx...);
       auto cR = DoEval::eval(mT, idx...);
@@ -128,7 +118,7 @@ namespace TempLat
 
   template <typename R, typename T>
     requires(HasSymGet<R> && HasSymTracelessGet<T>)
-  DEVICE_FORCEINLINE_FUNCTION auto operator*(const R &r, const T &t)
+  auto operator*(const R &r, const T &t)
   {
     return SymSymTracelessMultiplication<R, T>(r, t);
   }

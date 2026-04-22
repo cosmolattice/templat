@@ -24,18 +24,11 @@ namespace TempLat
 
     template <typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
-    DEVICE_INLINE_FUNCTION double get(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION double eval(const IDX &...idx) const
     {
       device::IdxArray<NDim> ii;
       mLayout.putSpatialLocationFromMemoryIndexInto0N(ii, idx...);
       return ii[0] * pow(16, 3) + ii[1] * pow(16, 2) + ii[2] * 16 + ii[3];
-    }
-
-    template <typename... IDX>
-      requires IsVariadicNDIndex<NDim, IDX...>
-    DEVICE_INLINE_FUNCTION double eval(const IDX &...idx) const
-    {
-      return get(idx...);
     }
 
     auto getToolBox() const { return mt; }

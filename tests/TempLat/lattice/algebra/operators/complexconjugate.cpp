@@ -19,9 +19,9 @@ namespace TempLat
 
     struct myStruct {
       DEVICE_INLINE_FUNCTION
-      complex<double> get(ptrdiff_t i) const { return complex<double>(1, -1); }
+      complex<double> get(device::Idx i) const { return complex<double>(1, -1); }
       DEVICE_INLINE_FUNCTION
-      complex<double> eval(ptrdiff_t i) const { return complex<double>(1, -1); }
+      complex<double> eval(device::Idx i) const { return complex<double>(1, -1); }
     };
 
     /* Default is to fail: to remind yourself to implement something here. */

@@ -27,7 +27,7 @@ namespace TempLat
         std::cerr << "Hell yeah.\n";
         return 420;
       }
-      ptrdiff_t getVectorSize() { return 42; }
+      device::Idx getVectorSize() { return 42; }
     };
 
     MyTestOne t1;

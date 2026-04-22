@@ -46,14 +46,9 @@ namespace TempLat
     template <typename U> friend class RadialProjectionResult;
 
     // Put public methods here. These should change very little over time.
-    RadialProjectionResult(size_t nBins, bool pUseBinCentralValues = false, bool pIsInFourier = false):
-    std::vector<RadialProjectionSingleBinAndValue<T>>(),
-    finalizedOnce(false),
-    mNBins(nBins),
-    mValues(mNBins),
-    mBinBounds(mNBins),
-    mUseBinCentralValues(pUseBinCentralValues),
-    mIsInFourier(pIsInFourier)
+    RadialProjectionResult(size_t nBins, bool pUseBinCentralValues = false, bool pIsInFourier = false)
+        : std::vector<RadialProjectionSingleBinAndValue<T>>(), finalizedOnce(false), mNBins(nBins), mValues(mNBins),
+          mBinBounds(mNBins), mUseBinCentralValues(pUseBinCentralValues), mIsInFourier(pIsInFourier)
     {
       mMultiplicitiesDevice = DeviceView("RadialProjectionResult::mMultiplicitiesDevice", mNBins);
       mMultiplicities = device::memory::createMirrorView(mMultiplicitiesDevice);
@@ -68,30 +63,29 @@ namespace TempLat
      *  enclosing powerSpectrum call. */
     template <typename U>
     RadialProjectionResult(const RadialProjectionResult<U> &other)
-        : std::vector<RadialProjectionSingleBinAndValue<T>>(), finalizedOnce(other.finalizedOnce),
-          mNBins(other.mNBins), mValues(other.mNBins), mBinBounds(other.mNBins),
-          mUseBinCentralValues(other.mUseBinCentralValues), mIsInFourier(other.mIsInFourier)
+        : std::vector<RadialProjectionSingleBinAndValue<T>>(), finalizedOnce(other.finalizedOnce), mNBins(other.mNBins),
+          mValues(other.mNBins), mBinBounds(other.mNBins), mUseBinCentralValues(other.mUseBinCentralValues),
+          mIsInFourier(other.mIsInFourier)
     {
       this->reserve(other.size());
-      for (const auto &bv : other) this->emplace_back(bv);
+      for (const auto &bv : other)
+        this->emplace_back(bv);
       centralBinBounds.reserve(other.centralBinBounds.size());
-      for (const auto &b : other.centralBinBounds) centralBinBounds.push_back(static_cast<T>(b));
+      for (const auto &b : other.centralBinBounds)
+        centralBinBounds.push_back(static_cast<T>(b));
       mMultiplicitiesDevice = DeviceView("RadialProjectionResult::mMultiplicitiesDevice", mNBins);
       mMultiplicities = device::memory::createMirrorView(mMultiplicitiesDevice);
     }
 
     /** @brief Decrease the number of bins on demand. */
-    RadialProjectionResult &rebin(ptrdiff_t nBins, T customRange = -1)
+    RadialProjectionResult &rebin(device::Idx nBins, T customRange = -1)
     {
       std::vector<RadialProjectionSingleBinAndValue<T>>::operator=(
           RadialProjectionRebinner<T>::rebin(*this, nBins, centralBinBounds, customRange));
       return *this;
     }
 
-    auto getNBins()
-    {
-      return mNBins;
-    }
+    auto getNBins() { return mNBins; }
 
     /** @brief Rescale the results with a function of x or k (bin location),
      *  using for now a simple lambda function of single float parameter, which
@@ -114,10 +108,11 @@ namespace TempLat
       auto total = 0.;
       auto kIR = (*this).getCentralBinBounds()[0];
       if (useCentralBin) {
-        for (size_t i = 0; i < this->size(); ++i) total += (*this)[i].getValue().average / (i + 1);
-      }
-      else {
-        for (auto &&it : *this) total += it.getValue().average * kIR / it.getBin().average;
+        for (size_t i = 0; i < this->size(); ++i)
+          total += (*this)[i].getValue().average / (i + 1);
+      } else {
+        for (auto &&it : *this)
+          total += it.getValue().average * kIR / it.getBin().average;
       }
       return total;
     }
@@ -156,7 +151,7 @@ namespace TempLat
 
     std::string toString(int verbosity = 0) const
     {
-      if ((ptrdiff_t)this->size() < 1) return "";
+      if ((device::Idx)this->size() < 1) return "";
       std::stringstream sstream;
       sstream << this->front().getHeader(verbosity) << "\n";
       for (auto &&it : *this) {
@@ -179,7 +174,7 @@ namespace TempLat
     friend RadialProjectionResult<S> operator+(const RadialProjectionResult<S> &a, const RadialProjectionResult<S> &b);
 
     DEVICE_INLINE_FUNCTION
-    void add_device(ptrdiff_t i, const T &value, const T &position, const T &weight = (T)1) const
+    void add_device(device::Idx i, const T &value, const T &position, const T &weight = (T)1) const
     {
       mValues.add_device(i, value, weight);
       mBinBounds.add_device(i, position, weight);

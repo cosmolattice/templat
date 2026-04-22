@@ -25,11 +25,10 @@ namespace TempLat
 
     using ComplexFieldUnaryOperator<R>::mR;
 
-    DEVICE_FUNCTION
     ComplexFieldConjugate(const R &pR) : ComplexFieldUnaryOperator<R>(pR) {}
 
-    DEVICE_INLINE_FUNCTION auto ComplexFieldGet(Tag<0> t) const { return Real(mR); }
-    DEVICE_INLINE_FUNCTION auto ComplexFieldGet(Tag<1> t) const { return -Imag(mR); }
+    auto ComplexFieldGet(Tag<0> t) const { return Real(mR); }
+    auto ComplexFieldGet(Tag<1> t) const { return -Imag(mR); }
 
     template <typename... IDX>
       requires requires(std::decay_t<R> r, IDX... idx) {
@@ -53,27 +52,20 @@ namespace TempLat
 
   template <typename R>
     requires HasComplexFieldGet<R>
-  DEVICE_INLINE_FUNCTION auto conj(const R &r)
+  auto conj(const R &r)
   {
     return ComplexFieldConjugate<R>(r);
   }
 
   template <typename R>
     requires HasComplexFieldGet<R>
-  DEVICE_INLINE_FUNCTION auto dagger(const R &r)
+  auto dagger(const R &r)
   {
     return ComplexFieldConjugate<R>(r);
   }
 
-  DEVICE_INLINE_FUNCTION
-  OneType dagger(OneType) { return {}; }
-  DEVICE_INLINE_FUNCTION
-  OneType conj(OneType) { return {}; }
-
-  DEVICE_INLINE_FUNCTION
-  ZeroType conj(ZeroType t) { return t; };
-  DEVICE_INLINE_FUNCTION
-  ZeroType dagger(ZeroType t) { return t; };
+  constexpr inline OneType dagger(OneType) { return {}; }
+  constexpr inline ZeroType dagger(ZeroType) { return {}; };
 } // namespace TempLat
 
 #endif

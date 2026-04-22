@@ -52,7 +52,7 @@ namespace TempLat
     memVec[1] = 2;
     memVec[2] = 3;
 
-    for (ptrdiff_t i = 0; i < 3; ++i) {
+    for (device::Idx i = 0; i < 3; ++i) {
       auto map = a.getSpatialLocationFromMemoryIndex(memVec[i], i);
       posVec[map.atIndex] = map.withValue;
     }
@@ -68,7 +68,7 @@ namespace TempLat
     /* mem pos 1 at mem dim 0 -> global dim 2 -> global pos 1 + 9 = 10 -> 10 - 16 = -6 */
     tdd.verify(posVec[2] == -6);
 
-    for (ptrdiff_t i = 0; i < 3; ++i) {
+    for (device::Idx i = 0; i < 3; ++i) {
       auto map = a.getMemoryIndexFromSpatialLocation(posVec[i], i);
       memVec2[map.atIndex] = map.withValue;
     }
@@ -99,7 +99,7 @@ namespace TempLat
     memVec[1] = 2;
     memVec[2] = 3;
 
-    for (ptrdiff_t i = 0; i < 3; ++i) {
+    for (device::Idx i = 0; i < 3; ++i) {
       auto map = a.getSpatialLocationFromMemoryIndex(memVec[i], i);
       posVec[map.atIndex] = map.withValue;
     }
@@ -115,7 +115,7 @@ namespace TempLat
     /* mem pos 1 at mem dim 0 -> global dim 2 -> global pos 1 + 9 = 10 -> 10 - 18 = -8 */
     tdd.verify(posVec[2] == -8);
 
-    for (ptrdiff_t i = 0; i < 3; ++i) {
+    for (device::Idx i = 0; i < 3; ++i) {
       auto map = a.getMemoryIndexFromSpatialLocation(posVec[i], i);
       memVec2[map.atIndex] = map.withValue;
     }

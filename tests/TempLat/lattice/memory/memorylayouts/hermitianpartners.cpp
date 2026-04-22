@@ -23,7 +23,7 @@ namespace TempLat
     device::IdxArray<4> global{{16, 16, 16, 16}}, hpvec{{0, 0, 0, 0}};
     hp.putHermitianPartner(global, hpvec);
     bool correct = true;
-    for (ptrdiff_t i = 0; i < 4; ++i)
+    for (device::Idx i = 0; i < 4; ++i)
       correct = correct && global[i] == hpvec[i];
     tdd.verify(correct);
   }

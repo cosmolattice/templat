@@ -25,20 +25,19 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     KokkosFFTInterface() = default;
 
-    virtual ptrdiff_t getMaximumNumberOfDimensionsToDivide(ptrdiff_t nDimensions)
+    virtual device::Idx getMaximumNumberOfDimensionsToDivide(device::Idx nDimensions)
     {
-      return std::max((ptrdiff_t)1, nDimensions - 1);
+      return std::max((device::Idx)1, nDimensions - 1);
     };
 
     /** @brief KokkosFFT does not run under MPI: the entire lattice is local. Report "no split".
      *  The selector only reaches this backend when `baseComm.size() == 1`. */
-    static FFTDecomposition<NDim> decomposition(MPICommReference /*baseComm*/,
-                                                device::IdxArray<NDim> /*nGridPoints*/)
+    static FFTDecomposition<NDim> decomposition(MPICommReference /*baseComm*/, device::IdxArray<NDim> /*nGridPoints*/)
     {
       return FFTDecomposition<NDim>{/*nDimsToSplit=*/0, {}};
     }
 
-    virtual IntrinsicScales getIntrinsicRescaleToGetUnnormalizedFFT(ptrdiff_t nGridPoints)
+    virtual IntrinsicScales getIntrinsicRescaleToGetUnnormalizedFFT(device::Idx nGridPoints)
     {
       return IntrinsicScales{1., 1};
     }

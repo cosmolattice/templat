@@ -19,7 +19,7 @@ namespace TempLat
 
   template <typename T, size_t NDim> inline void ConfigViewTester<T, NDim>::Test(TDDAssertion &tdd)
   {
-    const ptrdiff_t nGrid = 16, nGhost = 2;
+    const device::Idx nGrid = 16, nGhost = 2;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
@@ -43,7 +43,7 @@ namespace TempLat
     });
     tdd.verify(same);
 
-    /*ptrdiff_t nGrid = 256, nGhost = 2;
+    /*device::Idx nGrid = 256, nGhost = 2;
 
     auto toolBox = MemoryToolBox::makeShared(3, nGrid, nGhost);
 

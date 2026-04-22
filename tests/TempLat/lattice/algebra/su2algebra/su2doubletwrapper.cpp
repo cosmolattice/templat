@@ -9,7 +9,6 @@
 
 namespace TempLat
 {
-
   struct SU2DoubletWrapperTester {
     static void Test(TDDAssertion &tdd);
   };
@@ -18,7 +17,7 @@ namespace TempLat
   {
     // Just to check if all compiles
 
-    SU2DoubletWrapper<double, double, double, double> w1;
+    SU2DoubletWrapper<double, double, double, double> w1(0, 0, 0, 0);
     tdd.verify(w1.toString() == "SU2(0,0,0,0)");
 
     SU2DoubletWrapper<double, double, double, double> w2(1.0, 2.0, 3.0, 4.0);

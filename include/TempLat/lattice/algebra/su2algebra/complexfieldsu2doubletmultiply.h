@@ -34,13 +34,9 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     ComplexFieldSU2DoubletMultiplication(const R &pR, const T &pT) : SU2DoubletBinaryOperator<R, T>(pR, pT) {}
 
-    DEVICE_INLINE_FUNCTION
     auto SU2DoubletGet(Tag<0> t) const { return Real(mR * Complexify(mT.SU2DoubletGet(0_c), mT.SU2DoubletGet(1_c))); }
-    DEVICE_INLINE_FUNCTION
     auto SU2DoubletGet(Tag<1> t) const { return Imag(mR * Complexify(mT.SU2DoubletGet(0_c), mT.SU2DoubletGet(1_c))); }
-    DEVICE_INLINE_FUNCTION
     auto SU2DoubletGet(Tag<2> t) const { return Real(mR * Complexify(mT.SU2DoubletGet(2_c), mT.SU2DoubletGet(3_c))); }
-    DEVICE_INLINE_FUNCTION
     auto SU2DoubletGet(Tag<3> t) const { return Imag(mR * Complexify(mT.SU2DoubletGet(2_c), mT.SU2DoubletGet(3_c))); }
 
     template <typename... IDX>

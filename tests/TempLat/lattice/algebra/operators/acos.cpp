@@ -6,6 +6,7 @@
 // File info: Main contributor(s): Adrien Florio,  Year: 2024
 
 #include "TempLat/lattice/algebra/operators/acos.h"
+#include "TempLat/parallel/devices/kokkos/kokkos.h"
 #include "TempLat/util/tdd/tdd.h"
 #include "TempLat/util/almostequal.h"
 
@@ -23,8 +24,10 @@ namespace TempLat
     class myClass
     {
     public:
-      DEVICE_FUNCTION myClass(double b) : a(b) {}
-      DEVICE_INLINE_FUNCTION auto eval(const int &i) const { return a; }
+      myClass(double b) : a(b) {}
+
+      DEVICE_INLINE_FUNCTION
+      auto eval(const int &i) const { return a; }
 
     private:
       double a;

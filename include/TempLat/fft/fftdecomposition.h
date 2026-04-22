@@ -26,7 +26,7 @@ namespace TempLat
    *    is pinned exactly and the product must equal the rank count.
    */
   template <size_t NDim> struct FFTDecomposition {
-    ptrdiff_t nDimsToSplit = 0;
+    int nDimsToSplit = 0;
     std::array<int, NDim> dims = {};
   };
 } // namespace TempLat

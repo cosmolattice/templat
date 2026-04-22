@@ -35,7 +35,6 @@ namespace TempLat
       using BinaryOperator<R, T>::mR;
       using BinaryOperator<R, T>::mT;
 
-      DEVICE_FUNCTION
       Multiplication(const R &pR, const T &pT) : BinaryOperator<R, T>(pR, pT) {}
 
       template <typename... IDX>
@@ -52,7 +51,7 @@ namespace TempLat
       virtual std::string operatorString() const override { return "*"; }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
+      template <typename U> auto d(const U &other)
       {
         return GetDeriv::get(mT, other) * mR + mT * GetDeriv::get(mR, other);
       }
@@ -70,7 +69,7 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(r, idx...);
         }
-      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return N * DoEval::eval(mR, idx...);
       }
@@ -78,68 +77,69 @@ namespace TempLat
       virtual std::string operatorString() const override { return std::to_string(N) + "*"; }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other) { return N * mR; }
+      template <typename U> auto d(const U &other) { return N * mR; }
     };
   } // namespace Operators
 
   /** @brief Exposing our newly define multiplication operation to the world. */
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
-  DEVICE_INLINE_FUNCTION auto operator*(const R &r, const T &t)
+  auto operator*(const R &r, const T &t)
   {
     return Operators::Multiplication<R, T>(r, t);
   }
 
   template <typename R, int N>
     requires(HasEvalMethod<R> && !(IsTempLatGettable<0, R> || IsSTDGettable<0, R>))
-  DEVICE_INLINE_FUNCTION auto operator*(const R &r, Tag<N> n)
+  auto operator*(const R &r, Tag<N> n)
   {
     return Operators::MultiplicationN<R, N>(r);
   }
 
   template <typename R, int N>
     requires(HasEvalMethod<R> && !(IsTempLatGettable<0, R> || IsSTDGettable<0, R>))
-  DEVICE_INLINE_FUNCTION auto operator*(Tag<N> n, const R &r)
+  auto operator*(Tag<N> n, const R &r)
   {
     return Operators::MultiplicationN<R, N>(r);
   }
 
+  template <int M, int N> constexpr auto operator*(Tag<N> n, Tag<M> m) { return Tag<N * M>(); }
+
   /** @brief Specialize for ZeroType * ZeroType */
-  DEVICE_INLINE_FUNCTION ZeroType operator*(ZeroType, ZeroType) { return {}; }
+  constexpr inline ZeroType operator*(ZeroType, ZeroType) { return {}; }
 
   /** @brief Specialize for possible zero input! */
   template <typename T>
     requires(!std::is_same_v<T, ZeroType>)
-  DEVICE_INLINE_FUNCTION ZeroType operator*(const T &a, ZeroType b)
+  ZeroType operator*(const T &, ZeroType b)
   {
-    return b;
+    return {};
   }
   /** @brief Specialize for possible zero input! */
   template <typename T>
     requires(!std::is_same_v<T, ZeroType>)
-  DEVICE_INLINE_FUNCTION ZeroType operator*(ZeroType a, const T &b)
+  constexpr ZeroType operator*(ZeroType a, const T &)
   {
-    return a;
+    return {};
   }
 
   /** @brief Specialize for possible unit input! */
   template <typename T>
     requires(!std::is_same_v<T, OneType> && !std::is_same_v<T, ZeroType>)
-  DEVICE_INLINE_FUNCTION auto operator*(const T &a, const OneType b)
+  constexpr auto operator*(const T &a, const OneType b)
   {
     return a;
   }
   /** @brief Specialize for possible unit input! */
   template <typename T>
     requires(!std::is_same_v<T, OneType> && !std::is_same_v<T, ZeroType>)
-  DEVICE_INLINE_FUNCTION auto operator*(const OneType &a, const T &b)
+  constexpr auto operator*(const OneType &a, const T &b)
   {
     return b;
   }
 
   /** @brief Specialize for possible unit input! */
-  DEVICE_INLINE_FUNCTION
-  OneType operator*(OneType a, OneType b) { return a; }
+  constexpr inline OneType operator*(OneType a, OneType b) { return a; }
 } // namespace TempLat
 
 #endif

@@ -18,7 +18,7 @@ namespace TempLat
 
   template <typename T, size_t NDim> inline void FourierViewTester<T, NDim>::Test(TDDAssertion &tdd)
   {
-    const ptrdiff_t nGrid = 16, nGhost = 1;
+    const device::Idx nGrid = 16, nGhost = 1;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
     toolBox->setVerbose();
@@ -39,7 +39,7 @@ namespace TempLat
     NDLoop<NDim>(a_host, [&](const auto &...idx) { same = same && AlmostEqual(a_host(idx...), x_host(idx...)); });
     tdd.verify(same);
 
-    /*ptrdiff_t nGrid = 256, nGhost = 2;
+    /*device::Idx nGrid = 256, nGhost = 2;
 
     auto toolBox = MemoryToolBox::makeShared(3, nGrid, nGhost);
 

@@ -32,7 +32,7 @@ namespace TempLat
 
     template <typename... Args>
     TempLatVector(Args... args)
-        : mVec({static_cast<T>(args)...}){
+        : mVec({static_cast<T>(args)...}) {
 
           };
     TempLatVector(std::initializer_list<T> l)
@@ -56,13 +56,13 @@ namespace TempLat
 
     template <int N> T getComp(Tag<N> t) const noexcept { return mVec[N]; }
 
-    T operator[](ptrdiff_t i) const { return mVec[i]; }
+    T operator[](device::Idx i) const { return mVec[i]; }
 
-    T &operator[](ptrdiff_t i) { return mVec[i]; }
+    T &operator[](device::Idx i) { return mVec[i]; }
 
-    T operator()(ptrdiff_t i) const { return mVec[i - shift]; }
+    T operator()(device::Idx i) const { return mVec[i - shift]; }
 
-    T &operator()(ptrdiff_t i) { return mVec[i - shift]; }
+    T &operator()(device::Idx i) { return mVec[i - shift]; }
 
     size_t size() const { return mVec.size(); }
 

@@ -39,7 +39,7 @@ namespace TempLat
      *   then update ghosts.
      */
     // virtual
-    // ptrdiff_t confirmGhostsUpToDate(FieldShiftedViewDetection detector) = 0;
+    // device::Idx confirmGhostsUpToDate(FieldShiftedViewDetection detector) = 0;
 
     /** For measurement objects. */
     virtual inline device::memory::host_ptr<MemoryToolBox<3>> getToolBox() = 0;

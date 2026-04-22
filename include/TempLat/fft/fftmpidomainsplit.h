@@ -33,22 +33,26 @@ namespace TempLat
       FFTDecomposition<NDim> d = FFTLibrarySelector<NDim>::decomposition(baseGroup, nGridPoints);
 
       bool explicitGrid = d.nDimsToSplit > 0;
-      for (ptrdiff_t i = 0; i < d.nDimsToSplit; ++i)
-        if (d.dims[i] <= 0) { explicitGrid = false; break; }
+      for (device::Idx i = 0; i < d.nDimsToSplit; ++i)
+        if (d.dims[i] <= 0) {
+          explicitGrid = false;
+          break;
+        }
 
       if (explicitGrid) {
         std::vector<int> out(NDim, 1);
-        for (size_t i = 0; i < NDim; ++i) out[i] = std::max(1, d.dims[i]);
+        for (size_t i = 0; i < NDim; ++i)
+          out[i] = std::max(1, d.dims[i]);
         return out;
       }
 
-      MPIDomainSplit theSplit(baseGroup.size(), static_cast<ptrdiff_t>(NDim), d.nDimsToSplit);
+      MPIDomainSplit theSplit(baseGroup.size(), static_cast<device::Idx>(NDim), d.nDimsToSplit);
       return theSplit;
     }
 
     static MPICartesianGroup makeMPIGroup(MPICommReference baseGroup, const device::IdxArray<NDim> &nGridPoints)
     {
-      return MPICartesianGroup(baseGroup, static_cast<ptrdiff_t>(NDim),
+      return MPICartesianGroup(baseGroup, static_cast<device::Idx>(NDim),
                                makeDomainDecomposition(baseGroup, nGridPoints));
     }
     /* default using comm_world */

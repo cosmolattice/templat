@@ -133,31 +133,7 @@ namespace TempLat
 
     const auto &getLayout() const { return mToolBox->mLayouts.getFourierSpaceLayout(); }
 
-    /** @brief Getting a single entry from an array. Variadic because the number of dimensions is variable.
-     *  Use for tests only, never for actual integrations and iterations.
-     *  The arguments are in LOCAL SPACE!! Not global. Use true array indices, but not accounting for ghosts.
-     *  At the same time, the arguments are in original dimension order, not transposed.
-     *  Transposition will be applied internally where applicable.
-     */
-    /*
-   template <typename... Args> auto &operator()(bool &test, Args... args)
-   {
-     //            const ptrdiff_t sz = sizeof...(args);
-     std::vector<ptrdiff_t> asVec{{args...}};
-     return operator()(test, asVec);
-   }*/
-
-    /*
-    auto &operator()(bool &test, std::vector<ptrdiff_t> position)
-    {
-      ptrdiff_t offset = this->getOffsetFromCoords(test, position);
-      // our hack to give something that is not in the memory, without throwing an exception.
-      constexpr complex<T> dummy(std::numeric_limits<T>::infinity(), 0);
-      return offset > -1 ? mManager->as_complex(offset) : dummy;
-    }
-    */
-
-    // MPI aware setting of value. Use exceptionnaly (remove zero mode for example)
+    // MPI aware setting of value. Use exceptionally (remove zero mode for example)
 
     template <typename... Args> void setZeroMode(const complex<T> &toSet)
     {
@@ -193,7 +169,7 @@ namespace TempLat
     device::memory::NDViewUnmanagedHost<complex<T>, NDim> mHostView;
 
     device::IdxArray<NDim> memorySizes;
-    device::array<device::pair<ptrdiff_t, ptrdiff_t>, NDim> localSlicing;
+    device::array<device::pair<device::Idx, device::Idx>, NDim> localSlicing;
   };
 } // namespace TempLat
 

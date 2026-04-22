@@ -25,7 +25,7 @@ namespace TempLat
 
   template <class T, size_t NDim>
   concept HasSpaceConfirmationMethodsDirectIndexed =
-      requires(ptrdiff_t idx, std::decay_t<T> t, LayoutStruct<NDim> layout, SpaceStateType spaceType) {
+      requires(device::Idx idx, std::decay_t<T> t, LayoutStruct<NDim> layout, SpaceStateType spaceType) {
         t.confirmSpace(idx, layout, spaceType);
       };
 
@@ -37,7 +37,7 @@ namespace TempLat
 
   template <class T, size_t NDim>
   concept HasSpaceConfirmationMethodsDirectElement =
-      requires(ptrdiff_t idx, std::decay_t<T> t, LayoutStruct<NDim> layout, SpaceStateType spaceType) {
+      requires(device::Idx idx, std::decay_t<T> t, LayoutStruct<NDim> layout, SpaceStateType spaceType) {
         t(idx).confirmSpace(layout, spaceType);
       };
 } // namespace TempLat

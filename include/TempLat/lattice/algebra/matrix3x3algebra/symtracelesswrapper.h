@@ -28,48 +28,26 @@ namespace TempLat
   public:
     // Put public methods here. These should change very little over time.
 
-    DEVICE_FUNCTION
-    SymTracelessWrapper() = default;
-
-    DEVICE_FUNCTION
     SymTracelessWrapper(const R0 &pR0, const R1 &pR1, const R2 &pR2, const R3 &pR3, const R4 &pR4, const R5 &pR5)
         : mR0(pR0), mR1(pR1), mR2(pR2), mR3(pR3), mR4(pR4), mR5(pR5)
     {
     }
 
-    DEVICE_FUNCTION
-    SymTracelessWrapper(const SymTracelessWrapper &) = default;
-
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<0> t) const { return (2. / 3.) * mR0 - (1. / 3.) * mR3 - (1. / 3.) * mR5; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t) const { return mR1; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t) const { return mR2; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t) const { return -(1. / 3.) * mR0 + (2. / 3.) * mR3 - (1. / 3.) * mR5; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<4> t) const { return mR4; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<5> t) const { return -(1. / 3.) * mR0 - (1. / 3.) * mR3 + (2. / 3.) * mR5; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<1> t2) const { return SymTracelessGet(0_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<2> t2) const { return SymTracelessGet(1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<3> t2) const { return SymTracelessGet(2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<1> t2) const { return SymTracelessGet(1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<2> t2) const { return SymTracelessGet(3_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<3> t2) const { return SymTracelessGet(4_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<1> t2) const { return SymTracelessGet(2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<2> t2) const { return SymTracelessGet(4_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<3> t2) const { return SymTracelessGet(5_c); }
 
     template <int N> auto operator()(Tag<N> t) const
@@ -89,7 +67,7 @@ namespace TempLat
         DoEval::eval(r4, idx...);
         DoEval::eval(r5, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       device::array<decltype(DoEval::eval(mR0, idx...)), 5> result;
       result[0] = DoEval::eval(mR0, idx...);
@@ -140,8 +118,8 @@ namespace TempLat
   };
 
   template <typename R0, typename R1, typename R2, typename R3, typename R4, typename R5>
-  DEVICE_FORCEINLINE_FUNCTION SymTracelessWrapper<R0, R1, R2, R3, R4, R5>
-  ConstructSymTraceless(const R0 &r0, const R1 &r1, const R2 &r2, const R3 &r3, const R4 &r4, const R5 &r5)
+  SymTracelessWrapper<R0, R1, R2, R3, R4, R5> ConstructSymTraceless(const R0 &r0, const R1 &r1, const R2 &r2,
+                                                                    const R3 &r3, const R4 &r4, const R5 &r5)
   {
     return {r0, r1, r2, r3, r4, r5};
   }

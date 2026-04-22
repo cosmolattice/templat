@@ -29,10 +29,10 @@ namespace TempLat
      *        bin counts with symmetry factors.
      */
     template <size_t Dim, size_t NDim, typename T>
-    void iterateOctant(const ptrdiff_t Nh, const ptrdiff_t N, std::vector<int> &binP, ptrdiff_t n2, int nEdge)
+    void iterateOctant(const device::Idx Nh, const device::Idx N, std::vector<int> &binP, device::Idx n2, int nEdge)
     {
-      for (ptrdiff_t a = 0; a <= Nh; ++a) {
-        const ptrdiff_t newN2 = n2 + a * a;
+      for (device::Idx a = 0; a <= Nh; ++a) {
+        const device::Idx newN2 = n2 + a * a;
         const int newNEdge = nEdge + ((a == 0 || a == Nh) ? 1 : 0);
 
         if constexpr (Dim + 1 < NDim) {
@@ -48,7 +48,7 @@ namespace TempLat
     }
   } // namespace detail
 
-  template <size_t NDim> std::vector<int> getTypeIBinCounts(const ptrdiff_t N)
+  template <size_t NDim> std::vector<int> getTypeIBinCounts(const device::Idx N)
   {
     const auto Nh = N / 2;
 
@@ -91,7 +91,7 @@ namespace TempLat
       device::IdxArray<NDim> spatial;
       mLayout.putSpatialLocationFromMemoryIndexInto(spatial, idx...);
 
-      const ptrdiff_t half = mnGrid / 2;
+      const device::Idx half = mnGrid / 2;
 
       // Fold spatial coordinates (which may be negative) to [0, Nh]
       size_t n2 = 0;
@@ -120,7 +120,7 @@ namespace TempLat
 
     static std::string toString() { return "MomentumMultiplicity"; }
 
-    void confirmSpace(ptrdiff_t i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    void confirmSpace(device::Idx i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
       switch (spaceType) {
       case SpaceStateType::Configuration:
@@ -134,7 +134,7 @@ namespace TempLat
     }
 
   private:
-    ptrdiff_t mnGrid;
+    device::Idx mnGrid;
     LayoutStruct<NDim> mLayout;
     device::memory::NDView<int, 1> mmulti;
   };

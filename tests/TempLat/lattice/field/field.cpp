@@ -22,7 +22,7 @@ namespace TempLat
 
   template <typename T, size_t NDim> inline void FieldTester<T, NDim>::Test(TDDAssertion &tdd)
   {
-    const ptrdiff_t nGrid = 32, nGhost = 2;
+    const device::Idx nGrid = 32, nGhost = 2;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
     toolBox->setVerbose();

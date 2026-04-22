@@ -26,7 +26,7 @@ namespace TempLat
     /* Default is to fail: to remind yourself to implement something here. */
 
     auto sum_this_vec = [](auto x) {
-      ptrdiff_t res = 0;
+      size_t res = 0;
       for (auto t : x)
         res += t;
       return res;

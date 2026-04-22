@@ -20,7 +20,7 @@ namespace TempLat
    * @param x Argument
    * @return x^n
    */
-  template <ptrdiff_t n, typename NumberType>
+  template <int n, typename NumberType>
     requires requires(NumberType x) {
       x * x;
       static_cast<NumberType>(1) / x;

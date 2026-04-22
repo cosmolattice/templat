@@ -56,7 +56,7 @@ namespace TempLat
       static_assert(M >= 1 && M <= 3, "Operator(): M must be between 0 and 3 for SU2LieAlgebraField");
       return fs[M - 1];
     }
-    template <int M> DEVICE_INLINE_FUNCTION const auto &operator()(Tag<M> t) const
+    template <int M> const auto &operator()(Tag<M> t) const
     {
       static_assert(M >= 1 && M <= 3, "Operator(): M must be between 0 and 3 for SU2LieAlgebraField");
       return fs[M - 1];
@@ -111,10 +111,7 @@ namespace TempLat
 
     std::string toString() const { return *mName; }
 
-    DEVICE_INLINE_FUNCTION
     auto getDx() const { return GetDx::getDx(fs[0]); }
-
-    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(fs[0]); }
 
     inline auto getToolBox() { return GetToolBox::get(fs[0]); }

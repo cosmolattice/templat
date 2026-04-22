@@ -33,7 +33,6 @@ namespace TempLat
       // Put public methods here. These should change very little over time.
       using UnaryOperator<T>::mR;
 
-      DEVICE_FUNCTION
       Cosine(const T &a) : UnaryOperator<T>(a) {}
 
       template <typename... IDX>
@@ -41,16 +40,13 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(t, idx...);
         }
-      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return cos(DoEval::eval(mR, idx...));
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
-      {
-        return -GetDeriv::get(mR, other) * sin(mR);
-      }
+      template <typename U> auto d(const U &other) { return -GetDeriv::get(mR, other) * sin(mR); }
 
       virtual std::string operatorString() const override { return "cos"; }
     };
@@ -59,14 +55,13 @@ namespace TempLat
   /** @brief Exposing our newly define exp operation to the world. */
   template <typename T>
     requires ConditionalUnaryGetter<T>
-  DEVICE_INLINE_FUNCTION auto cos(T a)
+  auto cos(T a)
   {
     return Operators::Cosine<T>(a);
   }
 
   /** @brief Specialize for possible zero input! */
-  DEVICE_INLINE_FUNCTION
-  OneType cos(ZeroType a) { return {}; }
+  constexpr inline OneType cos(ZeroType a) { return {}; }
 } // namespace TempLat
 
 #endif

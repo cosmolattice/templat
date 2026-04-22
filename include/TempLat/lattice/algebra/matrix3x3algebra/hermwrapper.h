@@ -32,48 +32,26 @@ namespace TempLat
   public:
     // Put public methods here. These should change very little over time.
 
-    DEVICE_FUNCTION
-    HermWrapper() = default;
-
-    DEVICE_FUNCTION
     HermWrapper(const R11 &pR11, const R12 &pR12, const R13 &pR13, const R22 &pR22, const R23 &pR23, const R33 &pR33)
         : mR11(pR11), mR12(pR12), mR13(pR13), mR22(pR22), mR23(pR23), mR33(pR33)
     {
     }
 
-    DEVICE_FUNCTION
-    HermWrapper(const HermWrapper &) = default;
-
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<0> t) const { return mR11; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<1> t) const { return mR12; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<2> t) const { return mR13; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<3> t) const { return mR22; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<4> t) const { return mR23; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<5> t) const { return mR33; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<1> t1, Tag<1> t2) const { return mR11; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<1> t1, Tag<2> t2) const { return mR12; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<1> t1, Tag<3> t2) const { return mR13; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<2> t1, Tag<1> t2) const { return conj(mR12); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<2> t1, Tag<2> t2) const { return mR22; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<2> t1, Tag<3> t2) const { return mR23; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<3> t1, Tag<1> t2) const { return conj(mR13); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<3> t1, Tag<2> t2) const { return conj(mR23); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto HermGet(Tag<3> t1, Tag<3> t2) const { return mR33; }
 
     template <int N> auto operator()(Tag<N> t) const
@@ -100,7 +78,7 @@ namespace TempLat
         DoEval::eval(r23, idx...);
         DoEval::eval(r33, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto
+    DEVICE_INLINE_FUNCTION auto
     eval(const IDX &...idx) const // TODO: Jorge: I need to discuss if the use of aux here takes time or if it is fine.
     {
       device::array<complex<decltype(DoEval::eval(mR11, idx...))>, 6> result;
@@ -154,8 +132,8 @@ namespace TempLat
   };
 
   template <typename R11, typename R12, typename R13, typename R22, typename R23, typename R33>
-  DEVICE_FORCEINLINE_FUNCTION HermWrapper<R11, R12, R13, R22, R23, R33>
-  ConstructHerm(const R11 &r11, const R12 &r12, const R13 &r13, const R22 &r22, const R23 &r23, const R33 &r33)
+  HermWrapper<R11, R12, R13, R22, R23, R33> ConstructHerm(const R11 &r11, const R12 &r12, const R13 &r13,
+                                                          const R22 &r22, const R23 &r23, const R33 &r33)
   {
     return {r11, r12, r13, r22, r23, r33};
   }

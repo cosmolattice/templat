@@ -30,7 +30,7 @@ namespace TempLat
 
       FFTNormalization<3> normalizer(layout);
 
-      const ptrdiff_t iEnd = layout.getMinimalMemorySize();
+      const device::Idx iEnd = layout.getMinimalMemorySize();
 
       MemoryBlock<double, 3> mem(iEnd);
       auto host_mem_view = mem.getRawHostView();
@@ -48,7 +48,7 @@ namespace TempLat
 
         bool c2rAllgood = true;
         mem.pullHostView();
-        for (ptrdiff_t i = 0; i < iEnd; ++i) {
+        for (device::Idx i = 0; i < iEnd; ++i) {
           c2rAllgood = c2rAllgood && AlmostEqual(host_mem_view[i], expectedNormC2R * i / iScales.c2r);
           if (!c2rAllgood) {
             sayShort << "at " << i << ": " << host_mem_view[i] << " != " << expectedNormC2R * i / iScales.c2r << "\n";
@@ -62,7 +62,7 @@ namespace TempLat
 
         bool r2cAllgood = true;
         mem.pullHostView();
-        for (ptrdiff_t i = 0; i < iEnd; ++i) {
+        for (device::Idx i = 0; i < iEnd; ++i) {
           r2cAllgood = r2cAllgood && AlmostEqual(host_mem_view[i], expectedNormR2C * i / iScales.r2c);
           if (!r2cAllgood) {
             sayShort << "at " << i << ": " << host_mem_view[i] << " != " << expectedNormR2C * i / iScales.r2c << "\n";

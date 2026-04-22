@@ -21,17 +21,13 @@ namespace TempLat
     struct MySU2Doublet {
       MySU2Doublet(double i, double j, double k, double l) : arr{i, j, k, l} {}
 
-      DEVICE_INLINE_FUNCTION
       int SU2DoubletGet(Tag<0> t) const { return arr[0]; }
-      DEVICE_INLINE_FUNCTION
       int SU2DoubletGet(Tag<1> t) const { return arr[1]; }
-      DEVICE_INLINE_FUNCTION
       int SU2DoubletGet(Tag<2> t) const { return arr[2]; }
-      DEVICE_INLINE_FUNCTION
       int SU2DoubletGet(Tag<3> t) const { return arr[3]; }
 
       DEVICE_INLINE_FUNCTION
-      device::array<int, 4> eval(ptrdiff_t) const { return {int(arr[0]), int(arr[1]), int(arr[2]), int(arr[3])}; }
+      device::array<int, 4> eval(device::Idx) const { return {int(arr[0]), int(arr[1]), int(arr[2]), int(arr[3])}; }
 
       std::string toString() const { return "test"; }
 
@@ -47,7 +43,7 @@ namespace TempLat
     tdd.verify(dag.SU2DoubletGet(2_c) == 3);
     tdd.verify(dag.SU2DoubletGet(3_c) == -4);
 
-    auto result = dag.eval(ptrdiff_t(22));
+    auto result = dag.eval(device::Idx(22));
     tdd.verify(result[0] == 1);
     tdd.verify(result[1] == -2);
     tdd.verify(result[2] == 3);

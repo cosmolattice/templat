@@ -35,9 +35,6 @@ namespace TempLat
   public:
     ListBinaryOperator(const R &pR, const T &pT) : mR(pR), mT(pT) {}
 
-    DEVICE_FUNCTION
-    ListBinaryOperator(const ListBinaryOperator &) = default;
-
     static consteval size_t getNDim() { return std::max(GetNDim::get<R>(), GetNDim::get<T>()); }
 
     template <int N, size_t NDim>
@@ -47,7 +44,7 @@ namespace TempLat
       ConfirmSpace::apply(mT, i, newLayout, spaceType);
     }
 
-    template <int N> ptrdiff_t confirmGhostsUpToDate(Tag<N> i) const
+    template <int N> device::Idx confirmGhostsUpToDate(Tag<N> i) const
     {
       return ConfirmGhosts::apply(mR, i) + ConfirmGhosts::apply(mT, i);
     }

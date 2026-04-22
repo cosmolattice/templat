@@ -18,23 +18,14 @@ namespace TempLat
   {
     /* Default is to fail: to remind yourself to implement something here. */
     struct myTest {
-      DEVICE_INLINE_FUNCTION
       double getKIR() { return 0.42; }
     };
     struct myTest1 {
-      DEVICE_INLINE_FUNCTION
       double getKIR() { return 0.42; }
-
-      DEVICE_INLINE_FUNCTION
-      double get(ptrdiff_t i) { return 76; }
     };
 
     struct myTest2 {
-      DEVICE_INLINE_FUNCTION
       double getIR() { return 0.42; }
-
-      DEVICE_INLINE_FUNCTION
-      double get(ptrdiff_t i) { return 76; }
     };
 
     myTest1 t1;

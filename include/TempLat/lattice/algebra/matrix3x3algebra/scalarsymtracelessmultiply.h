@@ -30,39 +30,23 @@ namespace TempLat
     using SymTracelessBinaryOperator<R, T>::mR;
     using SymTracelessBinaryOperator<R, T>::mT;
 
-    DEVICE_FUNCTION
     ScalarSymTracelessMultiply(const R &pR, const T &pT) : SymTracelessBinaryOperator<R, T>(pR, pT) {}
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<0> t) const { return mR * getComponent(mT, 0_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t) const { return mR * getComponent(mT, 1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t) const { return mR * getComponent(mT, 2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t) const { return mR * getComponent(mT, 3_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<4> t) const { return mR * getComponent(mT, 4_c); }
-    DEVICE_FORCEINLINE_FUNCTION
-    auto SymTracelessGet(Tag<5> t) const { return mR * (- getComponent(mT, 0_c) - getComponent(mT, 3_c)); }
+    auto SymTracelessGet(Tag<5> t) const { return mR * (-getComponent(mT, 0_c) - getComponent(mT, 3_c)); }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<1> t2) const { return SymTracelessGet(0_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<2> t2) const { return SymTracelessGet(1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<3> t2) const { return SymTracelessGet(2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<1> t2) const { return SymTracelessGet(1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<2> t2) const { return SymTracelessGet(3_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<3> t2) const { return SymTracelessGet(4_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<1> t2) const { return SymTracelessGet(2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<2> t2) const { return SymTracelessGet(4_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<3> t2) const { return SymTracelessGet(5_c); }
 
     template <typename... IDX>
@@ -71,7 +55,7 @@ namespace TempLat
         DoEval::eval(r, idx...);
         DoEval::eval(t, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       const auto symtraceless = DoEval::eval(mT, idx...);
       const auto scalar = DoEval::eval(mR, idx...);
@@ -89,21 +73,21 @@ namespace TempLat
 
   template <typename R, typename T>
     requires(IsScalarType<R> && HasSymTracelessGet<T>)
-  DEVICE_FORCEINLINE_FUNCTION auto operator*(const R &r, const T &t)
+  auto operator*(const R &r, const T &t)
   {
     return ScalarSymTracelessMultiply<R, T>(r, t);
   }
 
   template <typename R, typename T>
     requires(HasSymTracelessGet<R> && IsScalarType<T>)
-  DEVICE_FORCEINLINE_FUNCTION auto operator*(const R &r, const T &t)
+  auto operator*(const R &r, const T &t)
   {
     return ScalarSymTracelessMultiply<T, R>(t, r);
   }
 
   template <typename R, typename T>
     requires(HasSymTracelessGet<R> && IsScalarType<T>)
-  DEVICE_FORCEINLINE_FUNCTION auto operator/(const R &r, const T &t)
+  auto operator/(const R &r, const T &t)
   {
     return ScalarSymTracelessMultiply(1_c / t, r);
   }

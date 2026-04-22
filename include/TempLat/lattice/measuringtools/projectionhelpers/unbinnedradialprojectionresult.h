@@ -32,47 +32,41 @@ namespace TempLat
    *  Unit test: ctest -R test-unbinnedradialprojectionresult
    **/
 
-  template <typename T> class UnbinnedRadialProjectionResult : public std::vector<std::tuple<T, RadialProjectionSingleDatum<T>>>
+  template <typename T>
+  class UnbinnedRadialProjectionResult : public std::vector<std::tuple<T, RadialProjectionSingleDatum<T>>>
   {
   public:
     using floatType = typename GetFloatType<T>::type;
 
     // Put public methods here. These should change very little over time.
-    UnbinnedRadialProjectionResult(size_t nBins, bool pIsInFourier = false) :
-    std::vector<std::tuple<T, RadialProjectionSingleDatum<T>>>(),
-    finalizedOnce(false),
-    mNBins(nBins),
-    mValues(mNBins),
-    unset(false),
-    mIsInFourier(pIsInFourier)
+    UnbinnedRadialProjectionResult(size_t nBins, bool pIsInFourier = false)
+        : std::vector<std::tuple<T, RadialProjectionSingleDatum<T>>>(), finalizedOnce(false), mNBins(nBins),
+          mValues(mNBins), unset(false), mIsInFourier(pIsInFourier)
     {
       mMultiplicitiesDevice = DeviceView("RadialProjectionResult::mMultiplicitiesDevice", mNBins);
       mMultiplicities = device::memory::createMirrorView(mMultiplicitiesDevice);
     }
 
-    auto getNBins()
-    {
-      return mNBins;
-    }
+    auto getNBins() { return mNBins; }
 
     /** \brief Rescale the results with a function of x or k (bin location),
      *  using for now a simple lambda function of single float parameter, which
      *  is your x in f(x). In other words, you give f(x).
      */
-    template <typename LL>
-    UnbinnedRadialProjectionResult& rescale(LL rescaler) {
-      //for (auto&& it : *this) {
-      for (size_t i = 0; i< this->size(); ++i)
-      {
-        std::get<1>((*this)[i]) *= rescaler( std::get<0>((*this)[i]) );
+    template <typename LL> UnbinnedRadialProjectionResult &rescale(LL rescaler)
+    {
+      // for (auto&& it : *this) {
+      for (size_t i = 0; i < this->size(); ++i) {
+        std::get<1>((*this)[i]) *= rescaler(std::get<0>((*this)[i]));
       }
       return *this;
     }
 
     /** @brief Rescale the bin positions with a normalization (for example dimensionful).
      */
-    UnbinnedRadialProjectionResult& rescaleBins(T scale) {
-      for (auto&& it : *this) {
+    UnbinnedRadialProjectionResult &rescaleBins(T scale)
+    {
+      for (auto &&it : *this) {
         std::get<0>(it) *= scale;
       }
       return *this;
@@ -82,14 +76,14 @@ namespace TempLat
     {
       auto total = 0.;
       for (size_t i = 0; i < this->size(); ++i) {
-        total +=  std::get<1>((*this)[i]).average / std::get<0>((*this)[i]) * std::get<1>((*this)[i]).multiplicity;
+        total += std::get<1>((*this)[i]).average / std::get<0>((*this)[i]) * std::get<1>((*this)[i]).multiplicity;
       }
       return total;
     }
 
     std::string toString(int verbosity = 0) const
     {
-      if ((ptrdiff_t)this->size() < 1) return "";
+      if ((device::Idx)this->size() < 1) return "";
       std::stringstream sstream;
       sstream << this->front().getHeader(verbosity) << "\n";
       for (auto &&it : *this) {
@@ -107,10 +101,11 @@ namespace TempLat
     template <typename S> friend class RadialProjector;
 
     template <typename S>
-    friend UnbinnedRadialProjectionResult<S> operator+(const UnbinnedRadialProjectionResult<S> &a, const UnbinnedRadialProjectionResult<S> &b);
+    friend UnbinnedRadialProjectionResult<S> operator+(const UnbinnedRadialProjectionResult<S> &a,
+                                                       const UnbinnedRadialProjectionResult<S> &b);
 
     DEVICE_FORCEINLINE_FUNCTION
-    void add_device(ptrdiff_t i, const T &value, const T &weight = (T)1) const
+    void add_device(device::Idx i, const T &value, const T &weight = (T)1) const
     {
       mValues.add_device(i, value, weight);
       device::atomic_add(&mMultiplicitiesDevice(i), weight);
@@ -172,7 +167,8 @@ namespace TempLat
   };
 
   template <typename T>
-  UnbinnedRadialProjectionResult<T> operator+(const UnbinnedRadialProjectionResult<T> &a, const UnbinnedRadialProjectionResult<T> &b)
+  UnbinnedRadialProjectionResult<T> operator+(const UnbinnedRadialProjectionResult<T> &a,
+                                              const UnbinnedRadialProjectionResult<T> &b)
   {
     UnbinnedRadialProjectionResult<T> res(a);
 
@@ -182,25 +178,29 @@ namespace TempLat
     return res;
   }
 
-  template <typename T, class R> UnbinnedRadialProjectionResult<T> operator*(R &&func, const UnbinnedRadialProjectionResult<T> &obj)
+  template <typename T, class R>
+  UnbinnedRadialProjectionResult<T> operator*(R &&func, const UnbinnedRadialProjectionResult<T> &obj)
   {
     UnbinnedRadialProjectionResult<T> res(obj);
     return res.rescale(func);
   }
 
-  template <typename T> UnbinnedRadialProjectionResult<T> operator*(double scale, const UnbinnedRadialProjectionResult<T> &obj)
+  template <typename T>
+  UnbinnedRadialProjectionResult<T> operator*(double scale, const UnbinnedRadialProjectionResult<T> &obj)
   {
     auto func = [&](auto x) { return scale; };
     return func * obj;
   }
 
-  template <typename T> UnbinnedRadialProjectionResult<T> operator*(float scale, const UnbinnedRadialProjectionResult<T> &obj)
+  template <typename T>
+  UnbinnedRadialProjectionResult<T> operator*(float scale, const UnbinnedRadialProjectionResult<T> &obj)
   {
     auto func = [&](auto x) { return scale; };
     return func * obj;
   }
 
-  template <typename T> UnbinnedRadialProjectionResult<T> operator*(int scale, const UnbinnedRadialProjectionResult<T> &obj)
+  template <typename T>
+  UnbinnedRadialProjectionResult<T> operator*(int scale, const UnbinnedRadialProjectionResult<T> &obj)
   {
     auto func = [&](auto x) { return scale; };
     return func * obj;

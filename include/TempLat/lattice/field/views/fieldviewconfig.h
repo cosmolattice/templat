@@ -53,7 +53,6 @@ namespace TempLat
       initFromToolBox(toolBox);
     }
 
-    DEVICE_INLINE_FUNCTION
     auto getView() const { return mView; }
 
     template <typename R> void assign(R &&g)
@@ -171,7 +170,7 @@ namespace TempLat
     device::memory::NDViewUnmanagedHost<T, NDim> mHostView;
 
     device::IdxArray<NDim> memorySizes;
-    device::array<std::pair<ptrdiff_t, ptrdiff_t>, NDim> localSlicing;
+    device::array<std::pair<device::Idx, device::Idx>, NDim> localSlicing;
 
     bool mDisableFFTBlocking;
   };

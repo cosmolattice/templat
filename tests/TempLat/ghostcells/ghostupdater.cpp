@@ -33,7 +33,7 @@ namespace TempLat
       datumMPITypeHolder()
       {
 #ifdef HAVE_MPI
-        MPI_Type_contiguous(NDim, TempLat::MPITypeSelect<ptrdiff_t>(), &dType);
+        MPI_Type_contiguous(NDim, TempLat::MPITypeSelect<device::Idx>(), &dType);
         MPI_Type_commit(&dType);
 #endif
       }
@@ -66,7 +66,7 @@ namespace TempLat
     template <size_t NDim> void datum_initialize(MemoryBlock<datum<NDim>, NDim> &block, const LayoutStruct<NDim> layout)
     {
       const auto localSizes = layout.getLocalSizes();
-      const ptrdiff_t nGhost = layout.getNGhosts();
+      const device::Idx nGhost = layout.getNGhosts();
 
       std::string localSizesStr = "{";
       for (size_t i = 0; i < NDim; ++i) {
@@ -80,7 +80,7 @@ namespace TempLat
         device::iteration::foreach (
             "DatumInitialize1D", device::IdxArray<1>{0}, device::IdxArray<1>(localSizes[0]),
             DEVICE_LAMBDA(const size_t i) {
-              view(nGhost + i) = datum<NDim>{layout.getLocalStarts()[0] + (ptrdiff_t)i + 1};
+              view(nGhost + i) = datum<NDim>{layout.getLocalStarts()[0] + (device::Idx)i + 1};
             });
       } else {
         device::IdxArray<NDim> viewSizes;
@@ -88,7 +88,7 @@ namespace TempLat
           viewSizes[k] = localSizes[k] + 2 * nGhost;
         auto view = block.getNDView(viewSizes);
 
-        device::array<std::pair<ptrdiff_t, ptrdiff_t>, NDim> slices{};
+        device::array<std::pair<device::Idx, device::Idx>, NDim> slices{};
         for (size_t k = 0; k < NDim; ++k)
           slices[k] = std::make_pair(nGhost, nGhost + localSizes[k]);
 
@@ -113,7 +113,7 @@ namespace TempLat
       }
     }
 
-    template <size_t nd> bool test_ghost_updater(const ptrdiff_t nGrid, const size_t nGhost)
+    template <size_t nd> bool test_ghost_updater(const device::Idx nGrid, const size_t nGhost)
     {
       auto toolBox = MemoryToolBox<nd>::makeShared(nGrid, nGhost);
       toolBox->unsetVerbose();

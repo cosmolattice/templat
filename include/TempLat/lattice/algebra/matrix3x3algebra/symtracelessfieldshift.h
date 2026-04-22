@@ -34,15 +34,16 @@ namespace TempLat
       shiftString = shift<N...>(mR.SymTracelessFieldShifter(0_c)).getString({N...});
     }
 
-    template <int M> DEVICE_FORCEINLINE_FUNCTION auto SymTracelessGet(Tag<M> t) const
+    template <int M> auto SymTracelessGet(Tag<M> t) const
     {
       static_assert(M >= 0 && M <= 4, "SymTracelessFieldShifter: M must be 0-4 for SymTracelessFieldShifter");
       return shift<N...>(mR.SymTracelessGet(t));
     }
 
-    template <int M1, int M2> DEVICE_FORCEINLINE_FUNCTION auto SymTracelessGet(Tag<M1> t1, Tag<M2> t2) const
+    template <int M1, int M2> auto SymTracelessGet(Tag<M1> t1, Tag<M2> t2) const
     {
-      static_assert(M1 >= 1 && M1 <= 3 && M2 >= 1 && M2 <= 3, "SymTracelessFieldShifter: M1 and M2 must be 0-2 for SymTracelessFieldShifter");
+      static_assert(M1 >= 1 && M1 <= 3 && M2 >= 1 && M2 <= 3,
+                    "SymTracelessFieldShifter: M1 and M2 must be 0-2 for SymTracelessFieldShifter");
       return shift<N...>(mR.SymTracelessGet(t1, t2));
     }
 
@@ -51,7 +52,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto tup = device::tie(idx...);
       constexpr_for<0, dim>([&](const auto _d) {
@@ -81,15 +82,16 @@ namespace TempLat
 
     SymTracelessFieldShifterByOne(const R &pR) : SymTracelessUnaryOperator<R>(pR) {}
 
-    template <int M> DEVICE_FORCEINLINE_FUNCTION auto SymTracelessGet(Tag<M> t) const
+    template <int M> auto SymTracelessGet(Tag<M> t) const
     {
       static_assert(M >= 0 && M <= 4, "SymTracelessFieldShifterByOne: M must be 0-4 for SymTracelessGet");
       return shift<_N>(mR.SymTracelessGet(t));
     }
 
-    template <int M1, int M2> DEVICE_FORCEINLINE_FUNCTION auto SymTracelessGet(Tag<M1> t1, Tag<M2> t2) const
+    template <int M1, int M2> auto SymTracelessGet(Tag<M1> t1, Tag<M2> t2) const
     {
-      static_assert(M1 >= 1 && M1 <= 3 && M2 >= 1 && M2 <= 3, "SymTracelessFieldShifterByOne: M1 and M2 must be 0-2 for SymTracelessGet");
+      static_assert(M1 >= 1 && M1 <= 3 && M2 >= 1 && M2 <= 3,
+                    "SymTracelessFieldShifterByOne: M1 and M2 must be 0-2 for SymTracelessGet");
       return shift<_N>(mR.SymTracelessGet(t1, t2));
     }
 
@@ -98,7 +100,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       return device::apply([&](const auto &...shifted_idx) { return DoEval::eval(mR, shifted_idx...); },
                            tuple_add_to_nth<N - 1, dir>(device::tie(idx...)));

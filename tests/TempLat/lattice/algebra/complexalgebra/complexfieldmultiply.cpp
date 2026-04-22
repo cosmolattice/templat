@@ -20,15 +20,11 @@ namespace TempLat
   void ComplexFieldMultiplyTester::Test(TDDAssertion &tdd)
   {
     struct MyStruct {
-      DEVICE_INLINE_FUNCTION
       int ComplexFieldGet(Tag<0> t) const { return 1; }
-      DEVICE_INLINE_FUNCTION
       int ComplexFieldGet(Tag<1> t) const { return 2; }
     };
     struct MyStruct2 {
-      DEVICE_INLINE_FUNCTION
       int ComplexFieldGet(Tag<0> t) const { return 3; }
-      DEVICE_INLINE_FUNCTION
       int ComplexFieldGet(Tag<1> t) const { return 4; }
     };
 
@@ -45,7 +41,7 @@ namespace TempLat
       // Test whether norm works.
       constexpr size_t NDim = 3;
       using T = double;
-      ptrdiff_t nGrid = 16, nGhost = 2;
+      device::Idx nGrid = 16, nGhost = 2;
       auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
       toolBox->setVerbose();
 

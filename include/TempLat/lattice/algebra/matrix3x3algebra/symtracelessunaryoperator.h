@@ -29,11 +29,7 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    DEVICE_FUNCTION
     SymTracelessUnaryOperator(const R &pR) : mR(pR) {}
-
-    DEVICE_FUNCTION
-    SymTracelessUnaryOperator(const SymTracelessUnaryOperator &) = default;
 
     static consteval size_t getNDim() { return GetNDim::get<R>(); }
 
@@ -52,14 +48,10 @@ namespace TempLat
       return operatorString() + result;
     }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto getDx() const { return GetDx::getDx(mR); }
-
-    DEVICE_FORCEINLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
     void preGet() { PreGet::apply(mR); }
-
     void postGet() { PostGet::apply(mR); }
 
     static constexpr size_t size = 5;

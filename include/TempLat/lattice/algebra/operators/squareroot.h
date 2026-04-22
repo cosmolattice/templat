@@ -28,7 +28,6 @@ namespace TempLat
     public:
       using UnaryOperator<R>::mR;
 
-      DEVICE_FUNCTION
       SafeSqrt(const R &pR) : UnaryOperator<R>(pR) {}
 
       template <typename... IDX>
@@ -46,31 +45,29 @@ namespace TempLat
       virtual std::string operatorString() const override { return "safe_sqrt"; }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION void d(const U &other) = delete;
+      template <typename U> void d(const U &other) = delete;
     };
   } // namespace Operators
 
   template <typename R>
     requires ConditionalUnaryGetter<R>
-  DEVICE_INLINE_FUNCTION auto safeSqrt(const R &r)
+  auto safeSqrt(const R &r)
   {
     return Operators::SafeSqrt<R>(r);
   }
 
   template <typename T>
     requires(ConditionalBinaryGetter<T, HalfType> && !std::is_arithmetic_v<T>)
-  DEVICE_INLINE_FUNCTION auto sqrt(T a)
+  auto sqrt(T a)
   {
     return Operators::Power<T, HalfType>(a, HalfType());
   }
 
   /** @brief Specialize for possible zero input! */
-  DEVICE_INLINE_FUNCTION
-  ZeroType sqrt(ZeroType a) { return a; }
+  constexpr inline ZeroType sqrt(ZeroType a) { return a; }
 
   /** @brief Specialize for possible unit input! */
-  DEVICE_INLINE_FUNCTION
-  OneType sqrt(OneType a) { return a; }
+  constexpr inline OneType sqrt(OneType a) { return a; }
 } // namespace TempLat
 
 #endif

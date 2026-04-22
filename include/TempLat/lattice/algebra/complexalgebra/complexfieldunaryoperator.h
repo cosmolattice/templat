@@ -29,11 +29,7 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    DEVICE_FUNCTION
     ComplexFieldUnaryOperator(const R &pR) : mR(pR) {}
-
-    DEVICE_FUNCTION
-    ComplexFieldUnaryOperator(const ComplexFieldUnaryOperator &) = default;
 
     static consteval size_t getNDim() { return GetNDim::get<R>(); }
 
@@ -52,14 +48,10 @@ namespace TempLat
       return operatorString() + result;
     }
 
-    DEVICE_INLINE_FUNCTION
     auto getDx() const { return GetDx::getDx(mR); }
-
-    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
     void preGet() { PreGet::apply(mR); }
-
     void postGet() { PostGet::apply(mR); }
 
     static constexpr size_t size = 2;

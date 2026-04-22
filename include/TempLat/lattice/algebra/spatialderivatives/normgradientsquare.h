@@ -34,8 +34,7 @@ namespace TempLat
 
     using UnaryOperator<R>::mR;
 
-    DEVICE_FUNCTION
-    NormGradientSquare(const R &pR) : UnaryOperator<R>(pR), dx2(pow<2>(GetDx::getDx(pR))) {}
+    NormGradientSquare(const R &pR) : UnaryOperator<R>(pR), dx2(powr<2>(GetDx::getDx(pR))) {}
 
     std::string toString() const { return "|Grad(" + GetString::get(mR) + ")|^2"; }
 
@@ -56,17 +55,14 @@ namespace TempLat
         constexpr_for<0, NDim>([&](const auto _d) {
           constexpr size_t d = decltype(_d)::value;
           device::apply(
-              [&](const auto &...shifted_idx) { result += pow<2>(DoEval::eval(mR, shifted_idx...) - midval); },
+              [&](const auto &...shifted_idx) { result += powr<2>(DoEval::eval(mR, shifted_idx...) - midval); },
               tuple_add_to_nth<d, 1>(device::tie(idx...)));
         });
         return result / dx2;
       }
     }
 
-    template <typename S> DEVICE_INLINE_FUNCTION auto d(const S &other)
-    {
-      return 2 * LatForwardGrad(mR) * LatForwardGrad(mR.d(other));
-    }
+    template <typename S> auto d(const S &other) { return 2 * LatForwardGrad(mR) * LatForwardGrad(mR.d(other)); }
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
@@ -75,7 +71,7 @@ namespace TempLat
 
   template <size_t NDim_ = 0, typename R>
     requires(HasEvalMethod<R> && GetNDim::get<std::decay_t<R>>() > 0)
-  DEVICE_INLINE_FUNCTION auto Grad2(R pR)
+  auto Grad2(R pR)
   {
     static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),
                   "Explicit NDim does not match the NDim deduced from expression type R.");
@@ -84,9 +80,9 @@ namespace TempLat
 
   template <size_t NDim_ = 0, typename R>
     requires(!HasEvalMethod<R> || GetNDim::get<std::decay_t<R>>() == 0)
-  DEVICE_INLINE_FUNCTION auto Grad2(R pR)
+  constexpr auto Grad2(R)
   {
-    return ZeroType();
+    return ZeroType{};
   }
 } // namespace TempLat
 

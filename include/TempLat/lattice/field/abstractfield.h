@@ -61,7 +61,7 @@ namespace TempLat
 
     device::memory::host_ptr<MemoryToolBox<NDim>> getToolBox() const { return mToolBox; }
 
-    ptrdiff_t confirmGhostsUpToDate() const { return this->mManager->confirmGhostsUpToDate(); }
+    device::Idx confirmGhostsUpToDate() const { return this->mManager->confirmGhostsUpToDate(); }
 
     // Mostly for testing purpose
 
@@ -84,13 +84,8 @@ namespace TempLat
 
     const BCSpec<NDim> &getBCSpec() const { return mManager->getBCSpec(); }
 
-    DEVICE_INLINE_FUNCTION
     auto getDx() const { return latPar.getDx(); }
-
-    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return latPar.getKIR(); }
-
-    DEVICE_INLINE_FUNCTION
     auto getLatParams() const { return latPar; }
 
   protected:

@@ -34,7 +34,6 @@ namespace TempLat
 
     using UnaryOperator<R>::mR;
 
-    DEVICE_FUNCTION
     ForwDij(R pR) : UnaryOperator<R>(pR), dx(GetDx::getDx(pR)) {}
 
     void doWeNeedGhosts() const { mR.confirmGhostsUpToDate(); }
@@ -67,16 +66,16 @@ namespace TempLat
 
   template <class R, int N>
     requires(HasEvalMethod<R> && GetNDim::get<std::decay_t<R>>() > 0)
-  DEVICE_INLINE_FUNCTION auto forwDij(R pR, Tag<N> t)
+  auto forwDij(R pR, Tag<N> t)
   {
     return ForwDij<N, R>(pR);
   }
 
   template <int NDim, typename R>
     requires(!HasEvalMethod<R> || GetNDim::get<std::decay_t<R>>() == 0)
-  DEVICE_INLINE_FUNCTION auto forwDij(R pR)
+  constexpr auto forwDij(R)
   {
-    return ZeroType();
+    return ZeroType{};
   }
 } // namespace TempLat
 
