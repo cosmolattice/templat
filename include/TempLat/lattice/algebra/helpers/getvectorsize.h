@@ -22,14 +22,14 @@ namespace TempLat
 
     template <typename U>
       requires HasVectorGetMethod<U>
-    static inline ptrdiff_t getVectorSize(U &obj)
+    static inline device::Idx getVectorSize(U &obj)
     {
       return obj.getVectorSize();
     }
 
     template <typename U>
       requires(!HasVectorGetMethod<U>)
-    static inline ptrdiff_t getVectorSize(U &&obj)
+    static inline device::Idx getVectorSize(U &&obj)
     {
       return 1;
     }

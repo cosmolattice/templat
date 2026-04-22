@@ -18,9 +18,7 @@ namespace TempLat
   void RealTester::Test(TDDAssertion &tdd)
   {
     struct MyStruct {
-      DEVICE_INLINE_FUNCTION
       int ComplexFieldGet(Tag<0> t) { return 87; };
-      DEVICE_INLINE_FUNCTION
       double ComplexFieldGet(Tag<1> t) { return 870; };
     };
 
@@ -30,7 +28,7 @@ namespace TempLat
     // Test whether addition of two complex fields works.
     constexpr size_t NDim = 2;
     using T = double;
-    ptrdiff_t nGrid = 16, nGhost = 2;
+    device::Idx nGrid = 16, nGhost = 2;
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
     toolBox->setVerbose();
 

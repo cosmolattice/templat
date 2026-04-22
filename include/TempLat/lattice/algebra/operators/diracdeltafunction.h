@@ -24,7 +24,6 @@ namespace TempLat
     public:
       using UnaryOperator<R>::mR;
 
-      DEVICE_FUNCTION
       DiracDeltaFunction(const R &a) : UnaryOperator<R>(a) {}
 
       template <typename... IDX>
@@ -51,7 +50,7 @@ namespace TempLat
   } // namespace Operators
 
   /** @brief Exposing our newly define multiplication operation to the world. */
-  template <typename T> DEVICE_INLINE_FUNCTION Operators::DiracDeltaFunction<T> DiracDelta(const T &a)
+  template <typename T> Operators::DiracDeltaFunction<T> DiracDelta(const T &a)
   {
     return Operators::DiracDeltaFunction<T>(a);
   }

@@ -20,7 +20,6 @@ namespace TempLat
     class myClass
     {
     public:
-      DEVICE_FUNCTION
       myClass(int b) : a(b) {}
 
       DEVICE_INLINE_FUNCTION

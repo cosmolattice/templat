@@ -17,7 +17,7 @@ namespace TempLat
 
   template <size_t NDim> void LayoutStructTester<NDim>::Test(TDDAssertion &tdd)
   {
-    const ptrdiff_t nGhost = 0;
+    const device::Idx nGhost = 0;
     /* test the operator== */
     LayoutStruct<3> a({0, 0, 0}, nGhost);
     LayoutStruct<3> b({0, 0, 0}, nGhost);

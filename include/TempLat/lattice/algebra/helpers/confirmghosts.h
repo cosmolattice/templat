@@ -22,56 +22,56 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     template <typename U>
       requires HasGhostMethod<U>
-    static inline ptrdiff_t apply(U &obj)
+    static inline device::Idx apply(U &obj)
     {
       return obj.confirmGhostsUpToDate();
     }
 
     template <typename U>
       requires(!HasGhostMethod<U>)
-    static constexpr inline ptrdiff_t apply(U &obj)
+    static constexpr inline device::Idx apply(U &obj)
     {
       return 0;
     }
 
     template <int N, typename U>
       requires HasGhostMethodIndexed<N, U>
-    static inline ptrdiff_t apply(U &obj, Tag<N> i)
+    static inline device::Idx apply(U &obj, Tag<N> i)
     {
       return obj.confirmGhostsUpToDate(i);
     }
 
     template <int N, typename U>
       requires(!HasGhostMethodIndexed<N, U> && HasGhostMethodElement<N, U>)
-    static inline ptrdiff_t apply(U &obj, Tag<N> i)
+    static inline device::Idx apply(U &obj, Tag<N> i)
     {
       return obj(i).confirmGhostsUpToDate();
     }
 
     template <int N, typename U>
       requires(!HasGhostMethodIndexed<N, U> && !HasGhostMethodElement<N, U>)
-    static constexpr inline ptrdiff_t apply(U &obj, Tag<N> i)
+    static constexpr inline device::Idx apply(U &obj, Tag<N> i)
     {
       return 0;
     }
 
     template <typename U>
       requires HasGhostMethodDirectIndexed<U>
-    static inline ptrdiff_t apply(U &obj, ptrdiff_t i)
+    static inline device::Idx apply(U &obj, device::Idx i)
     {
       return obj.confirmGhostsUpToDate(i);
     }
 
     template <typename U>
       requires(!HasGhostMethodDirectIndexed<U> && HasGhostMethodDirectElement<U>)
-    static inline ptrdiff_t apply(U &obj, ptrdiff_t i)
+    static inline device::Idx apply(U &obj, device::Idx i)
     {
       return obj(i).confirmGhostsUpToDate();
     }
 
     template <typename U>
       requires(!HasGhostMethodDirectIndexed<U> && !HasGhostMethodDirectElement<U>)
-    static constexpr inline ptrdiff_t apply(U &obj, ptrdiff_t i)
+    static constexpr inline device::Idx apply(U &obj, device::Idx i)
     {
       return 0;
     }

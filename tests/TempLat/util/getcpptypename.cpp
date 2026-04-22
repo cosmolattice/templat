@@ -9,7 +9,6 @@
 
 namespace TempLat
 {
-
   struct GetCPPTypeNameTester {
     static void Test(TDDAssertion &tdd);
   };
@@ -17,8 +16,8 @@ namespace TempLat
   void GetCPPTypeNameTester::Test(TDDAssertion &tdd)
   {
     /* Default is to fail: to remind yourself to implement something here. */
-    tdd.verify(GetCPPTypeName::get(std::vector<ptrdiff_t>()).find("std::") != std::string::npos);
-    tdd.verify(GetCPPTypeName::get(std::vector<ptrdiff_t>()).find("::vector") != std::string::npos);
+    tdd.verify(GetCPPTypeName::get(std::vector<size_t>()).find("std::") != std::string::npos);
+    tdd.verify(GetCPPTypeName::get(std::vector<size_t>()).find("::vector") != std::string::npos);
   }
 
 } // namespace TempLat

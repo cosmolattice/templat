@@ -24,7 +24,7 @@ namespace TempLat
   concept HasDoWeNeedGhostsMethodIndexed = requires(std::decay_t<T> t, Tag<N> tag) { t.doWeNeedGhosts(tag); };
 
   template <class T>
-  concept HasDoWeNeedGhostsMethodIndexedDyn = requires(std::decay_t<T> t, ptrdiff_t idx) { t.doWeNeedGhosts(idx); };
+  concept HasDoWeNeedGhostsMethodIndexedDyn = requires(std::decay_t<T> t, device::Idx idx) { t.doWeNeedGhosts(idx); };
 
 } // namespace TempLat
 

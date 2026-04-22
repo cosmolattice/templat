@@ -20,7 +20,7 @@ namespace TempLat
 
   template <size_t NDim> inline void MomentumInterpolatorTester<NDim>::Test(TDDAssertion &tdd)
   {
-    const ptrdiff_t nGrid = 16, nGhost = 0;
+    const device::Idx nGrid = 16, nGhost = 0;
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
     // Build a known function: ps(k) = k^2 on a fine grid covering the range of

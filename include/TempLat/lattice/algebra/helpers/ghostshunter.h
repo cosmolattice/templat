@@ -48,14 +48,14 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     template <typename U>
       requires HasDoWeNeedGhostsMethodIndexedDyn<U>
-    static void apply(U &obj, ptrdiff_t i)
+    static void apply(U &obj, device::Idx i)
     {
       obj.doWeNeedGhosts(i);
     }
 
     template <typename U>
       requires(!HasDoWeNeedGhostsMethodIndexedDyn<U>)
-    static void apply(U &obj, ptrdiff_t i)
+    static void apply(U &obj, device::Idx i)
     {
     }
 

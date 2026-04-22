@@ -15,27 +15,27 @@ namespace TempLat
 
   void ThreadSettingsTester::Test(TDDAssertion &tdd)
   {
-    ptrdiff_t initialThreadCount = ThreadSettings::getMaxThreadCount();
+    device::Idx initialThreadCount = ThreadSettings::getMaxThreadCount();
 
-    ptrdiff_t initialMPISize = ThreadSettings::getMPILocalSize();
+    device::Idx initialMPISize = ThreadSettings::getMPILocalSize();
 
     ThreadSettings::setMPILocalSize(initialMPISize * 2);
 
-    ptrdiff_t newThreadCount = ThreadSettings::getMaxThreadCount();
+    device::Idx newThreadCount = ThreadSettings::getMaxThreadCount();
 
-    ptrdiff_t manuallyComputedThreadCount = std::max((ptrdiff_t)1, initialThreadCount / 2);
+    device::Idx manuallyComputedThreadCount = std::max((device::Idx)1, initialThreadCount / 2);
 
     tdd.verify(manuallyComputedThreadCount <= newThreadCount);
 
     char *env_p = std::getenv("OMP_NUM_THREADS");
     if (env_p != nullptr) {
-      ptrdiff_t ompThreads = std::stoi(env_p);
+      device::Idx ompThreads = std::stoi(env_p);
       tdd.verify(ompThreads >= newThreadCount);
     }
 
     char *kokkosEnv_p = std::getenv("KOKKOS_NUM_THREADS");
     if (kokkosEnv_p != nullptr) {
-      ptrdiff_t kokkosThreads = std::stoi(kokkosEnv_p);
+      device::Idx kokkosThreads = std::stoi(kokkosEnv_p);
       tdd.verify(kokkosThreads >= newThreadCount);
     }
 

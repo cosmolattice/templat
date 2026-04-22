@@ -28,7 +28,6 @@ namespace TempLat
       using BinaryOperator<R, T>::mR;
       using BinaryOperator<R, T>::mT;
 
-      DEVICE_FUNCTION
       Subtraction(const R &pR, const T &pT) : BinaryOperator<R, T>(pR, pT) {}
 
       template <typename... IDX>
@@ -45,47 +44,42 @@ namespace TempLat
       virtual std::string operatorString() const override { return "-"; }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
-      {
-        return GetDeriv::get(mR, other) - GetDeriv::get(mT, other);
-      }
+      template <typename U> auto d(const U &other) { return GetDeriv::get(mR, other) - GetDeriv::get(mT, other); }
     };
   } // namespace Operators
 
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
-  DEVICE_INLINE_FUNCTION Operators::Subtraction<R, T> operator-(const R &r, const T &t)
+  Operators::Subtraction<R, T> operator-(const R &r, const T &t)
   {
     return Operators::Subtraction<R, T>(r, t);
   }
 
   /** @brief Specialize for possible zero input! */
-  template <typename T> DEVICE_INLINE_FUNCTION T &operator-(T &&a, ZeroType b) { return a; }
+  template <typename T> T &operator-(T &&a, ZeroType b) { return a; }
 
   /** @brief Specialize for possible zero input! Need to disable one of these for two ZeroTypes as input. */
   template <typename T>
     requires(!std::is_same_v<T, ZeroType>)
-  DEVICE_INLINE_FUNCTION auto operator-(ZeroType a, const T &b)
+  auto operator-(ZeroType a, const T &b)
   {
     return Operators::UnaryMinus<T>(b);
   }
 
   /** @brief Specialize for unary minus. */
-  template <typename T, typename S> DEVICE_INLINE_FUNCTION auto operator-(T &&a, Operators::UnaryMinus<S> &&b)
+  template <typename T, typename S> auto operator-(T &&a, Operators::UnaryMinus<S> &&b)
   {
     return a + (-b); /* let the double-unary-minus detection take care of peeling b out if it */
   }
 
   /** @brief Specialize for possible half input! */
-  DEVICE_INLINE_FUNCTION
-  HalfType operator-(const OneType a, const HalfType b) { return b; }
+  constexpr inline HalfType operator-(const OneType a, const HalfType b) { return b; }
 
   /** @brief Specialize for possible half input! */
-  DEVICE_INLINE_FUNCTION
-  auto operator-(HalfType a, OneType b) { return Operators::UnaryMinus<HalfType>(a); }
+  inline auto operator-(HalfType a, OneType b) { return Operators::UnaryMinus<HalfType>(a); }
 
   /** @brief Specialize for possible OneType OneType input */
-  inline auto operator-(OneType a, OneType b) { return ZeroType(); }
+  constexpr inline auto operator-(OneType a, OneType b) { return ZeroType(); }
 } // namespace TempLat
 
 #endif

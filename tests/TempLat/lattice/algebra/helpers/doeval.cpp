@@ -21,7 +21,7 @@ namespace TempLat
   {
     struct myTest {
       DEVICE_INLINE_FUNCTION
-      double eval(ptrdiff_t i)
+      double eval(device::Idx i)
       {
         ev = true;
         m = 76;

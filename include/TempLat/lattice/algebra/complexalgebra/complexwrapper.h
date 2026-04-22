@@ -28,18 +28,9 @@ namespace TempLat
   public:
     // Put public methods here. These should change very little over time.
 
-    DEVICE_FUNCTION
-    ComplexFieldWrapper() = default;
-
-    DEVICE_FUNCTION
     ComplexFieldWrapper(const R &pR, const T &pT) : mR(pR), mT(pT) {}
 
-    DEVICE_FUNCTION
-    ComplexFieldWrapper(const ComplexFieldWrapper &) = default;
-
-    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<0> t) const { return mR; }
-    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<1> t) const { return mT; }
 
     template <int N> auto operator()(Tag<N> t) const
@@ -82,10 +73,7 @@ namespace TempLat
     T mT;
   };
 
-  template <typename R, typename T> DEVICE_INLINE_FUNCTION ComplexFieldWrapper<R, T> Complexify(const R &r, const T &t)
-  {
-    return {r, t};
-  }
+  template <typename R, typename T> ComplexFieldWrapper<R, T> Complexify(const R &r, const T &t) { return {r, t}; }
 } // namespace TempLat
 
 #endif

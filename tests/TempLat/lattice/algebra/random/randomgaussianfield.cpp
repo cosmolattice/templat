@@ -19,10 +19,10 @@ namespace TempLat
   {
     /* test the stability of the getter at various coordinates. */
 
-    const ptrdiff_t nGrid = 32, nGhost = 2;
-    const ptrdiff_t fourierGridPoints = nGrid * nGrid * (nGrid / 2 + 1); // +1 for the zero frequency.
+    const device::Idx nGrid = 32, nGhost = 2;
+    const device::Idx fourierGridPoints = nGrid * nGrid * (nGrid / 2 + 1); // +1 for the zero frequency.
     auto toolBox = MemoryToolBox<3>::makeShared(nGrid, nGhost);
-    const ptrdiff_t localFourierGridPoints = fourierGridPoints / toolBox->getNProcesses();
+    const device::Idx localFourierGridPoints = fourierGridPoints / toolBox->getNProcesses();
 
     RandomGaussianField<double, 3> myField("Hello world", toolBox);
 
@@ -41,7 +41,7 @@ namespace TempLat
 
       // Check that the values are different
       bool different = false;
-      for (ptrdiff_t i = 0; i < localFourierGridPoints; ++i) {
+      for (device::Idx i = 0; i < localFourierGridPoints; ++i) {
         // show the first few values for debugging
         if (i < 8) std::cout << "index " << i << " a: " << a_host(i) << " b: " << b_host(i) << "\n";
         bool local =
@@ -61,7 +61,7 @@ namespace TempLat
 
       // Check that the values are identical
       bool rewinding = true;
-      for (ptrdiff_t i = 0; i < localFourierGridPoints; ++i)
+      for (device::Idx i = 0; i < localFourierGridPoints; ++i)
         rewinding &=
             AlmostEqual(a_host(i), b_host(i)) && std::isfinite(abs(a_host(i))) && std::isfinite(abs(b_host(i)));
       tdd.verify(rewinding);
@@ -97,7 +97,7 @@ namespace TempLat
 
       bool match13 = true;
       bool match12 = true;
-      for (ptrdiff_t i = 0; i < localFourierGridPoints; ++i) {
+      for (device::Idx i = 0; i < localFourierGridPoints; ++i) {
         // Skip the zeros
         if (!(abs(field1_host(i)) < 1e-14 && abs(field3_host(i)) < 1e-14))
           match13 &= AlmostEqual(field1_host(i), field3_host(i)) && std::isfinite(abs(field1_host(i))) &&

@@ -17,7 +17,7 @@ namespace TempLat
   MakeException(MemoryManagerAccessOutOfBounds);
 
   /** @brief A class which holds a single lattice in memory, and tracks and moves between various ghost states.
-   *Templated for the memory type, typically float or double. All the confirm___Space() functions return a ptrdiff_t,
+   *Templated for the memory type, typically float or double. All the confirm___Space() functions return a device::Idx,
    *which counts the amount of work done. Ignore that, but it is important for testing purposes. NOTE that the memory
    *access operators (T* and operator[]) do NOT verify if memory was allocated.
    *
@@ -32,7 +32,7 @@ namespace TempLat
     {
     }
 
-    ptrdiff_t allocate()
+    device::Idx allocate()
     {
       if (mAllocated) return 0;
       const size_t size = mToolBox->mLayouts.getNecessaryMemoryAllocation();
@@ -53,7 +53,7 @@ namespace TempLat
 
     template <typename R = T>
     auto getNDSubView(const device::IdxArray<NDim> &localSizes,
-                      const device::array<std::pair<ptrdiff_t, ptrdiff_t>, NDim> &slices) const
+                      const device::array<std::pair<device::Idx, device::Idx>, NDim> &slices) const
     {
       auto view = mBlock.template getNDView<R>(localSizes);
       auto subView = device::apply([&](const auto &...args) { return device::memory::subview(view, args...); }, slices);
@@ -61,7 +61,7 @@ namespace TempLat
     }
     template <typename R = T>
     auto getNDHostSubView(const device::IdxArray<NDim> &localSizes,
-                          const device::array<std::pair<ptrdiff_t, ptrdiff_t>, NDim> &slices) const
+                          const device::array<std::pair<device::Idx, device::Idx>, NDim> &slices) const
     {
       auto view = mBlock.template getNDHostView<R>(localSizes);
       auto subView = device::apply([&](const auto &...args) { return device::memory::subview(view, args...); }, slices);
@@ -76,9 +76,9 @@ namespace TempLat
 
     template <typename R = T> auto getRawHostView() const { return mBlock.template getRawHostView<R>(); }
 
-    ptrdiff_t confirmConfigSpace()
+    device::Idx confirmConfigSpace()
     {
-      ptrdiff_t result = allocate();
+      device::Idx result = allocate();
 
       if (mToolBox->verbosity.spaceConfirmation)
         sayMPI << "Confirming that we are in configuration space. " << getName() << "\n";
@@ -112,9 +112,9 @@ namespace TempLat
       return result;
     }
 
-    ptrdiff_t confirmFFTConfigSpace()
+    device::Idx confirmFFTConfigSpace()
     {
-      ptrdiff_t result = allocate();
+      device::Idx result = allocate();
 
       if (mToolBox->verbosity.spaceConfirmation)
         sayMPI << "Confirming that we are in FFT configuration space. " << getName() << "\n";
@@ -145,9 +145,9 @@ namespace TempLat
       return result;
     }
 
-    ptrdiff_t confirmFourierSpace()
+    device::Idx confirmFourierSpace()
     {
-      ptrdiff_t result = allocate();
+      device::Idx result = allocate();
 
       if (mToolBox->verbosity.spaceConfirmation)
         sayMPI << "Confirming that we are in Fourier space. " << getName() << "\n";
@@ -177,9 +177,9 @@ namespace TempLat
       return result;
     }
 
-    ptrdiff_t confirmGhostsUpToDate()
+    device::Idx confirmGhostsUpToDate()
     {
-      ptrdiff_t result = confirmConfigSpace();
+      device::Idx result = confirmConfigSpace();
 
       if (mToolBox->verbosity.ghostConfirmationSteps)
         sayMPI << "Confirming that ghost cells are up to date. " << getName() << "\n" << mGhostStateKeeper << "\n";
@@ -248,17 +248,17 @@ namespace TempLat
     MemoryLayoutState mLayoutState;
     GhostStateKeeper mGhostStateKeeper;
 
-    void checkRealBounds(ptrdiff_t i)
+    void checkRealBounds(device::Idx i)
     {
-      if (i < 0 || i >= (ptrdiff_t)mBlock.size()) {
+      if (i < 0 || i >= (device::Idx)mBlock.size()) {
         throw MemoryManagerAccessOutOfBounds("Accessing memory out of bounds ", getName(),
                                              ", mBlock.size(): ", mBlock.size(), "index:", i);
       }
     }
 
-    void checkComplexBounds(ptrdiff_t i)
+    void checkComplexBounds(device::Idx i)
     {
-      if (i < 0 || 2 * i >= (ptrdiff_t)mBlock.size()) {
+      if (i < 0 || 2 * i >= (device::Idx)mBlock.size()) {
         throw MemoryManagerAccessOutOfBounds("Accessing memory out of bounds ", getName(),
                                              ", mBlock.size(): ", mBlock.size(), "index:", i);
       }

@@ -18,15 +18,11 @@ namespace TempLat
   {
     struct tmpStruct {
       DEVICE_INLINE_FUNCTION
-      ptrdiff_t get(ptrdiff_t) const { return -1; }
-      DEVICE_INLINE_FUNCTION
-      ptrdiff_t eval(ptrdiff_t) const { return -1; }
+      device::Idx eval(device::Idx) const { return -1; }
     };
     struct tmpStruct2 {
       DEVICE_INLINE_FUNCTION
-      complex<double> get(ptrdiff_t) const { return complex<double>(1, 1); }
-      DEVICE_INLINE_FUNCTION
-      complex<double> eval(ptrdiff_t) const { return complex<double>(1, 1); }
+      complex<double> eval(device::Idx) const { return complex<double>(1, 1); }
     };
     tdd.verify(abs(tmpStruct()).eval(0) == 1);
     tdd.verify(abs(tmpStruct2()).eval(0) == std::sqrt(2));

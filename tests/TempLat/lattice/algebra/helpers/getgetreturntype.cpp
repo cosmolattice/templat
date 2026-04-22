@@ -18,12 +18,12 @@ namespace TempLat
   {
     struct tmp {
       DEVICE_INLINE_FUNCTION
-      double eval(const ptrdiff_t &) const { return 0.; }
+      double eval(const device::Idx &) const { return 0.; }
     };
 
     struct tmp2 {
       DEVICE_INLINE_FUNCTION
-      complex<double> eval(const ptrdiff_t &) const { return complex<double>(0., 0.); }
+      complex<double> eval(const device::Idx &) const { return complex<double>(0., 0.); }
     };
 
     //  /* Default is to fail: to remind yourself to implement something here. */

@@ -31,12 +31,9 @@ namespace TempLat
     using ComplexFieldBinaryOperator<R, T>::mR;
     using ComplexFieldBinaryOperator<R, T>::mT;
 
-    DEVICE_FUNCTION
     ComplexFieldAddition(const R &pR, const T &pT) : ComplexFieldBinaryOperator<R, T>(pR, pT) {}
 
-    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<0> t) const { return Real(mR) + Real(mT); }
-    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<1> t) const { return Imag(mR) + Imag(mT); }
 
     template <typename... IDX>
@@ -63,21 +60,21 @@ namespace TempLat
 
   template <typename R, typename T>
     requires(HasComplexFieldGet<R> && HasComplexFieldGet<T>)
-  DEVICE_INLINE_FUNCTION auto operator+(const R &r, const T &t)
+  auto operator+(const R &r, const T &t)
   {
     return ComplexFieldAddition<R, T>{r, t};
   }
 
   template <typename R, typename T>
     requires(!HasComplexFieldGet<R> && HasComplexFieldGet<T>)
-  DEVICE_INLINE_FUNCTION auto operator+(const R &r, const T &t)
+  auto operator+(const R &r, const T &t)
   {
     return ComplexFieldAddition<ComplexFieldWrapper<R, ZeroType>, T>{Complexify(r, ZeroType()), t};
   }
 
   template <typename R, typename T>
     requires(!HasComplexFieldGet<T> && HasComplexFieldGet<R>)
-  DEVICE_INLINE_FUNCTION auto operator+(const R &r, const T &t)
+  auto operator+(const R &r, const T &t)
   {
     return ComplexFieldAddition<R, ComplexFieldWrapper<T, ZeroType>>{r, Complexify(t, ZeroType())};
   }

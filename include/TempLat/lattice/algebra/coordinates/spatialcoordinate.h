@@ -28,7 +28,7 @@ namespace TempLat
     {
     }
 
-    static constexpr ptrdiff_t getVectorSize() { return NDim; }
+    static constexpr device::Idx getVectorSize() { return NDim; }
 
     template <typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
@@ -39,10 +39,10 @@ namespace TempLat
       return result;
     }
 
-    void doWeNeedGhosts(ptrdiff_t i) const {}
-    template <int N> ptrdiff_t confirmGhostsUpToDate(Tag<N> i) const { return 1; }
+    void doWeNeedGhosts(device::Idx i) const {}
+    template <int N> device::Idx confirmGhostsUpToDate(Tag<N> i) const { return 1; }
 
-    virtual void confirmSpace(ptrdiff_t i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    virtual void confirmSpace(device::Idx i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
       switch (spaceType) {
       case SpaceStateType::Fourier:
@@ -69,7 +69,7 @@ namespace TempLat
 
     inline auto getToolBox() const { return mToolBox; }
 
-    static std::string toString(ptrdiff_t j) { return "x_" + std::to_string(j); }
+    static std::string toString(device::Idx j) { return "x_" + std::to_string(j); }
     static std::string toString() { return "x"; }
 
   private:

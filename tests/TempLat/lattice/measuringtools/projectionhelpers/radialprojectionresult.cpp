@@ -24,7 +24,7 @@ namespace TempLat
     // tdd.verify(Throws<RadialProjectionResultSizeException>([&]() { one += two; }));
 
     /* dummy data */
-    // for (ptrdiff_t i = 0, iEnd = three.size(); i < iEnd; ++i) {
+    // for (device::Idx i = 0, iEnd = three.size(); i < iEnd; ++i) {
     //   three.add(i, 2 * i, 2 * i);
     // }
 
@@ -43,7 +43,7 @@ namespace TempLat
     tdd.verify(three.size() == 10);
     {
       bool allRight = true;
-      for (ptrdiff_t i = 0, iEnd = three.size(); i < iEnd; ++i) {
+      for (device::Idx i = 0, iEnd = three.size(); i < iEnd; ++i) {
         const double expectedVariance =
             abs(powr<2>(2. * i) * 2. / 3. - powr<2>(2 * i + 0.5) / 3. - powr<2>(2 * i - 0.5) / 3.);
         allRight = allRight && AlmostEqual(three[i].getValue().average, 2 * i);
@@ -70,7 +70,7 @@ namespace TempLat
       bool allRight = true;
       tdd.verify(one.size() == three.size());
 
-      for (ptrdiff_t i = 0, iEnd = one.size(); i < iEnd; ++i) {
+      for (device::Idx i = 0, iEnd = one.size(); i < iEnd; ++i) {
         allRight = allRight && one[i].getValue().average == 2 * three.mValues.mAverages[i];
         allRight = allRight && one[i].getValue().sampleVariance == 2 * three.mValues.mVariances[i];
         allRight = allRight && one[i].getValue().multiplicity == 2 * three.mMultiplicities[i];

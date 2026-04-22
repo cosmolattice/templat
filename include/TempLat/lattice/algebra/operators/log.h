@@ -33,7 +33,6 @@ namespace TempLat
       // Put public methods here. These should change very little over time.
       using UnaryOperator<T>::mR;
 
-      DEVICE_FUNCTION
       Log(const T &a) : UnaryOperator<T>(a) {}
 
       template <typename... IDX>
@@ -41,13 +40,13 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(t, idx...);
         }
-      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return log(DoEval::eval(mR, idx...));
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
+      template <typename U> auto d(const U &other)
       {
         /* not using pow for 1/mInstanceT because pow imports us, log.h */
         return GetDeriv::get(mR, other) / mR;
@@ -60,14 +59,13 @@ namespace TempLat
   /** @brief Exposing our newly define log operation to the world. */
   template <typename T>
     requires ConditionalUnaryGetter<T>
-  DEVICE_INLINE_FUNCTION auto log(T a)
+  auto log(T a)
   {
     return Operators::Log<T>(a);
   }
 
   /** @brief Specialize for possible zero output! */
-  DEVICE_INLINE_FUNCTION
-  ZeroType log(OneType a) { return {}; }
+  constexpr inline ZeroType log(OneType a) { return {}; }
 } // namespace TempLat
 
 #endif

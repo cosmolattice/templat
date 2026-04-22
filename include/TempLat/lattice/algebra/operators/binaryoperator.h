@@ -35,14 +35,7 @@ namespace TempLat
   template <typename R, typename T> class BinaryOperator
   {
   public:
-    DEVICE_FUNCTION
     BinaryOperator(const R &pR, const T &pT) : mR(pR), mT(pT) {}
-
-    DEVICE_FUNCTION
-    BinaryOperator(const BinaryOperator &) = default;
-
-    DEVICE_FUNCTION
-    ~BinaryOperator() = default;
 
     static consteval size_t getNDim() { return std::max(GetNDim::get<R>(), GetNDim::get<T>()); }
 
@@ -70,12 +63,9 @@ namespace TempLat
       ConfirmSpace::apply(mT, newLayout, spaceType);
     }
 
-    ptrdiff_t confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mT); }
+    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mT); }
 
-    DEVICE_INLINE_FUNCTION
     auto getDx() const { return HasDx<R> ? GetDx::getDx(mR) : (HasDx<T> ? GetDx::getDx(mT) : 1.); }
-
-    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return HasKIR<R> ? GetKIR::getKIR(mR) : (HasKIR<T> ? GetKIR::getKIR(mT) : 1.); }
 
     /** @brief Override this method in your derived class, to have an easy implementation of your toString method. */

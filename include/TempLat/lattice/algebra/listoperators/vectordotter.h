@@ -30,10 +30,8 @@ namespace TempLat
     using BinaryOperator<R, T>::mR;
     using BinaryOperator<R, T>::mT;
 
-    DEVICE_FUNCTION
     VectorDotter(R &a, T &b) : BinaryOperator<R, T>(a, b) {}
 
-    DEVICE_FUNCTION
     VectorDotter(const VectorDotter &) = default;
 
     static_assert(std::decay_t<R>::getVectorSize() == std::decay_t<T>::getVectorSize(),
@@ -51,7 +49,7 @@ namespace TempLat
        * (it might be an expensive algebraic operation. */
       if ((void *)&mR == (void *)&mT) {
         auto cache = DoEval::eval(mR, idx...);
-        return device::apply([&](const auto &...args) { return (pow<2>(args) + ...); }, cache);
+        return device::apply([&](const auto &...args) { return (powr<2>(args) + ...); }, cache);
       } else {
         auto cache1 = DoEval::eval(mR, idx...);
         auto cache2 = DoEval::eval(mT, idx...);

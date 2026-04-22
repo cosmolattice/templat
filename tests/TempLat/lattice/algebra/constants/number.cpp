@@ -19,7 +19,7 @@ namespace TempLat
   template <size_t _NDim> struct DummyLatticeExpr {
     static constexpr size_t NDim = _NDim;
     double val;
-    DummyLatticeExpr(double v, ptrdiff_t ngr = 16) : val(v), mt(MemoryToolBox<NDim>::makeShared(ngr, 1)) {}
+    DummyLatticeExpr(double v, device::Idx ngr = 16) : val(v), mt(MemoryToolBox<NDim>::makeShared(ngr, 1)) {}
 
     template <typename... IDX> DEVICE_INLINE_FUNCTION double eval(const IDX &...) const { return val; }
 
@@ -137,13 +137,11 @@ namespace TempLat
     DummyLatticeExpr<3> latticeExpr2(2.0);
     Number<double> scalar{3.0};
     auto numTimesLattice = scalar * latticeExpr2;
-    static_assert(GetNDim::get<decltype(numTimesLattice)>() == 3,
-                  "Number * DummyLatticeExpr<3> must have NDim = 3");
+    static_assert(GetNDim::get<decltype(numTimesLattice)>() == 3, "Number * DummyLatticeExpr<3> must have NDim = 3");
     tdd.verify(AlmostEqual(DoEval::eval(numTimesLattice, size_t{0}, size_t{0}, size_t{0}), 6.0));
 
     auto latticeTimesNum = latticeExpr2 * scalar;
-    static_assert(GetNDim::get<decltype(latticeTimesNum)>() == 3,
-                  "DummyLatticeExpr<3> * Number must have NDim = 3");
+    static_assert(GetNDim::get<decltype(latticeTimesNum)>() == 3, "DummyLatticeExpr<3> * Number must have NDim = 3");
     tdd.verify(AlmostEqual(DoEval::eval(latticeTimesNum, size_t{0}, size_t{0}, size_t{0}), 6.0));
 
     // --- eval() with multiple indices (variadic correctness) ---
@@ -185,10 +183,10 @@ namespace TempLat
 
     // --- Interaction with ZeroType in expressions ---
     Number<double> z{5.0};
-    auto zProd = z * ZeroType();
+    [[maybe_unused]] auto zProd = z * ZeroType();
     static_assert(std::is_same_v<decltype(zProd), ZeroType>, "Number * ZeroType must return ZeroType");
 
-    auto zProd2 = ZeroType() * z;
+    [[maybe_unused]] auto zProd2 = ZeroType() * z;
     static_assert(std::is_same_v<decltype(zProd2), ZeroType>, "ZeroType * Number must return ZeroType");
 
     // --- Interaction with OneType in expressions ---

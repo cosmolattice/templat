@@ -45,7 +45,7 @@ namespace TempLat
     tdd.verify(IsComposite<dummy2>::value == true);
     tdd.verify(IsComposite<dummy3>::value == true);
 
-    auto testmake = make_tuple_from(dum);
+    [[maybe_unused]] auto testmake = make_tuple_from(dum);
 
     tdd.verify(tuple_size<decltype(testmake)>::value == 5);
     tdd.verify(tuple_size<decltype(flatten_tuple(testmake))>::value == 60);

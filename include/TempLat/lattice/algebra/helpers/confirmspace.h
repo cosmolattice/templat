@@ -57,21 +57,24 @@ namespace TempLat
 
     template <typename U, size_t NDim>
       requires HasSpaceConfirmationMethodsDirectIndexed<U, NDim>
-    static inline void apply(U &obj, ptrdiff_t i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType)
+    static inline void apply(U &obj, device::Idx i, const LayoutStruct<NDim> &newLayout,
+                             const SpaceStateType &spaceType)
     {
       obj.confirmSpace(i, newLayout, spaceType);
     }
 
     template <typename U, size_t NDim>
       requires(!HasSpaceConfirmationMethodsDirectIndexed<U, NDim> && HasSpaceConfirmationMethodsDirectElement<U, NDim>)
-    static inline void apply(U &obj, ptrdiff_t i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType)
+    static inline void apply(U &obj, device::Idx i, const LayoutStruct<NDim> &newLayout,
+                             const SpaceStateType &spaceType)
     {
       obj(i).confirmSpace(newLayout, spaceType);
     }
 
     template <typename U, size_t NDim>
       requires(!HasSpaceConfirmationMethodsDirectIndexed<U, NDim> && !HasSpaceConfirmationMethodsDirectElement<U, NDim>)
-    static inline void apply(U &obj, ptrdiff_t i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType)
+    static inline void apply(U &obj, device::Idx i, const LayoutStruct<NDim> &newLayout,
+                             const SpaceStateType &spaceType)
     {
     }
 

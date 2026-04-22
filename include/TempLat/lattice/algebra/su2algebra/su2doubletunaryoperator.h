@@ -30,9 +30,6 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     SU2DoubletUnaryOperator(const R &pR) : mR(pR) {}
 
-    DEVICE_FUNCTION
-    SU2DoubletUnaryOperator(const SU2DoubletUnaryOperator &) = default;
-
     static consteval size_t getNDim() { return GetNDim::get<R>(); }
 
     /** @brief Override this method in your derived class, to have an easy implementation of your toString method. */
@@ -54,10 +51,7 @@ namespace TempLat
       return operatorString() + result;
     }
 
-    DEVICE_INLINE_FUNCTION
     auto getDx() const { return GetDx::getDx(mR); }
-
-    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
     template <typename... IDX>

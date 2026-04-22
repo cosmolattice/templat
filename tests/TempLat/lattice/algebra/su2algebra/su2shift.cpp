@@ -22,7 +22,7 @@ namespace TempLat
   void SU2ShiftTester::Test(TDDAssertion &tdd)
   {
     constexpr size_t NDim = 3;
-    const ptrdiff_t nGrid = 8, nGhost = 1;
+    const device::Idx nGrid = 8, nGhost = 1;
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
     SpatialCoordinate<NDim> x(toolBox);

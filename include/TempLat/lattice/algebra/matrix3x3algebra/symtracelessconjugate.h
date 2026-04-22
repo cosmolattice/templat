@@ -28,37 +28,22 @@ namespace TempLat
 
     using SymTracelessUnaryOperator<R>::mR;
 
-    DEVICE_FUNCTION
     SymTracelessConjugate(const R &pR) : SymTracelessUnaryOperator<R>(pR) {}
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<0> t) const { return conj(getComponent(mR, 0_c)); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t) const { return conj(getComponent(mR, 1_c)); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t) const { return conj(getComponent(mR, 2_c)); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t) const { return conj(getComponent(mR, 3_c)); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<4> t) const { return conj(getComponent(mR, 4_c)); }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<1> t2) const { return (*this).SymTracelessGet(0_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<2> t2) const { return (*this).SymTracelessGet(1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<3> t2) const { return (*this).SymTracelessGet(2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<1> t2) const { return (*this).SymTracelessGet(1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<2> t2) const { return (*this).SymTracelessGet(3_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<3> t2) const { return (*this).SymTracelessGet(4_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<1> t2) const { return (*this).SymTracelessGet(2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<2> t2) const { return (*this).SymTracelessGet(4_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<3> t2) const
     {
       return -(*this).SymTracelessGet(0_c) - (*this).SymTracelessGet(3_c);
@@ -75,7 +60,7 @@ namespace TempLat
         requires IsVariadicIndex<IDX...>;
         DoEval::eval(r, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto cL = DoEval::eval(mR, idx...);
       device::array<decltype(conj(cL[0])), 5>
@@ -97,7 +82,7 @@ namespace TempLat
 
   template <typename R>
     requires HasSymTracelessGet<R>
-  DEVICE_FORCEINLINE_FUNCTION auto conj(const R &r)
+  auto conj(const R &r)
   {
     return SymTracelessConjugate<R>(r);
   }

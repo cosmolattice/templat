@@ -20,7 +20,7 @@ namespace TempLat
 
   template <typename T, size_t NDim> inline void SymTracelessTester<T, NDim>::Test(TDDAssertion &tdd)
   {
-    ptrdiff_t nGrid = 16, nGhost = 2;
+    device::Idx nGrid = 16, nGhost = 2;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
@@ -103,7 +103,9 @@ namespace TempLat
           if (!this_correct) {
             std::cout << "SymTracelessField operation test failed at index (";
             ((std::cout << idx << ", "), ...);
-            std::cout << ") got (" << view0(idx...) << ", " << view1(idx...) << ", " << view2(idx...) << ", " << view3(idx...) << ", " << view4(idx...) << ") , expected (" << expected[0] << ", " << expected[1] << ", " << expected[2] << ", " << expected[3] << ", " << expected[4] << ")\n";
+            std::cout << ") got (" << view0(idx...) << ", " << view1(idx...) << ", " << view2(idx...) << ", "
+                      << view3(idx...) << ", " << view4(idx...) << ") , expected (" << expected[0] << ", "
+                      << expected[1] << ", " << expected[2] << ", " << expected[3] << ", " << expected[4] << ")\n";
           }
           all_correct = all_correct && this_correct;
         });

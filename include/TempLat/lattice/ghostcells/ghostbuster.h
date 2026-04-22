@@ -160,8 +160,8 @@ namespace TempLat
       auto fromView = block.template getNDView<T>(from_full_sizes);
       auto toView = block.template getNDView<T>(to_full_sizes);
 
-      device::array<std::pair<ptrdiff_t, ptrdiff_t>, NDim> slicesFrom{};
-      device::array<std::pair<ptrdiff_t, ptrdiff_t>, NDim> slicesTo{};
+      device::array<std::pair<device::Idx, device::Idx>, NDim> slicesFrom{};
+      device::array<std::pair<device::Idx, device::Idx>, NDim> slicesTo{};
       for (size_t i = 0; i < NDim; ++i) {
         slicesFrom[i] = std::make_pair(from_padding[i][0], from_padding[i][0] + from_sizes[i]);
         slicesTo[i] = std::make_pair(to_padding[i][0], to_padding[i][0] + to_sizes[i]);
@@ -188,8 +188,8 @@ namespace TempLat
         // If we expand (mDirection==-1), we go from max to 0. (slabs are rising to "higher" memory)
         const int j = mDirection > 0 ? _j : to_sizes[dim] - 1 - _j;
 
-        device::array<std::pair<ptrdiff_t, ptrdiff_t>, NDim> slabSliceFrom{};
-        device::array<std::pair<ptrdiff_t, ptrdiff_t>, NDim> slabSliceTo{};
+        device::array<std::pair<device::Idx, device::Idx>, NDim> slabSliceFrom{};
+        device::array<std::pair<device::Idx, device::Idx>, NDim> slabSliceTo{};
         for (size_t i = 0; i < NDim; ++i) {
           if (i == dim) {
             slabSliceFrom[i] = std::make_pair(from_padding[i][0] + j, from_padding[i][0] + j + 1);

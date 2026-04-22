@@ -275,7 +275,7 @@ namespace TempLat
       mDataset.close();
     }
 
-    template <typename R> void loadDim(R r, int dim, std::vector<ptrdiff_t> coords)
+    template <typename R> void loadDim(R r, int dim, std::vector<device::Idx> coords)
     {
       auto toolBox = r.getToolBox();
 
@@ -320,7 +320,8 @@ namespace TempLat
         auto subview = device::apply(
             [&](const auto &...args) {
               return device::memory::subview(
-                  r.getView(), args..., std::pair<ptrdiff_t, ptrdiff_t>(memoryPos[dim], memoryPos[dim] + subdims[dim]));
+                  r.getView(), args...,
+                  std::pair<device::Idx, device::Idx>(memoryPos[dim], memoryPos[dim] + subdims[dim]));
             },
             subMemoryPos);
 
@@ -332,9 +333,9 @@ namespace TempLat
         device::memory::copyHostToDevice(rdata.data(), subview);
       } else {
         // Recursive call to loop over an arbitrary number of dimensions.
-        if constexpr (NDim > 1) { //To prevent compilation warnings for NDim == 1
+        if constexpr (NDim > 1) { // To prevent compilation warnings for NDim == 1
           for (int i = 0; i < sizes[dim]; ++i) {
-            std::vector<ptrdiff_t> newCoords(coords);
+            std::vector<device::Idx> newCoords(coords);
             newCoords.emplace_back(starts[dim] + i);
             loadDim(r, dim + 1, newCoords);
           }

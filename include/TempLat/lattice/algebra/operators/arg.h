@@ -35,10 +35,8 @@ namespace TempLat
       using BinaryOperator<R, T>::mR;
       using BinaryOperator<R, T>::mT;
 
-      DEVICE_FUNCTION
       Arg(R r, T t) : BinaryOperator<R, T>(r, t) {}
 
-      DEVICE_FUNCTION
       Arg() : BinaryOperator<R, T>(R(), T()) {}
 
       template <typename... IDX>
@@ -63,7 +61,7 @@ namespace TempLat
 
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
-  DEVICE_INLINE_FUNCTION auto arg(R r, T t)
+  auto arg(R r, T t)
   {
     return Operators::Arg<R, T>{r, t};
   }

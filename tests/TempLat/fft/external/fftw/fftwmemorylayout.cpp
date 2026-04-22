@@ -39,9 +39,9 @@ namespace TempLat
         expected.fourierSpace = LayoutStruct<nDim>::createGlobalFFTLayout(nGrid);
 
         if (nDim > 1) {
-          confLocalStarts[0] = (nGrid[0] * (ptrdiff_t)world.rank()) / (ptrdiff_t)world.size();
+          confLocalStarts[0] = (nGrid[0] * (device::Idx)world.rank()) / (device::Idx)world.size();
           confLocalSizes[0] /= world.size();
-          fourLocalStarts[0] = (nGrid[0] * (ptrdiff_t)world.rank()) / (ptrdiff_t)world.size();
+          fourLocalStarts[0] = (nGrid[0] * (device::Idx)world.rank()) / (device::Idx)world.size();
           fourLocalSizes[0] /= world.size();
         }
 
@@ -63,7 +63,7 @@ namespace TempLat
 
       //    say << mem.computeLocalSizes(MPICartesianGroup(2), 4, 128) << "\nexpectation" << computeExpectation(4, 128);
 
-      ptrdiff_t wSize = world.size();
+      device::Idx wSize = world.size();
       if (128 % wSize) {
         bool test_Only_Works_For_World_Size_Which_Is_A_Factor_Of_128 = false;
         tdd.verify(test_Only_Works_For_World_Size_Which_Is_A_Factor_Of_128);

@@ -21,59 +21,59 @@ namespace TempLat
    * Unit test: ctest -R test-imag
    **/
   template <class T, int I>
-  requires HasMatrixGet<T>
-  static DEVICE_FORCEINLINE_FUNCTION auto getComponent(T &&t, Tag<I> i)
+    requires HasMatrixGet<T>
+  static auto getComponent(T &&t, Tag<I> i)
   {
     return t.MatrixGet(i);
   }
 
   template <class T, int I>
     requires HasSymTracelessGet<T>
-  static DEVICE_FORCEINLINE_FUNCTION auto getComponent(T &&t, Tag<I> i)
+  static auto getComponent(T &&t, Tag<I> i)
   {
     return t.SymTracelessGet(i);
   }
 
   template <class T, int I>
-  requires HasSymGet<T>
-  static DEVICE_FORCEINLINE_FUNCTION auto getComponent(T &&t, Tag<I> i)
+    requires HasSymGet<T>
+  static auto getComponent(T &&t, Tag<I> i)
   {
     return t.SymGet(i);
   }
 
   template <class T, int I>
-  requires HasHermGet<T>
-  static DEVICE_FORCEINLINE_FUNCTION auto getComponent(T &&t, Tag<I> i)
+    requires HasHermGet<T>
+  static auto getComponent(T &&t, Tag<I> i)
   {
     return t.HermGet(i);
   }
 
   template <class T, int I, int J>
-  requires HasMatrixGet<T>
-  static DEVICE_FORCEINLINE_FUNCTION auto getComponent(T &&t, Tag<I> i, Tag<J> j)
+    requires HasMatrixGet<T>
+  static auto getComponent(T &&t, Tag<I> i, Tag<J> j)
   {
-    return t.MatrixGet(i,j);
+    return t.MatrixGet(i, j);
   }
 
   template <class T, int I, int J>
-  requires HasHermGet<T>
-  static DEVICE_FORCEINLINE_FUNCTION auto getComponent(T &&t, Tag<I> i, Tag<J> j)
+    requires HasHermGet<T>
+  static auto getComponent(T &&t, Tag<I> i, Tag<J> j)
   {
-    return t.HermGet(i,j);
+    return t.HermGet(i, j);
   }
 
   template <class T, int I, int J>
-  requires HasSymGet<T>
-  static DEVICE_FORCEINLINE_FUNCTION auto getComponent(T &&t, Tag<I> i, Tag<J> j)
+    requires HasSymGet<T>
+  static auto getComponent(T &&t, Tag<I> i, Tag<J> j)
   {
-    return t.SymGet(i,j);
+    return t.SymGet(i, j);
   }
 
   template <class T, int I, int J>
-  requires HasSymTracelessGet<T>
-  static DEVICE_FORCEINLINE_FUNCTION auto getComponent(T &&t, Tag<I> i, Tag<J> j)
+    requires HasSymTracelessGet<T>
+  static auto getComponent(T &&t, Tag<I> i, Tag<J> j)
   {
-    return t.SymTracelessGet(i,j);
+    return t.SymTracelessGet(i, j);
   }
 
 } // namespace TempLat

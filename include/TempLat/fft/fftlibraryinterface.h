@@ -57,7 +57,7 @@ namespace TempLat
      *
      * The calling function needs to know, because the user may switch between layouts after compilation.
      */
-    virtual ptrdiff_t getMaximumNumberOfDimensionsToDivide(ptrdiff_t nDimensions) = 0;
+    virtual device::Idx getMaximumNumberOfDimensionsToDivide(device::Idx nDimensions) = 0;
 
     /** @brief The lattice objects expect an *unnormalized* FFT, such as the one FFTW gives:
      *  applying once forward and then backward should return the input values multiplied by
@@ -66,7 +66,7 @@ namespace TempLat
      *  values to obtain the unnormalized FFT. Return default IntrinsicScales (exact (double) 1)
      *  in order not to waste time, if your library does it like FFTW.
      */
-    virtual IntrinsicScales getIntrinsicRescaleToGetUnnormalizedFFT(ptrdiff_t nGridPoints) = 0;
+    virtual IntrinsicScales getIntrinsicRescaleToGetUnnormalizedFFT(device::Idx nGridPoints) = 0;
 
     /** @brief given an actual setup, return the description of the subarray of the global problem that this process
      * holds. */

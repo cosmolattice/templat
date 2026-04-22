@@ -23,21 +23,21 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     template <typename U, typename... IDX>
       requires HasEval<U, IDX...>
-    DEVICE_INLINE_FUNCTION static auto eval(U &&obj, const IDX &...idx)
+    DEVICE_FORCEINLINE_FUNCTION static auto eval(U &&obj, const IDX &...idx)
     {
       return obj.eval(idx...);
     }
 
     template <typename U, typename... IDX>
       requires(!HasEval<U, IDX...> && TypeHasStaticValue<U>)
-    DEVICE_INLINE_FUNCTION static constexpr auto eval(U &&obj, const IDX &...i)
+    DEVICE_FORCEINLINE_FUNCTION static constexpr auto eval(U &&obj, const IDX &...i)
     {
       return std::decay_t<U>::value;
     }
 
     template <typename U, typename... IDX>
       requires TypeEvalsItself<U>
-    static DEVICE_INLINE_FUNCTION auto eval(U &&obj, const IDX &...idx)
+    DEVICE_FORCEINLINE_FUNCTION static auto eval(U &&obj, const IDX &...idx)
     {
       return obj;
     }

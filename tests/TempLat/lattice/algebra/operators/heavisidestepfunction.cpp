@@ -18,9 +18,9 @@ namespace TempLat
   {
     template <int RETURNVALUE> struct HeavisideTesterTemplate {
       DEVICE_INLINE_FUNCTION
-      double get(ptrdiff_t i) const { return RETURNVALUE * std::numeric_limits<double>::epsilon(); }
+      double get(device::Idx i) const { return RETURNVALUE * std::numeric_limits<double>::epsilon(); }
       DEVICE_INLINE_FUNCTION
-      double eval(ptrdiff_t i) const { return RETURNVALUE * std::numeric_limits<double>::epsilon(); }
+      double eval(device::Idx i) const { return RETURNVALUE * std::numeric_limits<double>::epsilon(); }
     };
   } // namespace TestScratch
 

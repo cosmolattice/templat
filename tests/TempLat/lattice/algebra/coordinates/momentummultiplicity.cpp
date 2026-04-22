@@ -19,8 +19,8 @@ namespace TempLat
 
   template <size_t NDim> inline void MomentumMultiplicityTester<NDim>::Test(TDDAssertion &tdd)
   {
-    const ptrdiff_t nGrid = 16, nGhost = 0;
-    const ptrdiff_t Nh = nGrid / 2;
+    const device::Idx nGrid = 16, nGhost = 0;
+    const device::Idx Nh = nGrid / 2;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
@@ -28,12 +28,12 @@ namespace TempLat
     auto binP = getTypeIBinCounts<NDim>(nGrid);
 
     // Total non-zero modes in the full grid = N^D - 1
-    ptrdiff_t totalModes = 1;
+    device::Idx totalModes = 1;
     for (size_t d = 0; d < NDim; ++d)
       totalModes *= nGrid;
     totalModes -= 1; // exclude the zero mode
 
-    ptrdiff_t binSum = 0;
+    device::Idx binSum = 0;
     for (auto &b : binP)
       binSum += b;
 

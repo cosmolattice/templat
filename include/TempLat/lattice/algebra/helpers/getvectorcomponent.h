@@ -44,7 +44,7 @@ namespace TempLat
       ConfirmSpace::apply(mR, Tag<N>{}, newLayout, spaceType);
     }
 
-    ptrdiff_t confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR, Tag<N>{}); }
+    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR, Tag<N>{}); }
 
     inline auto getToolBox() const
     { // just take toolbox from first component

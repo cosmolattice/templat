@@ -29,55 +29,30 @@ namespace TempLat
   public:
     // Put public methods here. These should change very little over time.
 
-    DEVICE_FUNCTION
-    MatrixWrapper() = default;
-
-    DEVICE_FUNCTION
     MatrixWrapper(const R11 &pR11, const R12 &pR12, const R13 &pR13, const R21 &pR21, const R22 &pR22, const R23 &pR23,
                   const R31 &pR31, const R32 &pR32, const R33 &pR33)
         : mR11(pR11), mR12(pR12), mR13(pR13), mR21(pR21), mR22(pR22), mR23(pR23), mR31(pR31), mR32(pR32), mR33(pR33)
     {
     }
 
-    DEVICE_FUNCTION
-    MatrixWrapper(const MatrixWrapper &) = default;
-
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<0> t) const { return mR11; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<1> t) const { return mR12; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<2> t) const { return mR13; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<3> t) const { return mR21; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<4> t) const { return mR22; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<5> t) const { return mR23; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<6> t) const { return mR31; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<7> t) const { return mR32; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<8> t) const { return mR33; }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<1> t1, Tag<1> t2) const { return mR11; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<1> t1, Tag<2> t2) const { return mR12; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<1> t1, Tag<3> t2) const { return mR13; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<2> t1, Tag<1> t2) const { return mR21; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<2> t1, Tag<2> t2) const { return mR22; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<2> t1, Tag<3> t2) const { return mR23; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<3> t1, Tag<1> t2) const { return mR31; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<3> t1, Tag<2> t2) const { return mR32; }
-    DEVICE_FORCEINLINE_FUNCTION
     auto MatrixGet(Tag<3> t1, Tag<3> t2) const { return mR33; }
 
     template <int N> auto operator()(Tag<N> t) const
@@ -108,7 +83,7 @@ namespace TempLat
         DoEval::eval(r32, idx...);
         DoEval::eval(r33, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       device::array<decltype(DoEval::eval(mR11, idx...)), 9> result;
       result[0] = DoEval::eval(mR11, idx...);
@@ -171,7 +146,7 @@ namespace TempLat
 
   template <typename R11, typename R12, typename R13, typename R21, typename R22, typename R23, typename R31,
             typename R32, typename R33>
-  DEVICE_FORCEINLINE_FUNCTION MatrixWrapper<R11, R12, R13, R21, R22, R23, R31, R32, R33>
+  MatrixWrapper<R11, R12, R13, R21, R22, R23, R31, R32, R33>
   ConstructMatrix3x3(const R11 &r11, const R12 &r12, const R13 &r13, const R21 &r21, const R22 &r22, const R23 &r23,
                      const R31 &r31, const R32 &r32, const R33 &r33)
   {

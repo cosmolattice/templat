@@ -22,7 +22,6 @@ namespace TempLat
   public:
     using UnaryOperator<R>::mR;
 
-    DEVICE_FUNCTION
     HeavisideStepFunction(const R &pR) : UnaryOperator<R>(pR) {}
 
     template <typename... IDX>
@@ -36,28 +35,23 @@ namespace TempLat
     }
 
     /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-    template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
-    {
-      return GetDeriv::get(mR, other) * DiracDelta(mR);
-    }
+    template <typename U> auto d(const U &other) { return GetDeriv::get(mR, other) * DiracDelta(mR); }
 
     virtual std::string operatorString() const override { return "Heaviside"; }
   };
 
   template <typename R>
     requires ConditionalUnaryGetter<R>
-  DEVICE_INLINE_FUNCTION auto heaviside(const R &r)
+  auto heaviside(const R &r)
   {
     return HeavisideStepFunction<R>(r);
   }
 
   /** @brief Specialize for possible zero input! */
-  DEVICE_INLINE_FUNCTION
-  OneType heaviside(ZeroType a) { return {}; }
+  constexpr inline OneType heaviside(ZeroType a) { return {}; }
 
   /** @brief Specialize for possible unit input! */
-  DEVICE_INLINE_FUNCTION
-  OneType heaviside(OneType a) { return {}; }
+  constexpr inline OneType heaviside(OneType a) { return {}; }
 } // namespace TempLat
 
 #endif

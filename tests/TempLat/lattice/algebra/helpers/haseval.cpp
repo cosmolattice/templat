@@ -21,7 +21,7 @@ namespace TempLat
   {
     struct myTest {
       DEVICE_INLINE_FUNCTION
-      double eval(ptrdiff_t i)
+      double eval(device::Idx i)
       {
         m = 76;
         return m;
@@ -39,7 +39,7 @@ namespace TempLat
 
     tdd.verify(HasEval<myTest, int> == true);
     tdd.verify(HasEval<myTest2, int> == false);
-    tdd.verify(HasEval<myTest3, ptrdiff_t, ptrdiff_t, ptrdiff_t> == true);
+    tdd.verify(HasEval<myTest3, device::Idx, device::Idx, device::Idx> == true);
     tdd.verify(HasEval<double> == false);
 
     tdd.verify(TypeHasStaticValue<myTest> == false);

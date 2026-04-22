@@ -59,7 +59,7 @@ namespace TempLat
       return ZeroType();
     }
     /** @brief The real overlord: is it a Field, then we must compare. */
-    ptrdiff_t d(const Field<T, NDim> &other) const { return *this == other ? 1 : 0; }
+    device::Idx d(const Field<T, NDim> &other) const { return *this == other ? 1 : 0; }
 
     friend bool operator==(const Field<T, NDim> &a, const Field<T, NDim> &b) { return a.mManager == b.mManager; }
 

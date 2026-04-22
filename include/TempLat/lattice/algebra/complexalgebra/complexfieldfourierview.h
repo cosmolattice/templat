@@ -35,22 +35,14 @@ namespace TempLat
 
     std::string toString() const { return "(" + mR.toString() + ", " + mI.toString() + ")"; }
 
-    DEVICE_INLINE_FUNCTION
     auto &ComplexFieldGet(Tag<0> t) { return mR; }
-    DEVICE_INLINE_FUNCTION
     const auto &ComplexFieldGet(Tag<0> t) const { return mR; }
-    DEVICE_INLINE_FUNCTION
     auto &operator()(Tag<0> t) { return mR; }
-    DEVICE_INLINE_FUNCTION
     const auto &operator()(Tag<0> t) const { return mR; }
 
-    DEVICE_INLINE_FUNCTION
     auto &ComplexFieldGet(Tag<1> t) { return mI; }
-    DEVICE_INLINE_FUNCTION
     const auto &ComplexFieldGet(Tag<1> t) const { return mI; }
-    DEVICE_INLINE_FUNCTION
     auto &operator()(Tag<1> t) { return mI; }
-    DEVICE_INLINE_FUNCTION
     const auto &operator()(Tag<1> t) const { return mI; }
 
     template <typename... IDX>
@@ -91,10 +83,7 @@ namespace TempLat
       PostGet::apply(g);
     }
 
-    DEVICE_INLINE_FUNCTION
     auto getDx() const { return mR.getDx(); }
-
-    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return mR.getKIR(); }
 
     using Getter = ComplexFieldGetter;

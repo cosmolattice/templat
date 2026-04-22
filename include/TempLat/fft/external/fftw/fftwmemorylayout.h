@@ -59,7 +59,7 @@ namespace TempLat
 
 #ifdef HAVE_MPI
       if constexpr (NDim > 1) {
-        std::vector<ptrdiff_t> globalLayout(NDim);
+        std::vector<device::Idx> globalLayout(NDim);
         for (size_t i = 0; i < NDim; ++i)
           globalLayout[i] = result.fourierSpace.getLocalSizes()[i];
 
@@ -71,7 +71,7 @@ namespace TempLat
         doTranspose = doTranspose && !forbidTransposition;
 
         if (doTranspose) {
-          ptrdiff_t tmp_ln0, tmp_ls0, tmp_ln1, tmp_ls1;
+          device::Idx tmp_ln0, tmp_ls0, tmp_ln1, tmp_ls1;
           fftwRequiredMemory = fftw_mpi_local_size_transposed((int)NDim, globalLayout.data(), group.getComm(), &tmp_ln0,
                                                               &tmp_ls0, &tmp_ln1, &tmp_ls1);
           confLocalSizes[0] = tmp_ln0;
@@ -80,7 +80,7 @@ namespace TempLat
           fourLocalStarts[1] = tmp_ls1;
           std::swap(fourTransposition[0], fourTransposition[1]);
         } else {
-          ptrdiff_t tmp_ln0, tmp_ls0;
+          device::Idx tmp_ln0, tmp_ls0;
           fftwRequiredMemory = fftw_mpi_local_size((int)NDim, globalLayout.data(), group.getComm(), &tmp_ln0, &tmp_ls0);
           fourLocalSizes[0] = tmp_ln0;
           fourLocalStarts[0] = tmp_ls0;

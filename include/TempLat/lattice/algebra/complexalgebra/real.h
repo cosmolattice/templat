@@ -20,14 +20,14 @@ namespace TempLat
    **/
   template <class T>
     requires requires(T t) { t.ComplexFieldGet(0_c); }
-  static DEVICE_INLINE_FUNCTION auto Real(T &&t)
+  static auto Real(T &&t)
   {
     return t.ComplexFieldGet(0_c);
   }
 
   template <class T>
     requires IsComplexType<T>
-  static DEVICE_INLINE_FUNCTION auto Real(T &&t)
+  static auto Real(T &&t)
   {
     return t.real();
   }

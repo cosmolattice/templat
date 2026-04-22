@@ -11,17 +11,15 @@
 
 namespace TempLat
 {
-  template <typename T>
-  struct RadialProjectorTester {
+  template <typename T> struct RadialProjectorTester {
     static void Test(TDDAssertion &tdd);
   };
-
 
   template <typename T> void RadialProjectorTester<T>::Test(TDDAssertion &tdd)
   {
     static constexpr size_t NDim = 3;
-    const ptrdiff_t nGrid = 32;
-    const ptrdiff_t nGhost = 1;
+    const device::Idx nGrid = 32;
+    const device::Idx nGhost = 1;
 
     auto mToolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 
@@ -32,7 +30,7 @@ namespace TempLat
 
     auto rProj = projectRadiallyFourier(abs(phi_of_k));
 
-    auto result = rProj.measure(T(sqrt(T(NDim))/ T(2.) * T(nGrid)));
+    auto result = rProj.measure(T(sqrt(T(NDim)) / T(2.) * T(nGrid)));
 
     //    say << "result: \n" << result << "\n";
 
@@ -116,4 +114,4 @@ namespace
 #else
   TempLat::TDDContainer<TempLat::RadialProjectorTester<float>> test2;
 #endif
-}
+} // namespace

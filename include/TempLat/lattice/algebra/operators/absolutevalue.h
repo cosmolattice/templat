@@ -17,6 +17,10 @@
 #include "TempLat/lattice/algebra/helpers/getderiv.h"
 #include "TempLat/lattice/algebra/operators/heavisidestepfunction.h"
 
+#include "TempLat/lattice/algebra/constants/halftype.h"
+#include "TempLat/lattice/algebra/constants/zerotype.h"
+#include "TempLat/lattice/algebra/constants/onetype.h"
+
 namespace TempLat
 {
   /** @brief Enable use of this operator without prefixing std:: or TempLat::.
@@ -35,7 +39,6 @@ namespace TempLat
       // Put public methods here. These should change very little over time.
       using UnaryOperator<R>::mR;
 
-      DEVICE_FUNCTION
       AbsoluteValue(const R &a) : UnaryOperator<R>(a) {}
 
       template <typename... IDX>
@@ -43,7 +46,7 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(r, idx...);
         }
-      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return abs(DoEval::eval(mR, idx...));
       }
@@ -51,7 +54,7 @@ namespace TempLat
       virtual std::string operatorString() const override { return "abs"; }
 
       /** @brief Passing on the automatic / symbolic derivatives. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
+      template <typename U> auto d(const U &other)
       {
         return GetDeriv::get(mR, other) * (-heaviside(-mR) + heaviside(mR));
       }
@@ -61,10 +64,14 @@ namespace TempLat
   /** @brief Exposing our newly defined absolute value operation to the world. */
   template <typename T>
     requires ConditionalUnaryGetter<T>
-  DEVICE_INLINE_FUNCTION auto abs(const T &a)
+  auto abs(const T &a)
   {
     return Operators::AbsoluteValue<T>(a);
   }
+
+  constexpr inline ZeroType abs(ZeroType a) { return ZeroType(); }
+  constexpr inline OneType abs(OneType a) { return OneType(); }
+  constexpr inline HalfType abs(HalfType a) { return HalfType(); }
 } // namespace TempLat
 
 #endif

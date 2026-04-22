@@ -34,13 +34,13 @@ namespace TempLat
     device::IdxArray<3> newLocalStarts{{7, 8, 9}};
     a.setLocalStarts(newLocalStarts);
 
-    std::vector<ptrdiff_t> memVec(3), posVec(3), memVec2(3);
+    std::vector<device::Idx> memVec(3), posVec(3), memVec2(3);
 
     memVec[0] = 1;
     memVec[1] = 2;
     memVec[2] = 6;
 
-    for (ptrdiff_t i = 0; i < 3; ++i)
+    for (device::Idx i = 0; i < 3; ++i)
       posVec[i] = a.memoryIndexToSpatialCoordinate(memVec[i], i);
 
     say << "memVec " << memVec << " -> posVec " << posVec << "\n";
@@ -51,7 +51,7 @@ namespace TempLat
 
     tdd.verify(posVec[2] == -1);
 
-    for (ptrdiff_t i = 0; i < 3; ++i)
+    for (device::Idx i = 0; i < 3; ++i)
       memVec2[i] = a.spatialCoordinateToMemoryIndex(posVec[i], i);
 
     say << "posVec " << posVec << " -> memVec2 " << memVec2 << "\n";
@@ -70,7 +70,7 @@ namespace TempLat
     memVec[1] = 2;
     memVec[2] = 6;
 
-    for (ptrdiff_t i = 0; i < 3; ++i)
+    for (device::Idx i = 0; i < 3; ++i)
       posVec[i] = a.memoryIndexToSpatialCoordinate(memVec[i], i);
 
     say << "memVec " << memVec << " -> posVec " << posVec << "\n";
@@ -81,7 +81,7 @@ namespace TempLat
 
     tdd.verify(posVec[2] == -3);
 
-    for (ptrdiff_t i = 0; i < 3; ++i)
+    for (device::Idx i = 0; i < 3; ++i)
       memVec2[i] = a.spatialCoordinateToMemoryIndex(posVec[i], i);
 
     say << "posVec " << posVec << " -> memVec2 " << memVec2 << "\n";

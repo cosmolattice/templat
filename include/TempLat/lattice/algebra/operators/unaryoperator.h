@@ -39,14 +39,7 @@ namespace TempLat
   template <typename R> class UnaryOperator
   {
   public:
-    DEVICE_FUNCTION
     UnaryOperator(const R &pR) : mR(pR) {}
-
-    DEVICE_FUNCTION
-    UnaryOperator(const UnaryOperator &) = default;
-
-    DEVICE_FUNCTION
-    ~UnaryOperator() = default;
 
     static consteval size_t getNDim() { return GetNDim::get<R>(); }
 
@@ -56,7 +49,7 @@ namespace TempLat
 
     void postGet() { PostGet::apply(mR); }
 
-    ptrdiff_t confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR); }
+    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR); }
 
     template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
@@ -69,10 +62,7 @@ namespace TempLat
     /** @brief Override this method in your derived class, to have an easy implementation of your toString method. */
     virtual std::string operatorString() const { return " "; }
 
-    DEVICE_INLINE_FUNCTION
     auto getDx() const { return GetDx::getDx(mR); }
-
-    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
     /** @brief If your descending class implements `operatorString()` and your operator is of the type "OP b" (where OP

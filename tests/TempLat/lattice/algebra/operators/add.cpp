@@ -24,11 +24,10 @@ namespace TempLat
     class myClass
     {
     public:
-      DEVICE_FUNCTION
       myClass(int b) : a(b) {}
 
       DEVICE_INLINE_FUNCTION
-      auto get(ptrdiff_t i) const { return a; }
+      auto eval(device::Idx i) const { return a; }
 
     private:
       int a;
@@ -37,41 +36,33 @@ namespace TempLat
     class myClass2
     {
     public:
-      DEVICE_FUNCTION
       myClass2(int b) : a(b) {}
 
-      DEVICE_INLINE_FUNCTION
-      double get(ptrdiff_t i) const { return a; }
-
-      DEVICE_INLINE_FUNCTION
       auto getDx() const { return 2.89; }
-
-      DEVICE_INLINE_FUNCTION
       auto getKIR() const { return 9.89; }
 
     private:
       int a;
     };
-    /*
-      myClass a(3);
-      myClass b(4);
-      myClass2 e(4);
 
-      //    say << mAdd.get(0, NULL) << " " << GetCPPTypeName::get(decltype(mAdd.get(0, NULL))) << "\n";
-      //    say << HasGetMethod<Operators::Add<GetterGetOffset, GetterGetOffset>>::value << "\n";
-      tdd.verify(HasGetMethod<Operators::Addition<myClass, myClass>>::value == true);
-      tdd.verify((a+b).get(0) == 7);
-      tdd.verify((a+b).getDx() == 1);
-      tdd.verify((a+b).getKIR() == 1);
-      tdd.verify((a+e).getDx() == 2.89);
-      tdd.verify((a+e).getKIR() == 9.89);
+    myClass a(3);
+    myClass b(4);
+    myClass2 e(4);
 
-      int c = 3, d = 4;
-      tdd.verify(HasGetMethod<decltype(c + d)>::value == false);
-      // pointless, but shuts up the compiler about unused variables:
-      c = c + d;*/
+    //    say << mAdd.get(0, NULL) << " " << GetCPPTypeName::get(decltype(mAdd.get(0, NULL))) << "\n";
+    //    say << HasGetMethod<Operators::Add<GetterGetOffset, GetterGetOffset>>::value << "\n";
+    tdd.verify(HasEvalMethod<Operators::Addition<myClass, myClass>> == true);
+    tdd.verify((a + b).eval(0) == 7);
+    tdd.verify((a + b).getDx() == 1);
+    tdd.verify((a + b).getKIR() == 1);
+    tdd.verify((a + e).getDx() == 2.89);
+    tdd.verify((a + e).getKIR() == 9.89);
+
+    int c = 3, d = 4;
+    tdd.verify(HasEvalMethod<decltype(c + d)> == false);
+    // pointless, but shuts up the compiler about unused variables:
+    c = c + d;
   }
-
 } // namespace TempLat
 
 namespace

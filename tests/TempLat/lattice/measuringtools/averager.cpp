@@ -49,7 +49,7 @@ namespace TempLat
 
   template <size_t _NDim> struct myTmpStructComplex {
     static constexpr size_t NDim = _NDim;
-    myTmpStructComplex(ptrdiff_t ngr)
+    myTmpStructComplex(device::Idx ngr)
         : mt(MemoryToolBox<NDim>::makeShared(ngr, 1)), mLayout(mt->mLayouts.getFourierSpaceLayout())
     {
     }
@@ -83,7 +83,7 @@ namespace TempLat
 
     tdd.verify(AlmostEqual(aget.compute(), 3));
 
-    auto myLambda = [&](auto dim, ptrdiff_t ngr_) {
+    auto myLambda = [&](auto dim, device::Idx ngr_) {
       constexpr size_t NDim = decltype(dim)::value;
       myTmpStructComplex<NDim> myInstanceCp(ngr_);
 

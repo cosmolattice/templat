@@ -25,7 +25,7 @@ namespace TempLat
     {
       FileSaverHDF5 fs;
 
-      const ptrdiff_t nGrid = 16, nGhost = 1;
+      const device::Idx nGrid = 16, nGhost = 1;
       auto toolBox = MemoryToolBox<3>::makeShared(nGrid, nGhost);
 
       Field<double, 3> phi("phi", toolBox);

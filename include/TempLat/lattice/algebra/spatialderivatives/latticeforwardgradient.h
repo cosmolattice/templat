@@ -42,7 +42,6 @@ namespace TempLat
 
     static constexpr size_t NDim = GetNDim::get<R>();
 
-    DEVICE_FUNCTION
     LatticeForwardGradient(const R &pR) : UnaryOperator<R>(pR), dx(GetDx::getDx(mR)) {}
 
     template <typename... IDX>
@@ -89,17 +88,15 @@ namespace TempLat
 
     void doWeNeedGhosts() const { mR.confirmGhostsUpToDate(); }
 
-    DEVICE_INLINE_FUNCTION
     auto getDx() const { return dx; }
-    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
-    void confirmSpace(ptrdiff_t i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    void confirmSpace(device::Idx i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
       ConfirmSpace::apply(mR, i, newLayout, spaceType);
     }
 
-    template <int N> ptrdiff_t confirmGhostsUpToDate(Tag<N> i) const { return ConfirmGhosts::apply(mR, i); }
+    template <int N> device::Idx confirmGhostsUpToDate(Tag<N> i) const { return ConfirmGhosts::apply(mR, i); }
 
     /** For measurement objects. */
     inline device::memory::host_ptr<MemoryToolBox<NDim>> getToolBox() const { return GetToolBox::get(mR); }
@@ -111,7 +108,7 @@ namespace TempLat
     const FloatType dx;
   };
 
-  template <size_t NDim_ = 0, typename R> DEVICE_INLINE_FUNCTION auto LatForwardGrad(R pR)
+  template <size_t NDim_ = 0, typename R> auto LatForwardGrad(R pR)
   {
     static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),
                   "Explicit NDim does not match the NDim deduced from expression type R.");

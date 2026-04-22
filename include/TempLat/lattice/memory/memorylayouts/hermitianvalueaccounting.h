@@ -23,16 +23,16 @@ namespace TempLat
   public:
     // Put public methods here. These should change very little over time.
     DEVICE_FUNCTION
-    HermitianValueAccounting(ptrdiff_t realCount, ptrdiff_t imaginaryCount)
+    HermitianValueAccounting(device::Idx realCount, device::Idx imaginaryCount)
         : mRealCount(realCount), mImaginaryCount(imaginaryCount)
     {
     }
 
     DEVICE_INLINE_FUNCTION
-    ptrdiff_t getRealValueCount() const { return mRealCount; }
+    device::Idx getRealValueCount() const { return mRealCount; }
 
     DEVICE_INLINE_FUNCTION
-    ptrdiff_t getImaginaryValueCount() const { return mImaginaryCount; }
+    device::Idx getImaginaryValueCount() const { return mImaginaryCount; }
 
     friend std::ostream &operator<<(std::ostream &ostream, const HermitianValueAccounting &hva)
     {
@@ -42,8 +42,8 @@ namespace TempLat
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
-    ptrdiff_t mRealCount;
-    ptrdiff_t mImaginaryCount;
+    device::Idx mRealCount;
+    device::Idx mImaginaryCount;
   };
 
 } // namespace TempLat

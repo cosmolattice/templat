@@ -34,9 +34,6 @@ namespace TempLat
 
     SU2GroupWrapper(const A &pA, const B &pB, const C &pC) : mA(pA), mB(pB), mC(pC) {}
 
-    DEVICE_FUNCTION
-    SU2GroupWrapper(const SU2GroupWrapper &) = default;
-
     template <int N> auto SU2Get(Tag<N> t) const
     {
       static_assert(N >= 0 && N <= 3,
@@ -62,7 +59,7 @@ namespace TempLat
       result[1] = DoEval::eval(mA, idx...);
       result[2] = DoEval::eval(mB, idx...);
       result[3] = DoEval::eval(mC, idx...);
-      result[0] = sqrt(SV(1) - pow<2>(result[1]) - pow<2>(result[2]) - pow<2>(result[3]));
+      result[0] = sqrt(SV(1) - powr<2>(result[1]) - powr<2>(result[2]) - powr<2>(result[3]));
       return result;
     }
 

@@ -30,7 +30,6 @@ namespace TempLat
       using BinaryOperator<R, T>::mR;
       using BinaryOperator<R, T>::mT;
 
-      DEVICE_FUNCTION
       Addition(const R &pR, const T &pT) : BinaryOperator<R, T>(pR, pT) {}
 
       template <typename... IDX>
@@ -47,38 +46,34 @@ namespace TempLat
       virtual std::string operatorString() const override { return "+"; }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
-      {
-        return GetDeriv::get(mT, other) + GetDeriv::get(mR, other);
-      }
+      template <typename U> auto d(const U &other) { return GetDeriv::get(mT, other) + GetDeriv::get(mR, other); }
     };
   } // namespace Operators
 
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
-  DEVICE_INLINE_FUNCTION auto operator+(const R &r, const T &t)
+  auto operator+(const R &r, const T &t)
   {
     return Operators::Addition<R, T>(r, t);
   }
 
   /** @brief Specialize for possible zero input! */
-  DEVICE_INLINE_FUNCTION auto operator+(const ZeroType a, const ZeroType b) { return ZeroType(); }
+  constexpr inline auto operator+(const ZeroType a, const ZeroType b) { return ZeroType(); }
 
   /** @brief Specialize for possible half input! */
-  DEVICE_INLINE_FUNCTION
-  OneType operator+(const HalfType a, const HalfType b) { return {}; }
+  constexpr inline OneType operator+(const HalfType a, const HalfType b) { return {}; }
 
   /** @brief Specialize for possible zero input! Need to disable one of these for two ZeroTypes as input. */
   template <typename T>
     requires(!std::is_same<T, ZeroType>::value)
-  DEVICE_INLINE_FUNCTION T operator+(const ZeroType a, const T b)
+  T operator+(const ZeroType a, const T b)
   {
     return b;
   }
   /** @brief Specialize for possible zero input! Need to disable one of these for two ZeroTypes as input. */
   template <typename T>
     requires(!std::is_same<T, ZeroType>::value)
-  DEVICE_INLINE_FUNCTION T operator+(const T b, const ZeroType a)
+  T operator+(const T b, const ZeroType a)
   {
     return b;
   }

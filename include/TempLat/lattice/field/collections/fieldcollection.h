@@ -72,7 +72,7 @@ namespace TempLat
         fs[i] = other.fs[i];
     }
 
-    std::string toString(ptrdiff_t i) const { return fs[i - SHIFTIND].toString(); }
+    std::string toString(device::Idx i) const { return fs[i - SHIFTIND].toString(); }
 
     using Getter = GetComponent;
     static constexpr size_t size = N;

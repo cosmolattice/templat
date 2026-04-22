@@ -32,12 +32,10 @@ namespace TempLat
     {
     }
 
-    RadialProjectionSingleDatum(T sum, T sumOfSquares, T inputMinVal, T inputMaxVal, floatType inputMultiplicity):
-    multiplicity(inputMultiplicity),
-    average(multiplicity > 0 ? sum / multiplicity : sum),
-    sampleVariance(multiplicity > 0. ? sumOfSquares / multiplicity - average * average : 0.),
-    minVal(inputMinVal),
-    maxVal(inputMaxVal)
+    RadialProjectionSingleDatum(T sum, T sumOfSquares, T inputMinVal, T inputMaxVal, floatType inputMultiplicity)
+        : multiplicity(inputMultiplicity), average(multiplicity > 0 ? sum / multiplicity : sum),
+          sampleVariance(multiplicity > 0. ? sumOfSquares / multiplicity - average * average : 0.), minVal(inputMinVal),
+          maxVal(inputMaxVal)
     {
     }
 
@@ -55,7 +53,7 @@ namespace TempLat
     T minVal;
     T maxVal;
 
-    std::string getHeader(ptrdiff_t start, std::string prefix, bool withMultiplicity, int verbosity = 0) const
+    std::string getHeader(device::Idx start, std::string prefix, bool withMultiplicity, int verbosity = 0) const
     {
       return std::to_string(start) + ":" + prefix + "Average" +
              (verbosity == 2

@@ -16,10 +16,7 @@ namespace TempLat
 
   void ArgTester::Test(TDDAssertion &tdd)
   {
-
     struct MyStructR {
-      DEVICE_INLINE_FUNCTION
-      double get(int i) const { return (double)i / 4.0; }
       DEVICE_INLINE_FUNCTION
       double eval(int i) const { return (double)i / 4.0; }
     };

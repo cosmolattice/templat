@@ -24,7 +24,7 @@ namespace TempLat
   {
     static constexpr size_t NDim = 3;
     using T = double;
-    const ptrdiff_t nGrid = 16, nGhost = 2;
+    const device::Idx nGrid = 16, nGhost = 2;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 

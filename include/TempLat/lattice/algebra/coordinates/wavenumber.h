@@ -34,9 +34,6 @@ namespace TempLat
     {
     }
 
-    DEVICE_FUNCTION
-    WaveNumber(const WaveNumber &) = default;
-
     constexpr static size_t getVectorSize() { return NDim; }
 
     template <typename... IDX>
@@ -63,10 +60,10 @@ namespace TempLat
     auto norm2() const { return dot(*this, *this); }
     auto norm() const { return sqrt(dot(*this, *this)); }
 
-    static std::string toString(ptrdiff_t j) { return "k_" + std::to_string(j); }
+    static std::string toString(device::Idx j) { return "k_" + std::to_string(j); }
     static std::string toString() { return "k"; }
 
-    void confirmSpace(ptrdiff_t i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    void confirmSpace(device::Idx i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
       switch (spaceType) {
       case SpaceStateType::Configuration:

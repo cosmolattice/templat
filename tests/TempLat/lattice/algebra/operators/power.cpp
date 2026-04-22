@@ -20,14 +20,10 @@ namespace TempLat
     class myClass
     {
     public:
-      DEVICE_FUNCTION
       myClass(int b) : a(b) {}
 
       DEVICE_INLINE_FUNCTION
-      auto get(ptrdiff_t i) const { return a; }
-
-      DEVICE_INLINE_FUNCTION
-      auto eval(ptrdiff_t i) const { return a; }
+      auto eval(device::Idx i) const { return a; }
 
       std::string toString() const { return "aaaaaa"; }
 

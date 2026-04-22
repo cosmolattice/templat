@@ -35,10 +35,10 @@ namespace TempLat
      * Parafaft supports D-1 dimensional decomposition (pencil decomposition).
      * For 3D data, this returns 2 (distribute over 2 dimensions).
      */
-    virtual ptrdiff_t getMaximumNumberOfDimensionsToDivide(ptrdiff_t nDimensions) override
+    virtual device::Idx getMaximumNumberOfDimensionsToDivide(device::Idx nDimensions) override
     {
       // Pencil decomposition: all but one dimension can be distributed
-      return std::max((ptrdiff_t)1, nDimensions - 1);
+      return std::max((device::Idx)1, nDimensions - 1);
     }
 
     /** @brief Pencil decomposition for ParaFaFT, probed from a temporary `ParaFaFT_R2C` planner.
@@ -54,7 +54,8 @@ namespace TempLat
     {
       FFTDecomposition<NDim> result{};
       int globalShape[NDim];
-      for (size_t i = 0; i < NDim; ++i) globalShape[i] = static_cast<int>(nGridPoints[i]);
+      for (size_t i = 0; i < NDim; ++i)
+        globalShape[i] = static_cast<int>(nGridPoints[i]);
 
       // Pin the probe to double: get_domain_decomposition returns an int[] that depends
       // only on (baseComm.size(), nGridPoints), not on the floating-point precision, and
@@ -65,7 +66,7 @@ namespace TempLat
       int probeDims[NDim];
       probe.get_domain_decomposition(probeDims);
 
-      ptrdiff_t nSplit = 0;
+      device::Idx nSplit = 0;
       for (size_t i = 0; i < NDim; ++i) {
         result.dims[i] = probeDims[i];
         if (probeDims[i] > 1) ++nSplit;
@@ -80,7 +81,7 @@ namespace TempLat
      * Parafaft (via FFTW) produces unnormalized FFTs, same as FFTW.
      * Returns default IntrinsicScales (1.0, 1.0).
      */
-    virtual IntrinsicScales getIntrinsicRescaleToGetUnnormalizedFFT(ptrdiff_t nGridPoints) override
+    virtual IntrinsicScales getIntrinsicRescaleToGetUnnormalizedFFT(device::Idx nGridPoints) override
     {
       return IntrinsicScales();
     }

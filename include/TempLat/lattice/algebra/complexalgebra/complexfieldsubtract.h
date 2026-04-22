@@ -32,10 +32,7 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     ComplexFieldSubtraction(const R &pR, const T &pT) : ComplexFieldBinaryOperator<R, T>(pR, pT) {}
 
-    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<0> t) const { return Real(mR) - Real(mT); }
-
-    DEVICE_INLINE_FUNCTION
     auto ComplexFieldGet(Tag<1> t) const { return Imag(mR) - Imag(mT); }
 
     template <typename... IDX>

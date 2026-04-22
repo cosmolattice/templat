@@ -20,7 +20,7 @@ namespace TempLat
 
   template <typename T, size_t NDim> inline void ComplexFieldTester<T, NDim>::Test(TDDAssertion &tdd)
   {
-    ptrdiff_t nGrid = 16, nGhost = 2;
+    device::Idx nGrid = 16, nGhost = 2;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 

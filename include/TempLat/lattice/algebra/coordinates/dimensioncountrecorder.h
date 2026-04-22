@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
 
 #include "TempLat/lattice/algebra/spacestateinterface.h"
+#include "TempLat/parallel/devices/kokkos/kokkos.h"
 
 namespace TempLat
 {
@@ -33,7 +34,6 @@ namespace TempLat
 
     /** @brief When making sure everyone is in configuration or fourier space, steal the number of dimensions, which we
      * need in the coordinate manipulating objects.. */
-    DEVICE_FUNCTION
     void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
       if (mFixedSingleSpaceType != SpaceStateType::undefined && mFixedSingleSpaceType != spaceType) {
@@ -50,13 +50,9 @@ namespace TempLat
       mCurrentLayout = newLayout;
     }
 
-    DEVICE_INLINE_FUNCTION
-    static constexpr ptrdiff_t getNDimensions() { return NDim; }
-
-    DEVICE_INLINE_FUNCTION
+    static constexpr device::Idx getNDimensions() { return NDim; }
     SpaceStateType getCurrentSpaceType() const { return mCurrentSpaceType; }
-
-    DEVICE_INLINE_FUNCTION
+    DEVICE_FORCEINLINE_FUNCTION
     const LayoutStruct<NDim> &getCurrentLayout() const { return mCurrentLayout; }
 
     std::string toString() const

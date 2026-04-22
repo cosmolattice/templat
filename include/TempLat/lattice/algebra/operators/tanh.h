@@ -32,7 +32,6 @@ namespace TempLat
       // Put public methods here. These should change very little over time.
       using UnaryOperator<T>::mR;
 
-      DEVICE_FUNCTION
       Tanh(const T &a) : UnaryOperator<T>(a) {}
 
       template <typename... IDX>
@@ -40,16 +39,13 @@ namespace TempLat
           requires IsVariadicIndex<IDX...>;
           DoEval::eval(t, idx...);
         }
-      DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
+      DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
       {
         return tanh(DoEval::eval(mR, idx...));
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> DEVICE_INLINE_FUNCTION auto d(const U &other)
-      {
-        return GetDeriv::get(mR, other) / pow<2>(sinh(*this));
-      }
+      template <typename U> auto d(const U &other) { return GetDeriv::get(mR, other) / pow<2>(sinh(*this)); }
 
       virtual std::string operatorString() const override { return "tanh"; }
     };
@@ -58,14 +54,13 @@ namespace TempLat
   /** @brief Exposing our newly define exp operation to the world. */
   template <typename T>
     requires(!std::is_arithmetic_v<T> && !IsComplexType<T>)
-  DEVICE_INLINE_FUNCTION auto tanh(T a)
+  auto tanh(T a)
   {
     return Operators::Tanh<T>(a);
   }
 
   /** @brief Specialize for possible zero input! */
-  DEVICE_INLINE_FUNCTION
-  ZeroType tanh(ZeroType a) { return ZeroType(); }
+  constexpr inline ZeroType tanh(ZeroType a) { return ZeroType(); }
 } // namespace TempLat
 
 #endif

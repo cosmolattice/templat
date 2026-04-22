@@ -22,14 +22,14 @@ namespace TempLat
 
     template <typename U>
       requires HasToolBox<U>
-    static inline ptrdiff_t get(U &&obj)
+    static inline device::Idx get(U &&obj)
     {                                              // for isotropic lattices
       return obj.getToolBox()->mNGridPointsVec[0]; // Isotropic lattices only.
     }
 
     template <typename U>
       requires(!HasToolBox<U>)
-    static inline ptrdiff_t get(U &&obj)
+    static inline device::Idx get(U &&obj)
     {
       return 1;
     }
@@ -43,7 +43,7 @@ namespace TempLat
 
     template <typename U>
       requires(!HasToolBox<U>)
-    static inline std::vector<ptrdiff_t> getVec(U &obj)
+    static inline std::vector<device::Idx> getVec(U &obj)
     {
       return {};
     }

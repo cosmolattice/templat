@@ -23,13 +23,13 @@ namespace TempLat
   concept HasGhostMethodIndexed = requires(std::decay_t<T> t, Tag<N> tag) { t.confirmGhostsUpToDate(tag); };
 
   template <class T>
-  concept HasGhostMethodDirectIndexed = requires(std::decay_t<T> t, ptrdiff_t i) { t.confirmGhostsUpToDate(i); };
+  concept HasGhostMethodDirectIndexed = requires(std::decay_t<T> t, device::Idx i) { t.confirmGhostsUpToDate(i); };
 
   template <int N, class T>
   concept HasGhostMethodElement = requires(std::decay_t<T> t, Tag<N> tag) { t(tag).confirmGhostsUpToDate(); };
 
   template <class T>
-  concept HasGhostMethodDirectElement = requires(std::decay_t<T> t, ptrdiff_t i) { t(i).confirmGhostsUpToDate(); };
+  concept HasGhostMethodDirectElement = requires(std::decay_t<T> t, device::Idx i) { t(i).confirmGhostsUpToDate(); };
 
 } // namespace TempLat
 

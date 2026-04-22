@@ -20,25 +20,26 @@ namespace TempLat
   class RadialBinComputer
   {
   public:
-    RadialBinComputer(double minVal, double maxVal, ptrdiff_t nBins, double deltaKBin)
-    : mMinVal(minVal), mMaxVal(maxVal), mRange(mMaxVal - mMinVal), mNBins(nBins), mHighestBin(nBins - 1), mDeltakBin(deltaKBin)
+    RadialBinComputer(double minVal, double maxVal, device::Idx nBins, double deltaKBin)
+        : mMinVal(minVal), mMaxVal(maxVal), mRange(mMaxVal - mMinVal), mNBins(nBins), mHighestBin(nBins - 1),
+          mDeltakBin(deltaKBin)
     {
       if (mRange <= 0) mRange = 1;
     }
 
     /** @brief Call this for your value, receive a bin index in return. */
     DEVICE_FUNCTION
-    ptrdiff_t operator()(double value) const
+    device::Idx operator()(double value) const
     {
-      ptrdiff_t bin = static_cast<ptrdiff_t>(device::floor( (value - mMinVal) / mDeltakBin ) );
-      return device::min(mHighestBin, device::max(ptrdiff_t(0), bin));
+      const device::Idx bin = static_cast<device::Idx>(device::floor((value - mMinVal) / mDeltakBin));
+      return device::min(mHighestBin, device::max(device::Idx(0), bin));
     }
 
     template <typename T> void setCentralBinBounds(std::vector<T> &res)
     {
       res = std::vector<T>(mNBins);
       T steps = mDeltakBin;
-      for (ptrdiff_t i = 0; i < mNBins; ++i) {
+      for (device::Idx i = 0; i < mNBins; ++i) {
         res[i] = mMinVal + mDeltakBin / 2. + i * steps;
       }
     }
@@ -48,8 +49,8 @@ namespace TempLat
     double mMinVal;
     double mMaxVal;
     double mRange;
-    ptrdiff_t mNBins;
-    ptrdiff_t mHighestBin;
+    device::Idx mNBins;
+    device::Idx mHighestBin;
     double mDeltakBin;
   };
 } // namespace TempLat

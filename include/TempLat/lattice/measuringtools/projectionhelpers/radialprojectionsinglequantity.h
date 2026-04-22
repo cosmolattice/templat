@@ -31,7 +31,7 @@ namespace TempLat
   {
 
   public:
-    RadialProjectionSingleQuantity(ptrdiff_t size)
+    RadialProjectionSingleQuantity(device::Idx size)
     {
       mAveragesDevice = DeviceView("RadialProjectionSingleQuantity::mAveragesDevice", size);
       mVariancesDevice = DeviceView("RadialProjectionSingleQuantity::mVariancesDevice", size);
@@ -50,7 +50,7 @@ namespace TempLat
 
     /** @brief Add one new weighted value to the collection of properties. */
     DEVICE_FUNCTION
-    void add_device(ptrdiff_t i, const T &value, const T &weight) const
+    void add_device(device::Idx i, const T &value, const T &weight) const
     {
       checkBounds(i);
       device::atomic_add(&mAveragesDevice(i), weight * value);
@@ -98,7 +98,7 @@ namespace TempLat
 
     /** @brief to be called only after finalize, returning the normalized result, this time transposed: all info per
      * bin, instead of all bins per info. */
-    RadialProjectionSingleDatum<T> getFinal(ptrdiff_t i, const T &multiplicity)
+    RadialProjectionSingleDatum<T> getFinal(device::Idx i, const T &multiplicity)
     {
       checkBounds(i);
       return RadialProjectionSingleDatum<T>(mAverages[i], mVariances[i], mMins[i], mMaxs[i], multiplicity);
@@ -121,11 +121,11 @@ namespace TempLat
     HostMirror mMaxs;
 
     DEVICE_INLINE_FUNCTION
-    void checkBounds(ptrdiff_t i) const
+    void checkBounds(device::Idx i) const
     {
 #ifdef CHECKBOUNDS
 #ifdef DEVICE_HAS_EXCEPTIONS
-      if (i < 0 || i >= (ptrdiff_t)mAverages.size()) {
+      if (i < 0 || i >= (device::Idx)mAverages.size()) {
         throw RadialProjectionSingleQuantityException("Out of bounds: ", i, "not in", 0, " -- ", mAverages.size());
       }
 #endif

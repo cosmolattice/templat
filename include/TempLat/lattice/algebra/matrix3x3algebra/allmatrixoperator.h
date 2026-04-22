@@ -23,7 +23,6 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    DEVICE_FUNCTION
     MatrixOperator() = default;
     static constexpr size_t size = 9;
     using Getter = MatrixGetter;
@@ -33,7 +32,6 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    DEVICE_FUNCTION
     SymOperator() = default;
     static constexpr size_t size = 6;
     using Getter = SymGetter;
@@ -43,7 +41,6 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    DEVICE_FUNCTION
     HermOperator() = default;
     static constexpr size_t size = 6;
     using Getter = HermGetter;
@@ -53,7 +50,6 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    DEVICE_FUNCTION
     SymTracelessOperator() = default;
     static constexpr size_t size = 5;
     using Getter = SymTracelessGetter;

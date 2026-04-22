@@ -30,11 +30,7 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    DEVICE_FUNCTION
     ComplexFieldBinaryOperator(const R &pR, const T &pT) : mR(pR), mT(pT) {}
-
-    DEVICE_FUNCTION
-    ComplexFieldBinaryOperator(const ComplexFieldBinaryOperator &) = default;
 
     static consteval size_t getNDim() { return std::max(GetNDim::get<R>(), GetNDim::get<T>()); }
 
@@ -58,10 +54,7 @@ namespace TempLat
       return result;
     }
 
-    DEVICE_INLINE_FUNCTION
     auto getDx() const { return GetDx::getDx(mR); }
-
-    DEVICE_INLINE_FUNCTION
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
     void preGet()

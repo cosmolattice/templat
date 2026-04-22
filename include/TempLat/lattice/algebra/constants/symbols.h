@@ -21,9 +21,9 @@ namespace TempLat
    **/
   namespace Symbols
   {
-    template <int I, int J> constexpr DEVICE_INLINE_FUNCTION auto delta(Tag<I>, Tag<J>) { return ZeroType(); }
+    template <int I, int J> constexpr auto delta(Tag<I>, Tag<J>) { return ZeroType(); }
 
-    template <int I> constexpr DEVICE_INLINE_FUNCTION auto delta(Tag<I>, Tag<I>) { return OneType(); }
+    template <int I> constexpr auto delta(Tag<I>, Tag<I>) { return OneType(); }
 
     // Helper to check for repeated indices
     template <std::size_t N> constexpr bool has_repeats(const std::array<int, N> &arr)
@@ -45,7 +45,7 @@ namespace TempLat
     }
 
     // Generalized epsilon for arbitrary dimensions
-    template <typename... Tags> constexpr DEVICE_INLINE_FUNCTION auto epsilon(Tags... tags)
+    template <typename... Tags> constexpr auto epsilon(Tags... tags)
     {
       constexpr std::size_t N = sizeof...(Tags);
       constexpr std::array<int, N> idx = {tag_value(tags)...};

@@ -31,13 +31,7 @@ namespace TempLat
   public:
     using SV = typename GetGetReturnType<A>::type;
 
-    // Put public methods here. These should change very little over time.
-    SU2Wrapper() = default;
-
     SU2Wrapper(const A &pA, const B &pB, const C &pC, const D &pD) : data(pA, pB, pC, pD) {}
-
-    DEVICE_FUNCTION
-    SU2Wrapper(const SU2Wrapper &) = default;
 
     template <int N> auto SU2Get(Tag<N> t) const
     {

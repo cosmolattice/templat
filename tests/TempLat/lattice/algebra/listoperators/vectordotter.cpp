@@ -22,7 +22,7 @@ namespace TempLat
   {
     // Test 1: verify dot(x, x) using DoEval::eval
     {
-      const ptrdiff_t nGrid = 32, nGhost = 2;
+      const device::Idx nGrid = 32, nGhost = 2;
 
       auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
 

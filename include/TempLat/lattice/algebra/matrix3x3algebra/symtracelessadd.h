@@ -29,37 +29,22 @@ namespace TempLat
     using SymTracelessBinaryOperator<R, T>::mR;
     using SymTracelessBinaryOperator<R, T>::mT;
 
-    DEVICE_FUNCTION
     SymTracelessAddition(const R &pR, const T &pT) : SymTracelessBinaryOperator<R, T>(pR, pT) {}
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<0> t) const { return getComponent(mR, 0_c) + getComponent(mT, 0_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t) const { return getComponent(mR, 1_c) + getComponent(mT, 1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t) const { return getComponent(mR, 2_c) + getComponent(mT, 2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t) const { return getComponent(mR, 3_c) + getComponent(mT, 3_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<4> t) const { return getComponent(mR, 4_c) + getComponent(mT, 4_c); }
 
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<1> t2) const { return (*this).SymTracelessGet(0_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<2> t2) const { return (*this).SymTracelessGet(1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<1> t1, Tag<3> t2) const { return (*this).SymTracelessGet(2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<1> t2) const { return (*this).SymTracelessGet(1_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<2> t2) const { return (*this).SymTracelessGet(3_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<2> t1, Tag<3> t2) const { return (*this).SymTracelessGet(4_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<1> t2) const { return (*this).SymTracelessGet(2_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<2> t2) const { return (*this).SymTracelessGet(4_c); }
-    DEVICE_FORCEINLINE_FUNCTION
     auto SymTracelessGet(Tag<3> t1, Tag<3> t2) const
     {
       return -(*this).SymTracelessGet(0_c) - (*this).SymTracelessGet(3_c);
@@ -77,7 +62,7 @@ namespace TempLat
         DoEval::eval(r, idx...);
         DoEval::eval(t, idx...);
       }
-    DEVICE_FORCEINLINE_FUNCTION auto eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       auto cL = DoEval::eval(mR, idx...);
       auto cR = DoEval::eval(mT, idx...);
@@ -98,7 +83,7 @@ namespace TempLat
 
   template <typename R, typename T>
     requires(HasSymTracelessGet<R> && HasSymTracelessGet<T>)
-  DEVICE_FORCEINLINE_FUNCTION auto operator+(const R &r, const T &t)
+  auto operator+(const R &r, const T &t)
   {
     return SymTracelessAddition<R, T>{r, t};
   }

@@ -65,7 +65,7 @@ namespace TempLat
 
     /** @brief access */
     DEVICE_INLINE_FUNCTION
-    T &operator[](ptrdiff_t i) const
+    T &operator[](device::Idx i) const
     {
       checkBounds(i);
       return mData(i);
@@ -200,11 +200,11 @@ namespace TempLat
     mutable bool mHostMirrorOutdated = true;
 
     DEVICE_INLINE_FUNCTION
-    void checkBounds(ptrdiff_t i) const
+    void checkBounds(device::Idx i) const
     {
 #ifdef CHECKBOUNDS
 #ifdef DEVICE_HAS_EXCEPTIONS
-      if (i < 0 || i >= (ptrdiff_t)mSize)
+      if (i < 0 || i >= (device::Idx)mSize)
         throw MemoryBlockOutOfBoundsException("Accessing memory block out of bounds:", i, "not in 0 -- ", mSize);
 #endif
 #endif

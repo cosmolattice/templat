@@ -4,7 +4,6 @@
    Released under the MIT license, see LICENSE.md. */
 
 // File info: Main contributor(s): Adrien Florio,  Year: 2019
-#include "TempLat/lattice/algebra/su2algebra/su2algebratester.h"
 #include "TempLat/util/tdd/tdd.h"
 #include "TempLat/lattice/memory/memorytoolbox.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/hassu2doubletget.h"
@@ -13,6 +12,8 @@
 #include "TempLat/lattice/algebra/su2algebra/su2field.h"
 #include "TempLat/lattice/algebra/su2algebra/su2doublet.h"
 #include "TempLat/lattice/algebra/su2algebra/su2generators.h"
+#include "TempLat/lattice/algebra/su2algebra/su2algebra.h"
+
 #include "TempLat/lattice/algebra/operators/operators.h"
 #include "TempLat/lattice/algebra/gaugealgebra/u1exponential.h"
 #include "TempLat/parallel/device_memory.h"
@@ -52,13 +53,9 @@ namespace TempLat
     struct MySU2Doublet {
       MySU2Doublet(double i, double j, double k, double l) : arr{{i, j, k, l}} {}
 
-      DEVICE_INLINE_FUNCTION
       double SU2DoubletGet(Tag<0> t) const { return arr[0]; }
-      DEVICE_INLINE_FUNCTION
       double SU2DoubletGet(Tag<1> t) const { return arr[1]; }
-      DEVICE_INLINE_FUNCTION
       double SU2DoubletGet(Tag<2> t) const { return arr[2]; }
-      DEVICE_INLINE_FUNCTION
       double SU2DoubletGet(Tag<3> t) const { return arr[3]; }
 
       std::string toString() const
