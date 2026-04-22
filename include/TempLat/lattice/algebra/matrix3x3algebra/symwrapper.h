@@ -32,6 +32,7 @@ namespace TempLat
         : mR11(pR11), mR12(pR12), mR13(pR13), mR22(pR22), mR23(pR23), mR33(pR33)
     {
     }
+    SymWrapper() = default;
 
     auto SymGet(Tag<0> t) const { return mR11; }
     auto SymGet(Tag<1> t) const { return mR12; }

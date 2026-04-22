@@ -34,6 +34,7 @@ namespace TempLat
         : mR11(pR11), mR12(pR12), mR13(pR13), mR21(pR21), mR22(pR22), mR23(pR23), mR31(pR31), mR32(pR32), mR33(pR33)
     {
     }
+    MatrixWrapper() = default;
 
     auto MatrixGet(Tag<0> t) const { return mR11; }
     auto MatrixGet(Tag<1> t) const { return mR12; }
