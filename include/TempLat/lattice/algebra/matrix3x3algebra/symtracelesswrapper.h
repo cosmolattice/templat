@@ -32,6 +32,7 @@ namespace TempLat
         : mR0(pR0), mR1(pR1), mR2(pR2), mR3(pR3), mR4(pR4), mR5(pR5)
     {
     }
+    SymTracelessWrapper() = default;
 
     auto SymTracelessGet(Tag<0> t) const { return (2. / 3.) * mR0 - (1. / 3.) * mR3 - (1. / 3.) * mR5; }
     auto SymTracelessGet(Tag<1> t) const { return mR1; }

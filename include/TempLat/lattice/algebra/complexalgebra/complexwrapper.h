@@ -29,6 +29,7 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
 
     ComplexFieldWrapper(const R &pR, const T &pT) : mR(pR), mT(pT) {}
+    ComplexFieldWrapper() = default;
 
     auto ComplexFieldGet(Tag<0> t) const { return mR; }
     auto ComplexFieldGet(Tag<1> t) const { return mT; }

@@ -30,6 +30,7 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
 
     SU2DoubletWrapper(const A &pA, const B &pB, const C &pC, const D &pD) : mData(pA, pB, pC, pD) {}
+    SU2DoubletWrapper() = default;
 
     template <int N> const auto &SU2DoubletGet(Tag<N> t) const
     {

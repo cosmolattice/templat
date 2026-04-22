@@ -33,6 +33,7 @@ namespace TempLat
     using SV = typename GetGetReturnType<A>::type;
 
     SU2GroupWrapper(const A &pA, const B &pB, const C &pC) : mA(pA), mB(pB), mC(pC) {}
+    SU2GroupWrapper() = default;
 
     template <int N> auto SU2Get(Tag<N> t) const
     {
