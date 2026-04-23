@@ -67,6 +67,8 @@ namespace TempLat
       H5Dset_extent(mId, newSizes.data());
     }
 
+    void setOffset(hsize_t o) { curOffset = o; }
+
   private:
     std::vector<T> cache;
     hsize_t count, curOffset;
