@@ -104,6 +104,15 @@ namespace TempLat
     /* Put all member variables and private methods here. These may change arbitrarily. */
 #ifdef HAVE_MPI
     device::memory::ExchangeManager<NDim> mExchangeManager;
+
+    /** @brief Returns {isLowBoundary, isHighBoundary} for this rank along `dim`. */
+    std::pair<bool, bool> isBoundaryRank(size_t dim) const
+    {
+      const auto &group = mExchangeManager.getMPICartesianGroup();
+      const int coord = group.getPosition()[dim];
+      const int decomp = group.getDecomposition()[dim];
+      return {coord == 0, coord == decomp - 1};
+    }
 #endif
     LayoutStruct<NDim> mLayout;
     device::Idx mGhostDepth;
@@ -149,7 +158,6 @@ namespace TempLat
     void update_forDimension_device(MemoryBlock<T, NDim> &block, size_t dimension,
                                     BCSpec<NDim> bcSpec = allPeriodic<NDim>())
     {
-      (void)bcSpec; // Phase 1: BC plumbed but not yet used; Phase 3 wires real behavior.
       // We will copy slabs of thickness ghostDepth in the dimension 'dimension'.
       device::IdxArray<NDim> full_sizes = mLayout.getSizesInMemory();
       for (size_t i = 0; i < NDim; ++i)
@@ -256,6 +264,28 @@ namespace TempLat
       device::memory::copyDeviceToDevice(recvUpSlab, recvUpSubView);
       device::memory::copyDeviceToDevice(recvDownSlab, recvDownSubView);
       device::iteration::fence(); // ensures both unpacks complete before next dimension
+
+#ifdef HAVE_MPI
+      // BC-aware post-step: on boundary ranks along `dimension`, overwrite the wrap-around data
+      // just unpacked into the low-/high-ghost slab with the BC transform. Non-boundary ranks and
+      // Periodic BC are untouched (the exchange already produced correct values).
+      // recvUpSubView is the LOW-ghost slab (slice [0, mGhostDepth) in dim) — filled from lower
+      //                neighbor; at coord==0 this is wrap-around from the far end of the Cart.
+      // recvDownSubView is the HIGH-ghost slab (slice [full-mGhostDepth, full) in dim) — filled
+      //                from upper neighbor; at coord==decomp-1 this is wrap-around.
+      if (bcSpec[dimension] != BCType::Periodic) {
+        const auto boundary = isBoundaryRank(dimension);
+        if (boundary.first || boundary.second) {
+          device::IdxArray<NDim> ownedSizes = mLayout.getSizesInMemory();
+          for (size_t depth = 1; depth <= (size_t)mGhostDepth; ++depth) {
+            applyLocalBCAtDimDepth<T>(fullView, dimension, depth, ownedSizes, mGhostDepth,
+                                      bcSpec[dimension], boundary.first, boundary.second);
+          }
+        }
+      }
+#else
+      (void)bcSpec;
+#endif
     }
 
   private:
@@ -263,9 +293,8 @@ namespace TempLat
     void update_forDimension(MemoryBlock<T, NDim> &block, device::Idx dimension,
                              BCSpec<NDim> bcSpec = allPeriodic<NDim>())
     {
-      (void)bcSpec; // Phase 1: BC plumbed but not yet used; Phase 3 wires real behavior.
-      auto *ptr = block.data();
 #ifdef HAVE_MPI
+      auto *ptr = block.data();
       mExchangeManager.exchangeUp(mGhostSubarrayMap.template getSubArray<T>(dimension), dimension,
                                   /* base ptr is lower corner of all memory, including ghosts. */
                                   /* send:
@@ -280,6 +309,27 @@ namespace TempLat
                                     ptr + mGhostDepth * mLayout.stride(dimension),
                                     ptr + (mGhostDepth + mLayout.getSizesInMemory()[dimension]) *
                                               mLayout.stride(dimension));
+
+      // BC-aware post-step: on boundary ranks, overwrite the wrap-around ghost slab with the BC
+      // transform. Uses the same applyLocalBCAtDimDepth helper as Phase 2 / device path. Periodic
+      // BC and non-boundary ranks are untouched.
+      if (bcSpec[dimension] != BCType::Periodic) {
+        const auto boundary = isBoundaryRank(dimension);
+        if (boundary.first || boundary.second) {
+          device::IdxArray<NDim> ownedSizes = mLayout.getSizesInMemory();
+          device::IdxArray<NDim> full_sizes{};
+          for (size_t i = 0; i < NDim; ++i) full_sizes[i] = ownedSizes[i] + 2 * mGhostDepth;
+          auto fullView = block.getNDView(full_sizes);
+          for (size_t depth = 1; depth <= (size_t)mGhostDepth; ++depth) {
+            applyLocalBCAtDimDepth<T>(fullView, dimension, depth, ownedSizes, mGhostDepth,
+                                      bcSpec[dimension], boundary.first, boundary.second);
+          }
+        }
+      }
+#else
+      (void)block;
+      (void)dimension;
+      (void)bcSpec;
 #endif
     }
 
@@ -308,48 +358,52 @@ namespace TempLat
       }
     }
 
-    // BC-aware local ghost fill at a single (dim, depth). Writes the low- and high-ghost slabs
+    // BC-aware local ghost fill at a single (dim, depth). Writes the low- and/or high-ghost slabs
     // of `view` along `dim` at the requested `depth` level according to `bc`:
     //   Periodic:    wrap from opposite face.
     //   Antiperiodic: wrap from opposite face with sign flip.
     //   Dirichlet:   zero-fill (no source read).
     //   Neumann:     mirror the innermost interior cells outward (even extension).
+    // The `doLow` / `doHigh` flags select which side(s) to write. The local (single-rank) path
+    // calls with both true; the MPI boundary-rank post-step calls with exactly one true.
     template <typename T, typename View>
     void applyLocalBCAtDimDepth(View &view, size_t dim, size_t depth,
-                                const device::IdxArray<NDim> &sizes, device::Idx ghostDepth, BCType bc)
+                                const device::IdxArray<NDim> &sizes, device::Idx ghostDepth, BCType bc,
+                                bool doLow = true, bool doHigh = true)
     {
+      if (!doLow && !doHigh) return;
       if constexpr (NDim == 1) {
         switch (bc) {
         case BCType::Periodic:
           device::iteration::foreach (
               "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
               DEVICE_LAMBDA(const device::IdxArray<1> &) {
-                view(ghostDepth - depth) = view(ghostDepth + sizes[0] - depth);
-                view(ghostDepth + sizes[0] + (depth - 1)) = view(ghostDepth + (depth - 1));
+                if (doLow)  view(ghostDepth - depth) = view(ghostDepth + sizes[0] - depth);
+                if (doHigh) view(ghostDepth + sizes[0] + (depth - 1)) = view(ghostDepth + (depth - 1));
               });
           break;
         case BCType::Antiperiodic:
           device::iteration::foreach (
               "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
               DEVICE_LAMBDA(const device::IdxArray<1> &) {
-                view(ghostDepth - depth) = -view(ghostDepth + sizes[0] - depth);
-                view(ghostDepth + sizes[0] + (depth - 1)) = -view(ghostDepth + (depth - 1));
+                if (doLow)  view(ghostDepth - depth) = -view(ghostDepth + sizes[0] - depth);
+                if (doHigh) view(ghostDepth + sizes[0] + (depth - 1)) = -view(ghostDepth + (depth - 1));
               });
           break;
         case BCType::Dirichlet:
           device::iteration::foreach (
               "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
               DEVICE_LAMBDA(const device::IdxArray<1> &) {
-                view(ghostDepth - depth) = T{0};
-                view(ghostDepth + sizes[0] + (depth - 1)) = T{0};
+                if (doLow)  view(ghostDepth - depth) = T{0};
+                if (doHigh) view(ghostDepth + sizes[0] + (depth - 1)) = T{0};
               });
           break;
         case BCType::Neumann:
           device::iteration::foreach (
               "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
               DEVICE_LAMBDA(const device::IdxArray<1> &) {
-                view(ghostDepth - depth) = view(ghostDepth + (depth - 1));
-                view(ghostDepth + sizes[0] + (depth - 1)) = view(ghostDepth + sizes[0] - depth);
+                if (doLow)  view(ghostDepth - depth) = view(ghostDepth + (depth - 1));
+                if (doHigh) view(ghostDepth + sizes[0] + (depth - 1)) = view(ghostDepth + sizes[0] - depth);
               });
           break;
         }
@@ -407,16 +461,16 @@ namespace TempLat
         switch (bc) {
         case BCType::Periodic:
         case BCType::Neumann:
-          device::memory::copyDeviceToDevice(btf_fromSubView, btf_toSubView);
-          device::memory::copyDeviceToDevice(ftb_fromSubView, ftb_toSubView);
+          if (doLow)  device::memory::copyDeviceToDevice(btf_fromSubView, btf_toSubView);
+          if (doHigh) device::memory::copyDeviceToDevice(ftb_fromSubView, ftb_toSubView);
           break;
         case BCType::Antiperiodic:
-          negatingCopySubview(btf_fromSubView, btf_toSubView);
-          negatingCopySubview(ftb_fromSubView, ftb_toSubView);
+          if (doLow)  negatingCopySubview(btf_fromSubView, btf_toSubView);
+          if (doHigh) negatingCopySubview(ftb_fromSubView, ftb_toSubView);
           break;
         case BCType::Dirichlet:
-          device::memory::fill(btf_toSubView, T{0});
-          device::memory::fill(ftb_toSubView, T{0});
+          if (doLow)  device::memory::fill(btf_toSubView, T{0});
+          if (doHigh) device::memory::fill(ftb_toSubView, T{0});
           break;
         }
       }
