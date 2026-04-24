@@ -283,13 +283,151 @@ namespace TempLat
 #endif
     }
 
+  private:
+    // Elementwise dst = -src over all sites. Same shape required. GPU-safe via foreach.
+    // Guarded by if-constexpr on unary minus so the Antiperiodic branch of applyLocalBCAtDimDepth
+    // stays instantiable for element types that do not support negation (e.g. test-only struct types
+    // that only exercise the default Periodic path).
+    template <typename SrcView, typename DstView>
+    void negatingCopySubview(const SrcView &src, DstView &dst)
+    {
+      static_assert(DstView::rank == SrcView::rank, "negatingCopySubview: rank mismatch");
+      using ValT = typename DstView::value_type;
+      if constexpr (requires(ValT v) { -v; }) {
+        constexpr size_t R = DstView::rank;
+        device::IdxArray<R> ends;
+        for (size_t i = 0; i < R; ++i) ends[i] = dst.extent(i);
+        device::iteration::foreach (
+            "GhostUpdaterAntiperiodic", device::IdxArray<R>{}, ends,
+            DEVICE_LAMBDA(const device::IdxArray<R> &idx) {
+              device::apply([&](const auto... i) { dst(i...) = -src(i...); }, idx);
+            });
+      } else {
+        throw GhostUpdaterException(
+            "Antiperiodic BC requires element type to support unary operator-.");
+      }
+    }
+
+    // BC-aware local ghost fill at a single (dim, depth). Writes the low- and high-ghost slabs
+    // of `view` along `dim` at the requested `depth` level according to `bc`:
+    //   Periodic:    wrap from opposite face.
+    //   Antiperiodic: wrap from opposite face with sign flip.
+    //   Dirichlet:   zero-fill (no source read).
+    //   Neumann:     mirror the innermost interior cells outward (even extension).
+    template <typename T, typename View>
+    void applyLocalBCAtDimDepth(View &view, size_t dim, size_t depth,
+                                const device::IdxArray<NDim> &sizes, device::Idx ghostDepth, BCType bc)
+    {
+      if constexpr (NDim == 1) {
+        switch (bc) {
+        case BCType::Periodic:
+          device::iteration::foreach (
+              "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
+              DEVICE_LAMBDA(const device::IdxArray<1> &) {
+                view(ghostDepth - depth) = view(ghostDepth + sizes[0] - depth);
+                view(ghostDepth + sizes[0] + (depth - 1)) = view(ghostDepth + (depth - 1));
+              });
+          break;
+        case BCType::Antiperiodic:
+          device::iteration::foreach (
+              "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
+              DEVICE_LAMBDA(const device::IdxArray<1> &) {
+                view(ghostDepth - depth) = -view(ghostDepth + sizes[0] - depth);
+                view(ghostDepth + sizes[0] + (depth - 1)) = -view(ghostDepth + (depth - 1));
+              });
+          break;
+        case BCType::Dirichlet:
+          device::iteration::foreach (
+              "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
+              DEVICE_LAMBDA(const device::IdxArray<1> &) {
+                view(ghostDepth - depth) = T{0};
+                view(ghostDepth + sizes[0] + (depth - 1)) = T{0};
+              });
+          break;
+        case BCType::Neumann:
+          device::iteration::foreach (
+              "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
+              DEVICE_LAMBDA(const device::IdxArray<1> &) {
+                view(ghostDepth - depth) = view(ghostDepth + (depth - 1));
+                view(ghostDepth + sizes[0] + (depth - 1)) = view(ghostDepth + sizes[0] - depth);
+              });
+          break;
+        }
+        return;
+      } else {
+        // Destination slices are BC-independent: low ghost at (ghostDepth - depth), high ghost
+        // at (ghostDepth + sizes[dim] + (depth - 1)). Source slices differ:
+        //   Periodic/Antiperiodic: opposite face (wrap).
+        //   Neumann:              inward mirror (swap roles vs. wrap).
+        //   Dirichlet:            no source needed — fill destination with T{0}.
+        const bool mirror = (bc == BCType::Neumann);
+
+        device::array<std::pair<device::Idx, device::Idx>, NDim> btf_slicesFrom{};
+        device::array<std::pair<device::Idx, device::Idx>, NDim> btf_slicesTo{};
+        device::array<std::pair<device::Idx, device::Idx>, NDim> ftb_slicesFrom{};
+        device::array<std::pair<device::Idx, device::Idx>, NDim> ftb_slicesTo{};
+
+        for (size_t i = 0; i < NDim; ++i) {
+          const auto fullOther =
+              std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
+          btf_slicesTo[i] =
+              (i == dim)
+                  ? std::make_pair<device::Idx, device::Idx>(ghostDepth - depth, ghostDepth - depth + 1)
+                  : fullOther;
+          ftb_slicesTo[i] =
+              (i == dim)
+                  ? std::make_pair<device::Idx, device::Idx>(ghostDepth + sizes[i] + (depth - 1),
+                                                             ghostDepth + sizes[i] + (depth - 1) + 1)
+                  : fullOther;
+          btf_slicesFrom[i] =
+              (i == dim)
+                  ? (mirror ? std::make_pair<device::Idx, device::Idx>(ghostDepth + (depth - 1),
+                                                                       ghostDepth + (depth - 1) + 1)
+                            : std::make_pair<device::Idx, device::Idx>(ghostDepth + sizes[i] - depth,
+                                                                       ghostDepth + sizes[i] - depth + 1))
+                  : fullOther;
+          ftb_slicesFrom[i] =
+              (i == dim)
+                  ? (mirror ? std::make_pair<device::Idx, device::Idx>(ghostDepth + sizes[i] - depth,
+                                                                       ghostDepth + sizes[i] - depth + 1)
+                            : std::make_pair<device::Idx, device::Idx>(ghostDepth + (depth - 1),
+                                                                       ghostDepth + (depth - 1) + 1))
+                  : fullOther;
+        }
+
+        auto btf_fromSubView = device::apply(
+            [&](const auto &...args) { return device::memory::subview(view, args...); }, btf_slicesFrom);
+        auto btf_toSubView = device::apply(
+            [&](const auto &...args) { return device::memory::subview(view, args...); }, btf_slicesTo);
+        auto ftb_fromSubView = device::apply(
+            [&](const auto &...args) { return device::memory::subview(view, args...); }, ftb_slicesFrom);
+        auto ftb_toSubView = device::apply(
+            [&](const auto &...args) { return device::memory::subview(view, args...); }, ftb_slicesTo);
+
+        switch (bc) {
+        case BCType::Periodic:
+        case BCType::Neumann:
+          device::memory::copyDeviceToDevice(btf_fromSubView, btf_toSubView);
+          device::memory::copyDeviceToDevice(ftb_fromSubView, ftb_toSubView);
+          break;
+        case BCType::Antiperiodic:
+          negatingCopySubview(btf_fromSubView, btf_toSubView);
+          negatingCopySubview(ftb_fromSubView, ftb_toSubView);
+          break;
+        case BCType::Dirichlet:
+          device::memory::fill(btf_toSubView, T{0});
+          device::memory::fill(ftb_toSubView, T{0});
+          break;
+        }
+      }
+    }
+
   public:
-    /** @brief Local periodic ghost copy for a single dimension (no MPI). */
+    /** @brief Local BC-aware ghost copy for a single dimension (no MPI). */
     template <typename T>
     void pUpdate_NOMPI_singleDim(MemoryBlock<T, NDim> &block, size_t dim,
                                  BCSpec<NDim> bcSpec = allPeriodic<NDim>())
     {
-      (void)bcSpec; // Phase 1: BC plumbed but not yet used; Phase 2 wires real behavior.
       const auto ghostDepth = mLayout.getPadding()[0][0];
       device::IdxArray<NDim> sizes;
       for (size_t i = 0; i < NDim; ++i)
@@ -300,48 +438,7 @@ namespace TempLat
       auto View = block.getNDView(full_sizes);
 
       for (size_t depth = 1; depth <= (size_t)mGhostDepth; ++depth) {
-        if constexpr (NDim == 1) {
-          device::iteration::foreach (
-              "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
-              DEVICE_LAMBDA(const device::IdxArray<1> &i) {
-                View(ghostDepth - depth) = View(ghostDepth + sizes[0] - depth);
-                View(ghostDepth + sizes[0] + (depth - 1)) = View(ghostDepth + (depth - 1));
-              });
-        } else {
-          device::array<std::pair<device::Idx, device::Idx>, NDim> btf_slicesFrom{};
-          device::array<std::pair<device::Idx, device::Idx>, NDim> btf_slicesTo{};
-          device::array<std::pair<device::Idx, device::Idx>, NDim> ftb_slicesFrom{};
-          device::array<std::pair<device::Idx, device::Idx>, NDim> ftb_slicesTo{};
-
-          for (size_t i = 0; i < NDim; ++i) {
-            btf_slicesFrom[i] = (i == dim)
-                                    ? std::make_pair<device::Idx, device::Idx>(ghostDepth + sizes[i] - depth,
-                                                                               ghostDepth + sizes[i] - depth + 1)
-                                    : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
-            btf_slicesTo[i] = (i == dim)
-                                  ? std::make_pair<device::Idx, device::Idx>(ghostDepth - depth, ghostDepth - depth + 1)
-                                  : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
-            ftb_slicesFrom[i] =
-                (i == dim)
-                    ? std::make_pair<device::Idx, device::Idx>(ghostDepth + (depth - 1), ghostDepth + (depth - 1) + 1)
-                    : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
-            ftb_slicesTo[i] = (i == dim)
-                                  ? std::make_pair<device::Idx, device::Idx>(ghostDepth + sizes[i] + (depth - 1),
-                                                                             ghostDepth + sizes[i] + (depth - 1) + 1)
-                                  : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
-          }
-          auto btf_fromSubView = device::apply(
-              [&](const auto &...args) { return device::memory::subview(View, args...); }, btf_slicesFrom);
-          auto btf_toSubView =
-              device::apply([&](const auto &...args) { return device::memory::subview(View, args...); }, btf_slicesTo);
-          auto ftb_fromSubView = device::apply(
-              [&](const auto &...args) { return device::memory::subview(View, args...); }, ftb_slicesFrom);
-          auto ftb_toSubView =
-              device::apply([&](const auto &...args) { return device::memory::subview(View, args...); }, ftb_slicesTo);
-
-          device::memory::copyDeviceToDevice(btf_fromSubView, btf_toSubView);
-          device::memory::copyDeviceToDevice(ftb_fromSubView, ftb_toSubView);
-        }
+        applyLocalBCAtDimDepth<T>(View, dim, depth, sizes, ghostDepth, bcSpec[dim]);
       }
     }
 
@@ -349,8 +446,6 @@ namespace TempLat
     void pUpdate_NOMPI(MemoryBlock<T, NDim> &block, BCSpec<NDim> bcSpec = allPeriodic<NDim>(),
                       device::Idx dimension = 0)
     {
-      (void)bcSpec; // Phase 1: BC plumbed but not yet used; Phase 2 wires real behavior.
-      // Get View to the full data
       const auto ghostDepth = mLayout.getPadding()[0][0];
       for (size_t i = 0; i < NDim; ++i)
         if (ghostDepth != mLayout.getPadding()[i][0] || ghostDepth != mLayout.getPadding()[i][1]) {
@@ -365,57 +460,9 @@ namespace TempLat
         full_sizes[i] = ghostDepth + sizes[i] + ghostDepth;
       auto View = block.getNDView(full_sizes);
 
-      // Create subviews for the from and to views
-      // We need to create slices for each dimension, taking into account the padding
-      // and the layout of the views
-      device::array<std::pair<device::Idx, device::Idx>, NDim> btf_slicesFrom{};
-      device::array<std::pair<device::Idx, device::Idx>, NDim> btf_slicesTo{};
-      device::array<std::pair<device::Idx, device::Idx>, NDim> ftb_slicesFrom{};
-      device::array<std::pair<device::Idx, device::Idx>, NDim> ftb_slicesTo{};
-
       for (size_t dim = 0; dim < NDim; ++dim) {
         for (size_t depth = 1; depth <= (size_t)mGhostDepth; ++depth) {
-
-          if constexpr (NDim == 1) {
-            // For NDim == 1, we just need to copy the corners.
-            device::iteration::foreach (
-                "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
-                DEVICE_LAMBDA(const device::IdxArray<1> &i) {
-                  View(ghostDepth - depth) = View(ghostDepth + sizes[0] - depth);
-                  View(ghostDepth + sizes[0] + (depth - 1)) = View(ghostDepth + (depth - 1));
-                });
-          } else {
-            // so we copy a (NDim- 1)-dimensional slice. Include the padding, which leads to a copy of all corners, too!
-            for (size_t i = 0; i < NDim; ++i) {
-              btf_slicesFrom[i] = (i == dim)
-                                      ? std::make_pair<device::Idx, device::Idx>(ghostDepth + sizes[i] - depth,
-                                                                                 ghostDepth + sizes[i] - depth + 1)
-                                      : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
-              btf_slicesTo[i] =
-                  (i == dim) ? std::make_pair<device::Idx, device::Idx>(ghostDepth - depth, ghostDepth - depth + 1)
-                             : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
-              ftb_slicesFrom[i] =
-                  (i == dim)
-                      ? std::make_pair<device::Idx, device::Idx>(ghostDepth + (depth - 1), ghostDepth + (depth - 1) + 1)
-                      : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
-              ftb_slicesTo[i] = (i == dim)
-                                    ? std::make_pair<device::Idx, device::Idx>(ghostDepth + sizes[i] + (depth - 1),
-                                                                               ghostDepth + sizes[i] + (depth - 1) + 1)
-                                    : std::make_pair<device::Idx, device::Idx>(0, ghostDepth + sizes[i] + ghostDepth);
-            }
-            auto btf_fromSubView = device::apply(
-                [&](const auto &...args) { return device::memory::subview(View, args...); }, btf_slicesFrom);
-            auto btf_toSubView = device::apply(
-                [&](const auto &...args) { return device::memory::subview(View, args...); }, btf_slicesTo);
-            auto ftb_fromSubView = device::apply(
-                [&](const auto &...args) { return device::memory::subview(View, args...); }, ftb_slicesFrom);
-            auto ftb_toSubView = device::apply(
-                [&](const auto &...args) { return device::memory::subview(View, args...); }, ftb_slicesTo);
-
-            // Copy the data in both directions
-            device::memory::copyDeviceToDevice(btf_fromSubView, btf_toSubView);
-            device::memory::copyDeviceToDevice(ftb_fromSubView, ftb_toSubView);
-          }
+          applyLocalBCAtDimDepth<T>(View, dim, depth, sizes, ghostDepth, bcSpec[dim]);
         }
       }
     }
