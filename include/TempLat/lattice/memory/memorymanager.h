@@ -7,6 +7,7 @@
 
 // File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
 
+#include "TempLat/lattice/ghostcells/boundaryconditions.h"
 #include "TempLat/lattice/ghostcells/ghoststatekeeper.h"
 #include "TempLat/lattice/memory/memoryblock.h"
 #include "TempLat/lattice/memory/memorylayoutstate.h"
@@ -28,9 +29,13 @@ namespace TempLat
   public:
     // Put public methods here. These should change very little over time.
     MemoryManager(device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, std::string name = "")
-        : mToolBox(toolBox), mName(name), mAllocated(false)
+        : mToolBox(toolBox), mName(name), mAllocated(false), mBCSpec(allPeriodic<NDim>())
     {
     }
+
+    void setBCSpec(BCSpec<NDim> bc) { mBCSpec = bc; }
+
+    const BCSpec<NDim> &getBCSpec() const { return mBCSpec; }
 
     ptrdiff_t allocate()
     {
@@ -187,7 +192,7 @@ namespace TempLat
       if (mGhostStateKeeper.isStale()) {
         if (mToolBox->verbosity.ghostConfirmationSteps) sayMPI << "Need to update ghost cells.\n";
         ++result;
-        mToolBox->mGhostUpdater.update(mBlock);
+        mToolBox->mGhostUpdater.update(mBlock, mBCSpec);
         mGhostStateKeeper.setUpToDate();
       }
       if (mToolBox->verbosity.ghostConfirmationSteps)
@@ -200,7 +205,7 @@ namespace TempLat
 
     void updateGhosts()
     {
-      mToolBox->mGhostUpdater.update(mBlock);
+      mToolBox->mGhostUpdater.update(mBlock, mBCSpec);
       mBlock.flagHostMirrorOutdated();
     }
 
@@ -247,6 +252,7 @@ namespace TempLat
 
     MemoryLayoutState mLayoutState;
     GhostStateKeeper mGhostStateKeeper;
+    BCSpec<NDim> mBCSpec;
 
     void checkRealBounds(ptrdiff_t i)
     {

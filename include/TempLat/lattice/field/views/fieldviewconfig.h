@@ -43,25 +43,14 @@ namespace TempLat
     ConfigView(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar)
         : AbstractField<T, NDim>(name, toolBox, pLatPar), mDisableFFTBlocking(false)
     {
-      if (toolBox != nullptr)
-        mLayout = mToolBox->mLayouts.getConfigSpaceLayout();
-      else
-        throw FieldViewConfigMissingToolBox("A FieldViewConfig must be constructed with a valid MemoryToolBox.");
+      initFromToolBox(toolBox);
+    }
 
-      mManager->setGhostsAreStale();
-      mManager->confirmConfigSpace(); // allocation happens here
-
-      const auto localSizes = mLayout.getLocalSizes();
-      const size_t nGhosts = mLayout.getNGhosts();
-
-      memorySizes = mLayout.getSizesInMemory();
-      for (size_t d = 0; d < NDim; ++d) {
-        memorySizes[d] += nGhosts + nGhosts; // add padding to the local sizes
-        localSlicing[d] = std::make_pair(nGhosts, nGhosts + localSizes[d]);
-      }
-
-      mView = mManager->getNDView(memorySizes);
-      mRawView = mManager->getRawView();
+    ConfigView(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar,
+               BCSpec<NDim> bcSpec)
+        : AbstractField<T, NDim>(name, toolBox, pLatPar, bcSpec), mDisableFFTBlocking(false)
+    {
+      initFromToolBox(toolBox);
     }
 
     DEVICE_INLINE_FUNCTION
@@ -152,6 +141,29 @@ namespace TempLat
     std::string to_string() const { return mManager->getName() + "(x)"; }
 
   private:
+    void initFromToolBox(device::memory::host_ptr<MemoryToolBox<NDim>> toolBox)
+    {
+      if (toolBox != nullptr)
+        mLayout = mToolBox->mLayouts.getConfigSpaceLayout();
+      else
+        throw FieldViewConfigMissingToolBox("A FieldViewConfig must be constructed with a valid MemoryToolBox.");
+
+      mManager->setGhostsAreStale();
+      mManager->confirmConfigSpace(); // allocation happens here
+
+      const auto localSizes = mLayout.getLocalSizes();
+      const size_t nGhosts = mLayout.getNGhosts();
+
+      memorySizes = mLayout.getSizesInMemory();
+      for (size_t d = 0; d < NDim; ++d) {
+        memorySizes[d] += nGhosts + nGhosts; // add padding to the local sizes
+        localSlicing[d] = std::make_pair(nGhosts, nGhosts + localSizes[d]);
+      }
+
+      mView = mManager->getNDView(memorySizes);
+      mRawView = mManager->getRawView();
+    }
+
     LayoutStruct<NDim> mLayout;
 
     device::memory::NDViewUnmanaged<T, NDim> mView;

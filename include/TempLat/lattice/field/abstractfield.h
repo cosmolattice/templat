@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
 
 #include "TempLat/lattice/algebra/spacestateinterface.h"
+#include "TempLat/lattice/ghostcells/boundaryconditions.h"
 #include "TempLat/lattice/latticeparameters.h"
 #include "TempLat/lattice/memory/memorylayoutstate.h"
 #include "TempLat/lattice/memory/memorymanager.h"
@@ -36,6 +37,13 @@ namespace TempLat
     AbstractField(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar)
         : mToolBox(toolBox), mManager(mToolBox, name), latPar(pLatPar)
     {
+    }
+
+    AbstractField(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar,
+                  BCSpec<NDim> bcSpec)
+        : mToolBox(toolBox), mManager(mToolBox, name), latPar(pLatPar)
+    {
+      mManager->setBCSpec(bcSpec);
     }
 
     inline void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
@@ -73,6 +81,8 @@ namespace TempLat
     bool areGhostsStale() const { return mManager->areGhostsStale(); }
 
     device::memory::host_ptr<MemoryManager<T, NDim>> getMemoryManager() const { return mManager; }
+
+    const BCSpec<NDim> &getBCSpec() const { return mManager->getBCSpec(); }
 
     DEVICE_INLINE_FUNCTION
     auto getDx() const { return latPar.getDx(); }

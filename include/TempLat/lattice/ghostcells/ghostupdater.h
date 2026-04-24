@@ -11,6 +11,7 @@
 #include "TempLat/parallel/mpi/mpitags.h"
 #include "TempLat/parallel/mpi/cartesian/mpicartesianexchange.h"
 #include "TempLat/lattice/memory/memoryblock.h"
+#include "TempLat/lattice/ghostcells/boundaryconditions.h"
 #include "TempLat/lattice/ghostcells/ghostsubarraymap.h"
 
 #include "TempLat/parallel/device_iteration.h"
@@ -80,21 +81,22 @@ namespace TempLat
 #endif
     }
 
-    template <typename T> void update(MemoryBlock<T, NDim> &block)
+    template <typename T>
+    void update(MemoryBlock<T, NDim> &block, BCSpec<NDim> bcSpec = allPeriodic<NDim>())
     {
 #ifdef HAVE_MPI
       // There is no MPI splitting in one dimension. Also, when we have only a single node, there is no need to do MPI
       // communication.
       if constexpr (NDim > 1) {
         if (mExchangeManager.getMPICartesianGroup().size() > 1) {
-          pUpdate(block);
+          pUpdate(block, bcSpec);
         } else {
-          pUpdate_NOMPI(block);
+          pUpdate_NOMPI(block, bcSpec);
         }
       } else
 #endif
       {
-        pUpdate_NOMPI(block);
+        pUpdate_NOMPI(block, bcSpec);
       }
     }
 
@@ -119,7 +121,8 @@ namespace TempLat
     device::memory::NDView<char, 1> mRecvUpBuffer;
     device::memory::NDView<char, 1> mRecvDownBuffer;
 
-    template <typename T> void pUpdate(MemoryBlock<T, NDim> &block)
+    template <typename T>
+    void pUpdate(MemoryBlock<T, NDim> &block, BCSpec<NDim> bcSpec = allPeriodic<NDim>())
     {
 #ifdef HAVE_MPI
       auto &decomp = mExchangeManager.getMPICartesianGroup().getDecomposition();
@@ -129,21 +132,24 @@ namespace TempLat
 #ifdef HAVE_MPI
         // Non-split dimensions: local periodic copy (no MPI overhead)
         if (decomp[d] <= 1) {
-          pUpdate_NOMPI_singleDim(block, d);
+          pUpdate_NOMPI_singleDim(block, d, bcSpec);
           continue;
         }
 #endif
 #if defined(DEVICE_CUDA) || defined(DEVICE_HIP)
-        update_forDimension_device(block, d);
+        update_forDimension_device(block, d, bcSpec);
 #else
-        update_forDimension(block, d);
+        update_forDimension(block, d, bcSpec);
 #endif
       }
     }
 
   public:
-    template <typename T> void update_forDimension_device(MemoryBlock<T, NDim> &block, size_t dimension)
+    template <typename T>
+    void update_forDimension_device(MemoryBlock<T, NDim> &block, size_t dimension,
+                                    BCSpec<NDim> bcSpec = allPeriodic<NDim>())
     {
+      (void)bcSpec; // Phase 1: BC plumbed but not yet used; Phase 3 wires real behavior.
       // We will copy slabs of thickness ghostDepth in the dimension 'dimension'.
       device::IdxArray<NDim> full_sizes = mLayout.getSizesInMemory();
       for (size_t i = 0; i < NDim; ++i)
@@ -253,8 +259,11 @@ namespace TempLat
     }
 
   private:
-    template <typename T> void update_forDimension(MemoryBlock<T, NDim> &block, device::Idx dimension)
+    template <typename T>
+    void update_forDimension(MemoryBlock<T, NDim> &block, device::Idx dimension,
+                             BCSpec<NDim> bcSpec = allPeriodic<NDim>())
     {
+      (void)bcSpec; // Phase 1: BC plumbed but not yet used; Phase 3 wires real behavior.
       auto *ptr = block.data();
 #ifdef HAVE_MPI
       mExchangeManager.exchangeUp(mGhostSubarrayMap.template getSubArray<T>(dimension), dimension,
@@ -276,8 +285,11 @@ namespace TempLat
 
   public:
     /** @brief Local periodic ghost copy for a single dimension (no MPI). */
-    template <typename T> void pUpdate_NOMPI_singleDim(MemoryBlock<T, NDim> &block, size_t dim)
+    template <typename T>
+    void pUpdate_NOMPI_singleDim(MemoryBlock<T, NDim> &block, size_t dim,
+                                 BCSpec<NDim> bcSpec = allPeriodic<NDim>())
     {
+      (void)bcSpec; // Phase 1: BC plumbed but not yet used; Phase 2 wires real behavior.
       const auto ghostDepth = mLayout.getPadding()[0][0];
       device::IdxArray<NDim> sizes;
       for (size_t i = 0; i < NDim; ++i)
@@ -333,8 +345,11 @@ namespace TempLat
       }
     }
 
-    template <typename T> void pUpdate_NOMPI(MemoryBlock<T, NDim> &block, device::Idx dimension = 0)
+    template <typename T>
+    void pUpdate_NOMPI(MemoryBlock<T, NDim> &block, BCSpec<NDim> bcSpec = allPeriodic<NDim>(),
+                      device::Idx dimension = 0)
     {
+      (void)bcSpec; // Phase 1: BC plumbed but not yet used; Phase 2 wires real behavior.
       // Get View to the full data
       const auto ghostDepth = mLayout.getPadding()[0][0];
       for (size_t i = 0; i < NDim; ++i)
