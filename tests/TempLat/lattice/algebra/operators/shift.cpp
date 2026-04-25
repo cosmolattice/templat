@@ -87,12 +87,72 @@ namespace TempLat
     }
   }
 
+  /** @brief BC-aware shift test: shift a constant field by 1 across the dim-0 boundary, for
+   *  each of Antiperiodic, Dirichlet, Neumann. The shifted-by-+1 expression evaluated at
+   *  the LAST owned cell on the high-boundary rank reaches the dim-0 high ghost — whose value
+   *  is determined by the BC. Other cells just take their right-neighbor's value (= constant).
+   */
+  template <size_t NDim> struct ShiftBCTester {
+    static void Test(TDDAssertion &tdd);
+  };
+
+  template <size_t NDim> inline void ShiftBCTester<NDim>::Test(TDDAssertion &tdd)
+  {
+    const ptrdiff_t nGrid = 8, nGhost = 1;
+    auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
+    toolBox->unsetVerbose();
+
+    auto layout = toolBox->mLayouts.getConfigSpaceLayout();
+    const auto &localSizes  = layout.getLocalSizes();
+    const auto &localStarts = layout.getLocalStarts();
+
+    const double c = 3.0;
+
+    auto runOne = [&](BCType bc, double expectedAtBoundaryHigh) {
+      BCSpec<NDim> spec = allPeriodic<NDim>();
+      spec[0] = bc;
+      Field<double, NDim> f("f_const_shift", toolBox, LatticeParameters<double>(), spec);
+      f = c;
+      f.updateGhosts();
+
+      Field<double, NDim> sf("sf", toolBox);
+      sf = shift(f, 0_c + Tag<1>{}); // shift by +1 in dim 0
+
+      auto view = sf.getLocalNDHostView();
+      bool ok = true;
+      NDLoop<NDim>(view, [&](const auto &...indices) {
+        device::IdxArray<NDim> idx{indices...};
+        const bool lastInDim0 = (idx[0] == localSizes[0] - 1);
+        const bool highB = (localStarts[0] + localSizes[0] == nGrid);
+        const double expected = (lastInDim0 && highB) ? expectedAtBoundaryHigh : c;
+        const double got = view(indices...);
+        if (std::abs(got - expected) > 1e-12) {
+          ok = false;
+          std::stringstream ss;
+          ss << "ShiftBC(bc=" << static_cast<int>(bc) << ") mismatch at idx=" << idx
+             << " got=" << got << " expected=" << expected << "\n";
+          sayMPI << ss.str();
+        }
+      });
+      tdd.verify(ok);
+    };
+
+    runOne(BCType::Antiperiodic, -c);   // shift wraps to high-ghost = -c
+    runOne(BCType::Dirichlet,    0.0);  // ghost is zero
+    runOne(BCType::Neumann,      c);    // ghost mirrors local last owned (= c)
+  }
+
 } // namespace TempLat
 
 namespace
 {
+#ifndef HAVE_MPI
   TempLat::TDDContainer<TempLat::ExpressionShifterTester<1>> test1;
+#endif
   TempLat::TDDContainer<TempLat::ExpressionShifterTester<2>> test2;
   TempLat::TDDContainer<TempLat::ExpressionShifterTester<3>> test3;
   TempLat::TDDContainer<TempLat::ExpressionShifterTester<4>> test4;
+
+  TempLat::TDDContainer<TempLat::ShiftBCTester<2>> bcTest2;
+  TempLat::TDDContainer<TempLat::ShiftBCTester<3>> bcTest3;
 } // namespace

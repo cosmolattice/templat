@@ -13,6 +13,9 @@
 #include "TempLat/fft/fftmpidomainsplit.h"
 #include "TempLat/lattice/memory/triplestatelayouts.h"
 #include "TempLat/lattice/algebra/operators/power.h"
+#include "TempLat/lattice/field/field.h"
+#include "TempLat/lattice/algebra/coordinates/spatialcoordinate.h"
+#include "TempLat/util/ndloop.h"
 
 #include <sstream>
 #include <iomanip>
@@ -241,6 +244,153 @@ namespace TempLat
     }
   }
 
+  /** @brief BC-aware ghost-fill tester.
+   *
+   * For a Field<double, NDim> built with a chosen per-dim BCSpec, sets every cell to
+   * (global_x[bcDim] + 1). The "+1" keeps owned values in [1, nGrid] (strictly positive), so
+   * Dirichlet's zero-fill is visible against interior values, and every other BC's expected
+   * value is distinct from every other BC's expected value. Then calls updateGhosts() and
+   * checks the low- and high-ghost slabs along bcDim. Each rank verifies its own slab —
+   * boundary ranks see the BC transform, interior ranks see the ordinary periodic exchange.
+   */
+  template <size_t NDim> struct BCFillTester {
+    static void Test(TDDAssertion &tdd);
+  };
+
+  namespace BCTestDetail
+  {
+    inline double expectedLowGhost(BCType bc, ptrdiff_t globalSize, ptrdiff_t localStart, bool isLowBoundary)
+    {
+      if (!isLowBoundary) return static_cast<double>(localStart);
+      switch (bc) {
+      case BCType::Periodic:     return static_cast<double>(globalSize);
+      case BCType::Antiperiodic: return -static_cast<double>(globalSize);
+      case BCType::Dirichlet:    return 0.0;
+      case BCType::Neumann:      return 1.0;
+      }
+      return 0.0;
+    }
+
+    inline double expectedHighGhost(BCType bc, ptrdiff_t globalSize, ptrdiff_t localStart, ptrdiff_t localSize,
+                                    bool isHighBoundary)
+    {
+      if (!isHighBoundary) return static_cast<double>(localStart + localSize + 1);
+      switch (bc) {
+      case BCType::Periodic:     return 1.0;
+      case BCType::Antiperiodic: return -1.0;
+      case BCType::Dirichlet:    return 0.0;
+      case BCType::Neumann:      return static_cast<double>(globalSize);
+      }
+      return 0.0;
+    }
+
+    template <size_t NDim>
+    bool checkBCInDim(device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, size_t bcDim, BCType bc,
+                      ptrdiff_t nGrid, ptrdiff_t nGhost)
+    {
+      auto layout = toolBox->mLayouts.getConfigSpaceLayout();
+      const auto &localSizes = layout.getLocalSizes();
+      const auto &localStarts = layout.getLocalStarts();
+
+      BCSpec<NDim> spec = allPeriodic<NDim>();
+      spec[bcDim] = bc;
+
+      Field<double, NDim> f("f_bc_check", toolBox, LatticeParameters<double>(), spec);
+      SpatialCoordinate<NDim> x(toolBox);
+      // Initialize so each cell holds (global_x[bcDim] + 1). SpatialCoordinate's selector is a
+      // compile-time tag, so we dispatch on bcDim via constexpr_for.
+      constexpr_for<1, NDim + 1>([&](auto dirTag) {
+        constexpr size_t d = static_cast<size_t>(decltype(dirTag)::value) - 1;
+        if (d == bcDim) f = x(dirTag) + 1.0;
+      });
+      f.updateGhosts();
+
+      const bool isLowBoundary  = (localStarts[bcDim] == 0);
+      const bool isHighBoundary = (localStarts[bcDim] + localSizes[bcDim] == nGrid);
+
+      auto view = f.getFullNDHostView();
+
+      // Walk the low and high faces along bcDim, restricted to indices within the owned slab in
+      // every other dim — corners would mix in unrelated periodic BC behavior of other dims.
+      auto walkFace = [&](bool low, bool isBoundary) {
+        bool ok = true;
+        const ptrdiff_t bcIdx = low ? (nGhost - 1) : (nGhost + localSizes[bcDim]);
+        const double expected = low
+            ? expectedLowGhost(bc, nGrid, localStarts[bcDim], isBoundary)
+            : expectedHighGhost(bc, nGrid, localStarts[bcDim], localSizes[bcDim], isBoundary);
+
+        device::IdxArray<NDim> idx{};
+        for (size_t i = 0; i < NDim; ++i) idx[i] = (i == bcDim) ? bcIdx : nGhost;
+        const ptrdiff_t loopDim = (bcDim == 0) ? 1 : 0;
+        // Only iterate over the loopDim — checking one row of the face is sufficient since the
+        // value of `f` depends only on global_x[bcDim], so all face cells have the same expected.
+        const ptrdiff_t loopExtent = (NDim == 1) ? 1 : localSizes[loopDim];
+        for (ptrdiff_t i = 0; i < loopExtent; ++i) {
+          if constexpr (NDim > 1) idx[loopDim] = nGhost + i;
+          const double got = device::apply([&](auto... a) { return view(a...); }, idx);
+          if (std::abs(got - expected) > 1e-14) {
+            ok = false;
+            std::stringstream ss;
+            ss << "BCFill mismatch (bcDim=" << bcDim << ", bc=" << static_cast<int>(bc)
+               << ", " << (low ? "low" : "high") << " face) at view_idx=" << idx
+               << " got=" << got << " expected=" << expected
+               << " localStart=" << localStarts[bcDim] << " localSize=" << localSizes[bcDim] << "\n";
+            sayMPI << ss.str();
+          }
+        }
+        return ok;
+      };
+
+      bool ok = true;
+      ok &= walkFace(true,  isLowBoundary);
+      ok &= walkFace(false, isHighBoundary);
+      return ok;
+    }
+  } // namespace BCTestDetail
+
+  template <size_t NDim> void BCFillTester<NDim>::Test(TDDAssertion &tdd)
+  {
+    constexpr ptrdiff_t nGrid = 8;
+    constexpr ptrdiff_t nGhost = 1;
+    auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
+    toolBox->unsetVerbose();
+
+    for (size_t bcDim = 0; bcDim < NDim; ++bcDim) {
+      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Antiperiodic, nGrid, nGhost));
+      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Dirichlet,    nGrid, nGhost));
+      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Neumann,      nGrid, nGhost));
+      // Periodic regression: new BC plumbing must not change existing all-periodic behavior.
+      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Periodic,     nGrid, nGhost));
+    }
+
+    // Mixed-BC sanity: Antiperiodic in dim 0, Periodic elsewhere — verify dim-0 low ghost follows
+    // Antiperiodic on the boundary rank, leaving the other dim's Periodic unaffected.
+    if constexpr (NDim >= 2) {
+      auto layout = toolBox->mLayouts.getConfigSpaceLayout();
+      const auto &localSizes = layout.getLocalSizes();
+      const auto &localStarts = layout.getLocalStarts();
+      (void)localSizes;
+
+      BCSpec<NDim> mixed = allPeriodic<NDim>();
+      mixed[0] = BCType::Antiperiodic;
+
+      Field<double, NDim> f("f_mixed", toolBox, LatticeParameters<double>(), mixed);
+      SpatialCoordinate<NDim> x(toolBox);
+      f = x(1_c) + 1.0;
+      f.updateGhosts();
+
+      auto view = f.getFullNDHostView();
+      const bool isLow0 = (localStarts[0] == 0);
+
+      device::IdxArray<NDim> idx{};
+      idx[0] = nGhost - 1;
+      for (size_t i = 1; i < NDim; ++i) idx[i] = nGhost;
+      const double got = device::apply([&](auto... a) { return view(a...); }, idx);
+      const double expected = isLow0 ? -static_cast<double>(nGrid) : static_cast<double>(localStarts[0]);
+      tdd.verify(std::abs(got - expected) <= 1e-14);
+    }
+  }
+
 } // namespace TempLat
 
 namespace
@@ -251,4 +401,7 @@ namespace
   TempLat::TDDContainer<TempLat::GhostUpdaterTester<4>> test4;
   TempLat::TDDContainer<TempLat::GhostUpdaterTester<5>> test5;
   TempLat::TDDContainer<TempLat::GhostUpdaterTester<6>> test6;
+
+  TempLat::TDDContainer<TempLat::BCFillTester<2>> bcTest2;
+  TempLat::TDDContainer<TempLat::BCFillTester<3>> bcTest3;
 } // namespace

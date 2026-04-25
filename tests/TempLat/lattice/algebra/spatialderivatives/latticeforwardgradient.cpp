@@ -86,7 +86,9 @@ namespace TempLat
 
 namespace
 {
+#ifndef HAVE_MPI
   TempLat::TDDContainer<TempLat::LatticeForwardGradientTester<1>> test1;
+#endif
   TempLat::TDDContainer<TempLat::LatticeForwardGradientTester<2>> test2;
   TempLat::TDDContainer<TempLat::LatticeForwardGradientTester<3>> test3;
   TempLat::TDDContainer<TempLat::LatticeForwardGradientTester<4>> test4;

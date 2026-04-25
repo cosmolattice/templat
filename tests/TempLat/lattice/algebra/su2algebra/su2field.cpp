@@ -5,6 +5,9 @@
 // File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
 
 #include "TempLat/lattice/algebra/su2algebra/su2field.h"
+#include "TempLat/lattice/algebra/su2algebra/su2dagger.h"
+#include "TempLat/lattice/algebra/su2algebra/su2multiply.h"
+#include "TempLat/lattice/algebra/su2algebra/su2shift.h"
 #include "TempLat/util/tdd/tdd.h"
 #include "TempLat/util/ndloop.h"
 
@@ -88,6 +91,71 @@ namespace TempLat
     }
   }
 
+  /** @brief SU2 antiperiodic-link cross-boundary test.
+   *
+   * Constructs an SU2Field with Antiperiodic BC in dim 0. Sets every link to U_const = i*σ_1
+   * (c0=0, c1=1, c2=c3=0), which is unitary: U U† = σ_1² = I. Computes V(x) = U(x) * U(x+e_0)†.
+   * At the cell on the high-boundary rank with x[0] = local_last (i.e., global x[0] = nGrid-1),
+   * shift(U, e_0) reads the antiperiodic ghost — which holds U_const† (c1 sign-flipped via the
+   * per-component BC dispatch in SU2Field). Then dagger(U_const†) = U_const, so V = U_const *
+   * U_const = (iσ_1)² = -I, i.e. (c0,c1,c2,c3) = (-1,0,0,0). Everywhere else V = U_const *
+   * U_const† = I = (1,0,0,0). This is the canonical "dagger-on-wrap" sanity check for the
+   * antiperiodic gauge link.
+   */
+  template <size_t NDim> struct SU2AntiperiodicCrossBoundaryTester {
+    static void Test(TDDAssertion &tdd);
+  };
+
+  template <size_t NDim> void SU2AntiperiodicCrossBoundaryTester<NDim>::Test(TDDAssertion &tdd)
+  {
+    static_assert(NDim >= 2, "SU2 antiperiodic cross-boundary test needs NDim >= 2.");
+    const ptrdiff_t nGrid = 8, nGhost = 1;
+    auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
+    toolBox->unsetVerbose();
+
+    BCSpec<NDim> linkBC = allPeriodic<NDim>();
+    linkBC[0] = BCType::Antiperiodic;
+
+    SU2Field<double, NDim> U("U", toolBox, linkBC, LatticeParameters<double>());
+    U(0_c) = 0.0;
+    U(1_c) = 1.0;
+    U(2_c) = 0.0;
+    U(3_c) = 0.0;
+    U.updateGhosts();
+
+    SU2Field<double, NDim> V("V", toolBox);
+    V = U * dagger(shift(U, Tag<1>{}));
+
+    auto layout = toolBox->mLayouts.getConfigSpaceLayout();
+    const auto &localSizes  = layout.getLocalSizes();
+    const auto &localStarts = layout.getLocalStarts();
+
+    auto v0 = V(0_c).getLocalNDHostView();
+    auto v1 = V(1_c).getLocalNDHostView();
+    auto v2 = V(2_c).getLocalNDHostView();
+    auto v3 = V(3_c).getLocalNDHostView();
+
+    bool ok = true;
+    NDLoop<NDim>(v0, [&](const auto &...indices) {
+      device::IdxArray<NDim> idx{indices...};
+      const bool lastInDim0 = (idx[0] == localSizes[0] - 1);
+      const bool highB = (localStarts[0] + localSizes[0] == nGrid);
+      const bool atBoundary = lastInDim0 && highB;
+      const double e0 = atBoundary ? -1.0 : 1.0;
+      const double g0 = v0(indices...), g1 = v1(indices...), g2 = v2(indices...), g3 = v3(indices...);
+      if (std::abs(g0 - e0) > 1e-12 || std::abs(g1) > 1e-12 ||
+          std::abs(g2)      > 1e-12 || std::abs(g3) > 1e-12) {
+        ok = false;
+        std::stringstream ss;
+        ss << "SU2 antiperiodic cross-boundary mismatch at idx=" << idx
+           << " got=(" << g0 << "," << g1 << "," << g2 << "," << g3
+           << ") expected=(" << e0 << ",0,0,0)\n";
+        sayMPI << ss.str();
+      }
+    });
+    tdd.verify(ok);
+  }
+
 } // namespace TempLat
 
 namespace
@@ -99,4 +167,7 @@ namespace
   TempLat::TDDContainer<TempLat::SU2FieldTester<double, 2>> test6;
   TempLat::TDDContainer<TempLat::SU2FieldTester<double, 3>> test7;
   TempLat::TDDContainer<TempLat::SU2FieldTester<double, 4>> test8;
+
+  TempLat::TDDContainer<TempLat::SU2AntiperiodicCrossBoundaryTester<2>> bcTest2;
+  TempLat::TDDContainer<TempLat::SU2AntiperiodicCrossBoundaryTester<3>> bcTest3;
 } // namespace

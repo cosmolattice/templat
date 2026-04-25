@@ -197,13 +197,76 @@ namespace TempLat
     }
   }
 
+  /** @brief BC-aware NeutDiff test: antiperiodic in dim 0, constant field.
+   *
+   * f = c with Antiperiodic in dim 0; centered diff in dir 1 (= dim 0). Both ends in dim 0
+   * touch the antiperiodic ghost: at the FIRST owned cell of the low-boundary rank,
+   * (f[i+1] - f[low_ghost])/(2dx) = (c - (-c))/(2dx) = c/dx; at the LAST owned cell of the
+   * high-boundary rank, (f[high_ghost] - f[i-1])/(2dx) = (-c - c)/(2dx) = -c/dx; everywhere
+   * else 0.
+   */
+  template <size_t NDim> struct NeutDiffBCTester {
+    static void Test(TDDAssertion &tdd);
+  };
+
+  template <size_t NDim> inline void NeutDiffBCTester<NDim>::Test(TDDAssertion &tdd)
+  {
+    const device::Idx nGrid = 8, nGhost = 1;
+    auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
+    toolBox->unsetVerbose();
+
+    BCSpec<NDim> spec = allPeriodic<NDim>();
+    spec[0] = BCType::Antiperiodic;
+
+    const double c = 1.0;
+    const double dx = 1.0;
+
+    Field<double, NDim> f("f_const", toolBox, LatticeParameters<double>(), spec);
+    f = c;
+    f.updateGhosts();
+
+    Field<double, NDim> df("df", toolBox);
+    df = neutDiff(f, Tag<1>{});
+
+    auto layout = toolBox->mLayouts.getConfigSpaceLayout();
+    const auto &localSizes = layout.getLocalSizes();
+    const auto &localStarts = layout.getLocalStarts();
+
+    auto view = df.getLocalNDHostView();
+    bool ok = true;
+    NDLoop<NDim>(view, [&](const auto &...indices) {
+      device::IdxArray<NDim> idx{indices...};
+      const bool firstInDim0 = (idx[0] == 0);
+      const bool lastInDim0  = (idx[0] == localSizes[0] - 1);
+      const bool lowB  = (localStarts[0] == 0);
+      const bool highB = (localStarts[0] + localSizes[0] == nGrid);
+      double expected = 0.0;
+      if (firstInDim0 && lowB)  expected =  c / dx;
+      if (lastInDim0  && highB) expected = -c / dx;
+      const double got = view(indices...);
+      if (std::abs(got - expected) > 1e-12) {
+        ok = false;
+        std::stringstream ss;
+        ss << "NeutDiffBC mismatch at idx=" << idx << " got=" << got << " expected=" << expected
+           << "\n";
+        sayMPI << ss.str();
+      }
+    });
+    tdd.verify(ok);
+  }
+
 } // namespace TempLat
 
 namespace
 {
+#ifndef HAVE_MPI
   TempLat::TDDContainer<TempLat::NeutDiffTester<1>> test1;
+#endif
   TempLat::TDDContainer<TempLat::NeutDiffTester<2>> test2;
   TempLat::TDDContainer<TempLat::NeutDiffTester<3>> test3;
   TempLat::TDDContainer<TempLat::NeutDiffTester<4>> test4;
   TempLat::TDDContainer<TempLat::NeutDiffTester<5>> test5;
+
+  TempLat::TDDContainer<TempLat::NeutDiffBCTester<2>> bcTest2;
+  TempLat::TDDContainer<TempLat::NeutDiffBCTester<3>> bcTest3;
 } // namespace

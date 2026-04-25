@@ -191,13 +191,74 @@ namespace TempLat
     }
   }
 
+  /** @brief BC-aware ForwDiff test: antiperiodic in dim 0, constant field.
+   *
+   * Sets f = constant c on a lattice with Antiperiodic BC in dim 0. The forward difference in
+   * dir 1 (= dim 0) should evaluate to 0 everywhere except at the cell adjacent to the high
+   * boundary in dim 0, where the wrap value is -c instead of c, giving (-c - c)/dx = -2c/dx.
+   * This isolates the antiperiodic ghost-fill behavior — periodic BC would give 0 everywhere.
+   */
+  template <size_t NDim> struct ForwDiffBCTester {
+    static void Test(TDDAssertion &tdd);
+  };
+
+  template <size_t NDim> inline void ForwDiffBCTester<NDim>::Test(TDDAssertion &tdd)
+  {
+    const device::Idx nGrid = 8, nGhost = 1;
+    auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
+    toolBox->unsetVerbose();
+
+    BCSpec<NDim> spec = allPeriodic<NDim>();
+    spec[0] = BCType::Antiperiodic;
+
+    const double c = 1.0;
+    const double dx = 1.0; // LatticeParameters<double>() default
+
+    Field<double, NDim> f("f_const", toolBox, LatticeParameters<double>(), spec);
+    f = c;
+    f.updateGhosts();
+
+    Field<double, NDim> df("df", toolBox);
+    df = forwDiff(f, Tag<1>{}); // dir 1 → dim 0
+
+    auto layout = toolBox->mLayouts.getConfigSpaceLayout();
+    const auto &localSizes = layout.getLocalSizes();
+    const auto &localStarts = layout.getLocalStarts();
+
+    auto view = df.getLocalNDHostView();
+    bool ok = true;
+    NDLoop<NDim>(view, [&](const auto &...indices) {
+      device::IdxArray<NDim> idx{indices...};
+      // The LAST owned cell in dim 0 (idx[0] == localSize_0 - 1) on the high-boundary rank is
+      // where forwDiff reaches the antiperiodic ghost.
+      const bool lastInDim0 = (idx[0] == localSizes[0] - 1);
+      const bool highBoundaryRank = (localStarts[0] + localSizes[0] == nGrid);
+      const double expected = (lastInDim0 && highBoundaryRank) ? (-2.0 * c / dx) : 0.0;
+      const double got = view(indices...);
+      if (std::abs(got - expected) > 1e-12) {
+        ok = false;
+        std::stringstream ss;
+        ss << "ForwDiffBC mismatch at idx=" << idx << " got=" << got << " expected=" << expected
+           << " (lastInDim0=" << lastInDim0 << " highBoundaryRank=" << highBoundaryRank << ")\n";
+        sayMPI << ss.str();
+      }
+    });
+    tdd.verify(ok);
+  }
+
 } // namespace TempLat
 
 namespace
 {
+  // 1D MemoryToolBox is rejected at compile time in MPI builds (see memorytoolbox.h static_assert).
+#ifndef HAVE_MPI
   TempLat::TDDContainer<TempLat::ForwDiffTester<1>> test1;
+#endif
   TempLat::TDDContainer<TempLat::ForwDiffTester<2>> test2;
   TempLat::TDDContainer<TempLat::ForwDiffTester<3>> test3;
   TempLat::TDDContainer<TempLat::ForwDiffTester<4>> test4;
   TempLat::TDDContainer<TempLat::ForwDiffTester<5>> test5;
+
+  TempLat::TDDContainer<TempLat::ForwDiffBCTester<2>> bcTest2;
+  TempLat::TDDContainer<TempLat::ForwDiffBCTester<3>> bcTest3;
 } // namespace

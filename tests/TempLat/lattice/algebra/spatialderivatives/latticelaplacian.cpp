@@ -20,7 +20,7 @@ namespace TempLat
 
   template <size_t NDim> inline void LatticeLaplacianTester<NDim>::Test(TDDAssertion &tdd)
   {
-    const device::Idx nGrid = 4, nGhost = 1;
+    const device::Idx nGrid = 8, nGhost = 1;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
     SpatialCoordinate<NDim> coord(toolBox);
@@ -246,13 +246,74 @@ namespace TempLat
     }
   }
 
+  /** @brief BC-aware Laplacian test: antiperiodic in dim 0, constant field.
+   *
+   * f = c with Antiperiodic in dim 0; LatLapl is `sum_dir (f[+e] - 2f + f[-e])` (no /dx²
+   * factor in this codebase's convention). With f constant, every dir contributes 0 except
+   * dim 0 at boundary cells: at the LOW or HIGH boundary the antiperiodic ghost is -c, so the
+   * stencil becomes `(c) - 2*c + (-c) = -2c` (or symmetrically `(-c) - 2*c + c = -2c`).
+   * Interior cells in dim 0 see (c - 2c + c) = 0. Other dims are Periodic and contribute 0.
+   */
+  template <size_t NDim> struct LatticeLaplacianBCTester {
+    static void Test(TDDAssertion &tdd);
+  };
+
+  template <size_t NDim> inline void LatticeLaplacianBCTester<NDim>::Test(TDDAssertion &tdd)
+  {
+    const device::Idx nGrid = 8, nGhost = 1;
+    auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
+    toolBox->unsetVerbose();
+
+    BCSpec<NDim> spec = allPeriodic<NDim>();
+    spec[0] = BCType::Antiperiodic;
+
+    const double c = 1.0;
+
+    Field<double, NDim> f("f_const", toolBox, LatticeParameters<double>(), spec);
+    f = c;
+    f.updateGhosts();
+
+    Field<double, NDim> lf("lf", toolBox);
+    lf = LatLapl(f);
+
+    auto layout = toolBox->mLayouts.getConfigSpaceLayout();
+    const auto &localSizes = layout.getLocalSizes();
+    const auto &localStarts = layout.getLocalStarts();
+
+    auto view = lf.getLocalNDHostView();
+    bool ok = true;
+    NDLoop<NDim>(view, [&](const auto &...indices) {
+      device::IdxArray<NDim> idx{indices...};
+      const bool firstInDim0 = (idx[0] == 0);
+      const bool lastInDim0  = (idx[0] == localSizes[0] - 1);
+      const bool lowB  = (localStarts[0] == 0);
+      const bool highB = (localStarts[0] + localSizes[0] == nGrid);
+      const bool atDim0Boundary = (firstInDim0 && lowB) || (lastInDim0 && highB);
+      const double expected = atDim0Boundary ? (-2.0 * c) : 0.0;
+      const double got = view(indices...);
+      if (std::abs(got - expected) > 1e-12) {
+        ok = false;
+        std::stringstream ss;
+        ss << "LatLaplBC mismatch at idx=" << idx << " got=" << got << " expected=" << expected
+           << "\n";
+        sayMPI << ss.str();
+      }
+    });
+    tdd.verify(ok);
+  }
+
 } // namespace TempLat
 
 namespace
 {
+#ifndef HAVE_MPI
   TempLat::TDDContainer<TempLat::LatticeLaplacianTester<1>> test1;
+#endif
   TempLat::TDDContainer<TempLat::LatticeLaplacianTester<2>> test2;
   TempLat::TDDContainer<TempLat::LatticeLaplacianTester<3>> test3;
   TempLat::TDDContainer<TempLat::LatticeLaplacianTester<4>> test4;
   TempLat::TDDContainer<TempLat::LatticeLaplacianTester<5>> test5;
+
+  TempLat::TDDContainer<TempLat::LatticeLaplacianBCTester<2>> bcTest2;
+  TempLat::TDDContainer<TempLat::LatticeLaplacianBCTester<3>> bcTest3;
 } // namespace

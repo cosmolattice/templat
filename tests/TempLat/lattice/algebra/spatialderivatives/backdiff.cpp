@@ -194,13 +194,69 @@ namespace TempLat
     }
   }
 
+  /** @brief BC-aware BackDiff test: antiperiodic in dim 0, constant field.
+   *
+   * f = c with Antiperiodic in dim 0; backDiff in dir 1 (= dim 0). The first owned cell on the
+   * low-boundary rank is the only cell that reaches the antiperiodic ghost (= -c), giving
+   * (c - (-c))/dx = 2c/dx; everywhere else the result is 0.
+   */
+  template <size_t NDim> struct BackDiffBCTester {
+    static void Test(TDDAssertion &tdd);
+  };
+
+  template <size_t NDim> inline void BackDiffBCTester<NDim>::Test(TDDAssertion &tdd)
+  {
+    const device::Idx nGrid = 8, nGhost = 1;
+    auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
+    toolBox->unsetVerbose();
+
+    BCSpec<NDim> spec = allPeriodic<NDim>();
+    spec[0] = BCType::Antiperiodic;
+
+    const double c = 1.0;
+    const double dx = 1.0;
+
+    Field<double, NDim> f("f_const", toolBox, LatticeParameters<double>(), spec);
+    f = c;
+    f.updateGhosts();
+
+    Field<double, NDim> df("df", toolBox);
+    df = backDiff(f, Tag<1>{});
+
+    auto layout = toolBox->mLayouts.getConfigSpaceLayout();
+    const auto &localStarts = layout.getLocalStarts();
+
+    auto view = df.getLocalNDHostView();
+    bool ok = true;
+    NDLoop<NDim>(view, [&](const auto &...indices) {
+      device::IdxArray<NDim> idx{indices...};
+      const bool firstInDim0 = (idx[0] == 0);
+      const bool lowBoundaryRank = (localStarts[0] == 0);
+      const double expected = (firstInDim0 && lowBoundaryRank) ? (2.0 * c / dx) : 0.0;
+      const double got = view(indices...);
+      if (std::abs(got - expected) > 1e-12) {
+        ok = false;
+        std::stringstream ss;
+        ss << "BackDiffBC mismatch at idx=" << idx << " got=" << got << " expected=" << expected
+           << "\n";
+        sayMPI << ss.str();
+      }
+    });
+    tdd.verify(ok);
+  }
+
 } // namespace TempLat
 
 namespace
 {
+#ifndef HAVE_MPI
   TempLat::TDDContainer<TempLat::BackDiffTester<1>> test1;
+#endif
   TempLat::TDDContainer<TempLat::BackDiffTester<2>> test2;
   TempLat::TDDContainer<TempLat::BackDiffTester<3>> test3;
   TempLat::TDDContainer<TempLat::BackDiffTester<4>> test4;
   TempLat::TDDContainer<TempLat::BackDiffTester<5>> test5;
+
+  TempLat::TDDContainer<TempLat::BackDiffBCTester<2>> bcTest2;
+  TempLat::TDDContainer<TempLat::BackDiffBCTester<3>> bcTest3;
 } // namespace
