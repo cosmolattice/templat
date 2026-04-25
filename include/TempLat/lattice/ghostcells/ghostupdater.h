@@ -279,7 +279,8 @@ namespace TempLat
           device::IdxArray<NDim> ownedSizes = mLayout.getSizesInMemory();
           for (size_t depth = 1; depth <= (size_t)mGhostDepth; ++depth) {
             applyLocalBCAtDimDepth<T>(fullView, dimension, depth, ownedSizes, mGhostDepth,
-                                      bcSpec[dimension], boundary.first, boundary.second);
+                                      bcSpec[dimension], boundary.first, boundary.second,
+                                      /*mpiPostStep=*/true);
           }
         }
       }
@@ -322,7 +323,8 @@ namespace TempLat
           auto fullView = block.getNDView(full_sizes);
           for (size_t depth = 1; depth <= (size_t)mGhostDepth; ++depth) {
             applyLocalBCAtDimDepth<T>(fullView, dimension, depth, ownedSizes, mGhostDepth,
-                                      bcSpec[dimension], boundary.first, boundary.second);
+                                      bcSpec[dimension], boundary.first, boundary.second,
+                                      /*mpiPostStep=*/true);
           }
         }
       }
@@ -366,10 +368,18 @@ namespace TempLat
     //   Neumann:     mirror the innermost interior cells outward (even extension).
     // The `doLow` / `doHigh` flags select which side(s) to write. The local (single-rank) path
     // calls with both true; the MPI boundary-rank post-step calls with exactly one true.
+    //
+    // `mpiPostStep` distinguishes the local single-rank path (false) from the MPI boundary-rank
+    // post-exchange step (true). Under MPI, the exchange has already populated the destination
+    // ghost slab with the global-wrap value; for Antiperiodic the BC is then an in-place sign
+    // flip of that slab, NOT a copy from the local last/first owned cell (which under MPI lives
+    // on the wrong end of the global domain). Dirichlet/Neumann/Periodic produce identical
+    // results either way on a boundary rank — Dirichlet doesn't read source, Neumann's local
+    // first/last IS the global first/last on a boundary rank, and Periodic skips the post-step.
     template <typename T, typename View>
     void applyLocalBCAtDimDepth(View &view, size_t dim, size_t depth,
                                 const device::IdxArray<NDim> &sizes, device::Idx ghostDepth, BCType bc,
-                                bool doLow = true, bool doHigh = true)
+                                bool doLow = true, bool doHigh = true, bool mpiPostStep = false)
     {
       if (!doLow && !doHigh) return;
       if constexpr (NDim == 1) {
@@ -383,12 +393,21 @@ namespace TempLat
               });
           break;
         case BCType::Antiperiodic:
-          device::iteration::foreach (
-              "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
-              DEVICE_LAMBDA(const device::IdxArray<1> &) {
-                if (doLow)  view(ghostDepth - depth) = -view(ghostDepth + sizes[0] - depth);
-                if (doHigh) view(ghostDepth + sizes[0] + (depth - 1)) = -view(ghostDepth + (depth - 1));
-              });
+          if (mpiPostStep) {
+            device::iteration::foreach (
+                "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
+                DEVICE_LAMBDA(const device::IdxArray<1> &) {
+                  if (doLow)  view(ghostDepth - depth) = -view(ghostDepth - depth);
+                  if (doHigh) view(ghostDepth + sizes[0] + (depth - 1)) = -view(ghostDepth + sizes[0] + (depth - 1));
+                });
+          } else {
+            device::iteration::foreach (
+                "GhostUpdater", device::IdxArray<1>{0}, device::IdxArray<1>{1},
+                DEVICE_LAMBDA(const device::IdxArray<1> &) {
+                  if (doLow)  view(ghostDepth - depth) = -view(ghostDepth + sizes[0] - depth);
+                  if (doHigh) view(ghostDepth + sizes[0] + (depth - 1)) = -view(ghostDepth + (depth - 1));
+                });
+          }
           break;
         case BCType::Dirichlet:
           device::iteration::foreach (
@@ -465,8 +484,15 @@ namespace TempLat
           if (doHigh) device::memory::copyDeviceToDevice(ftb_fromSubView, ftb_toSubView);
           break;
         case BCType::Antiperiodic:
-          if (doLow)  negatingCopySubview(btf_fromSubView, btf_toSubView);
-          if (doHigh) negatingCopySubview(ftb_fromSubView, ftb_toSubView);
+          if (mpiPostStep) {
+            // Sign-flip the exchanged ghost slab in place: ghost = -ghost. The exchange has
+            // already brought the global-wrap value into the destination; we just negate it.
+            if (doLow)  negatingCopySubview(btf_toSubView, btf_toSubView);
+            if (doHigh) negatingCopySubview(ftb_toSubView, ftb_toSubView);
+          } else {
+            if (doLow)  negatingCopySubview(btf_fromSubView, btf_toSubView);
+            if (doHigh) negatingCopySubview(ftb_fromSubView, ftb_toSubView);
+          }
           break;
         case BCType::Dirichlet:
           if (doLow)  device::memory::fill(btf_toSubView, T{0});
