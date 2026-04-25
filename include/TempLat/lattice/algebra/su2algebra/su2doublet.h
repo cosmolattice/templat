@@ -12,6 +12,7 @@
 #include "TempLat/lattice/algebra/helpers/getkir.h"
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
 #include "TempLat/lattice/field/assignablefieldcollection.h"
+#include "TempLat/lattice/ghostcells/boundaryconditions.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2doubletget.h"
 #include "TempLat/util/rangeiteration/make_list_tag.h"
 
@@ -43,6 +44,20 @@ namespace TempLat
                            Field<T, NDim>(name + "_1", toolBox, pLatPar), //
                            Field<T, NDim>(name + "_2", toolBox, pLatPar), //
                            Field<T, NDim>(name + "_3", toolBox, pLatPar)  //
+                       }},
+          mLayout(toolBox->mLayouts.getConfigSpaceLayout())
+    {
+    }
+
+    // Matter doublet transforms in the fundamental: all 4 real components share the same BC
+    // (no c0/c_i split — that is specific to the SU(2) group-element parametrization).
+    SU2Doublet(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, BCSpec<NDim> bcSpec,
+               LatticeParameters<T> pLatPar = LatticeParameters<T>())
+        : mName(name), fs{{
+                           Field<T, NDim>(name + "_0", toolBox, pLatPar, bcSpec), //
+                           Field<T, NDim>(name + "_1", toolBox, pLatPar, bcSpec), //
+                           Field<T, NDim>(name + "_2", toolBox, pLatPar, bcSpec), //
+                           Field<T, NDim>(name + "_3", toolBox, pLatPar, bcSpec)  //
                        }},
           mLayout(toolBox->mLayouts.getConfigSpaceLayout())
     {
