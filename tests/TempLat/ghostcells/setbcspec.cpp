@@ -35,14 +35,10 @@ namespace TempLat
     toolBox->unsetVerbose();
 
     for (size_t bcDim = 0; bcDim < NDim; ++bcDim) {
-      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Antiperiodic, nGrid, nGhost,
-                                                  BCTestDetail::BCApplyMode::Setter));
-      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Dirichlet, nGrid, nGhost,
-                                                  BCTestDetail::BCApplyMode::Setter));
-      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Neumann, nGrid, nGhost,
-                                                  BCTestDetail::BCApplyMode::Setter));
-      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Periodic, nGrid, nGhost,
-                                                  BCTestDetail::BCApplyMode::Setter));
+      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Antiperiodic, nGrid, nGhost));
+      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Dirichlet, nGrid, nGhost));
+      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Neumann, nGrid, nGhost));
+      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Periodic, nGrid, nGhost));
     }
   }
 

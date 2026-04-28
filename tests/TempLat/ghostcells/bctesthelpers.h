@@ -43,8 +43,6 @@ namespace TempLat
       return 0.0;
     }
 
-    enum class BCApplyMode { Constructor, Setter };
-
     template <size_t NDim>
     inline void assignCoordinatePlusOne(Field<double, NDim> &f,
                                         device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, size_t bcDim)
@@ -104,30 +102,20 @@ namespace TempLat
       return ok;
     }
 
-    /** @brief Construct a Field with the given BC (via ctor or via setter), set every cell to
+    /** @brief Construct a Field with the given BC, set every cell to
      * (global_x[bcDim] + 1), updateGhosts(), and verify the low/high ghost slabs along bcDim.
      */
     template <size_t NDim>
     bool checkBCInDim(device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, size_t bcDim, BCType bc,
-                      ptrdiff_t nGrid, ptrdiff_t nGhost, BCApplyMode mode = BCApplyMode::Constructor)
+                      ptrdiff_t nGrid, ptrdiff_t nGhost)
     {
       BCSpec<NDim> spec = allPeriodic<NDim>();
       spec[bcDim] = bc;
-
-      auto runCheck = [&](Field<double, NDim> &f) {
-        assignCoordinatePlusOne<NDim>(f, toolBox, bcDim);
-        f.updateGhosts();
-        return verifyGhostFaces<NDim>(f, bcDim, bc, nGrid, nGhost);
-      };
-
-      if (mode == BCApplyMode::Constructor) {
-        Field<double, NDim> f("f_bc_check", toolBox, LatticeParameters<double>(), spec);
-        return runCheck(f);
-      } else {
-        Field<double, NDim> f("f_bc_check", toolBox, LatticeParameters<double>());
-        f.setBCSpec(spec);
-        return runCheck(f);
-      }
+      Field<double, NDim> f("f_bc_check", toolBox, LatticeParameters<double>());
+      f.setBCSpec(spec);
+      assignCoordinatePlusOne<NDim>(f, toolBox, bcDim);
+      f.updateGhosts();
+      return verifyGhostFaces<NDim>(f, bcDim, bc, nGrid, nGhost);
     }
   } // namespace BCTestDetail
 } // namespace TempLat

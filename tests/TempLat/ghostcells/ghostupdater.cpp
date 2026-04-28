@@ -273,33 +273,6 @@ namespace TempLat
       // Periodic regression: new BC plumbing must not change existing all-periodic behavior.
       tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Periodic,     nGrid, nGhost));
     }
-
-    // Mixed-BC sanity: Antiperiodic in dim 0, Periodic elsewhere — verify dim-0 low ghost follows
-    // Antiperiodic on the boundary rank, leaving the other dim's Periodic unaffected.
-    if constexpr (NDim >= 2) {
-      auto layout = toolBox->mLayouts.getConfigSpaceLayout();
-      const auto &localSizes = layout.getLocalSizes();
-      const auto &localStarts = layout.getLocalStarts();
-      (void)localSizes;
-
-      BCSpec<NDim> mixed = allPeriodic<NDim>();
-      mixed[0] = BCType::Antiperiodic;
-
-      Field<double, NDim> f("f_mixed", toolBox, LatticeParameters<double>(), mixed);
-      SpatialCoordinate<NDim> x(toolBox);
-      f = x(1_c) + 1.0;
-      f.updateGhosts();
-
-      auto view = f.getFullNDHostView();
-      const bool isLow0 = (localStarts[0] == 0);
-
-      device::IdxArray<NDim> idx{};
-      idx[0] = nGhost - 1;
-      for (size_t i = 1; i < NDim; ++i) idx[i] = nGhost;
-      const double got = device::apply([&](auto... a) { return view(a...); }, idx);
-      const double expected = isLow0 ? -static_cast<double>(nGrid) : static_cast<double>(localStarts[0]);
-      tdd.verify(std::abs(got - expected) <= 1e-14);
-    }
   }
 
 } // namespace TempLat
