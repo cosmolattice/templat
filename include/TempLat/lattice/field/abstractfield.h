@@ -84,6 +84,12 @@ namespace TempLat
 
     const BCSpec<NDim> &getBCSpec() const { return mManager->getBCSpec(); }
 
+    void setBCSpec(BCSpec<NDim> bcSpec)
+    {
+      mManager->setBCSpec(bcSpec);
+      mManager->setGhostsAreStale();
+    }
+
     auto getDx() const { return latPar.getDx(); }
     auto getKIR() const { return latPar.getKIR(); }
     auto getLatParams() const { return latPar; }
