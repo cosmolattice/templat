@@ -333,14 +333,14 @@ namespace TempLat::device_kokkos
                        &stat);
 
           // Open lower neighbor's sendUp handle (for our recvUp)
-          if (mP2PAvailable[d * 2 + 0] && recvSendUpFromLower.version > mRemoteHandleVersion[d * 2 + 1]) {
+          if (mP2PAvailable[d * 2 + 1] && recvSendUpFromLower.version > mRemoteHandleVersion[d * 2 + 1]) {
             if (mRemoteSendUpPtr[d * 2 + 1] != nullptr) p2p::ipcCloseHandle(mRemoteSendUpPtr[d * 2 + 1]);
             mRemoteSendUpPtr[d * 2 + 1] =
                 (recvSendUpFromLower.version > 0) ? p2p::ipcOpenHandle(recvSendUpFromLower.handle) : nullptr;
           }
 
           // Open upper neighbor's sendDown handle (for our recvDown)
-          if (mP2PAvailable[d * 2 + 1] && recvSendDownFromUpper.version > mRemoteHandleVersion[d * 2 + 0]) {
+          if (mP2PAvailable[d * 2 + 0] && recvSendDownFromUpper.version > mRemoteHandleVersion[d * 2 + 0]) {
             if (mRemoteSendDownPtr[d * 2 + 0] != nullptr) p2p::ipcCloseHandle(mRemoteSendDownPtr[d * 2 + 0]);
             mRemoteSendDownPtr[d * 2 + 0] =
                 (recvSendDownFromUpper.version > 0) ? p2p::ipcOpenHandle(recvSendDownFromUpper.handle) : nullptr;
