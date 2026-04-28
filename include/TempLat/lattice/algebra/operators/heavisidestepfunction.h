@@ -17,6 +17,12 @@
 
 namespace TempLat
 {
+  /**
+   * @brief Heaviside step function
+   * We use the convention that H(0) = 1 for simplicity.
+   *
+   * @tparam R Expression type of the argument.
+   */
   template <typename R> class HeavisideStepFunction : public UnaryOperator<R>
   {
   public:
@@ -34,7 +40,8 @@ namespace TempLat
       return (DoEval::eval(mR, idx...) >= 0 ? 1 : 0);
     }
 
-    /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
+    /** @brief Derivative of the Heaviside step function is the Dirac delta function.
+     */
     template <typename U> auto d(const U &other) { return GetDeriv::get(mR, other) * DiracDelta(mR); }
 
     virtual std::string operatorString() const override { return "Heaviside"; }
