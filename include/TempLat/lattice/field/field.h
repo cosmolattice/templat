@@ -42,12 +42,6 @@ namespace TempLat
     {
     }
 
-    Field(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar,
-          BCSpec<NDim> bcSpec)
-        : ConfigView<T, NDim>(name, toolBox, pLatPar, bcSpec), mFourierView(*this)
-    {
-    }
-
     template <typename R> void operator=(R &&g) { ConfigView<T, NDim>::operator=(g); }
 
     void operator=(const Field<T, NDim> &other) { operator=(OneType() * other); }

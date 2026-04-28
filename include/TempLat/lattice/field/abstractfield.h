@@ -39,13 +39,6 @@ namespace TempLat
     {
     }
 
-    AbstractField(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar,
-                  BCSpec<NDim> bcSpec)
-        : mToolBox(toolBox), mManager(mToolBox, name), latPar(pLatPar)
-    {
-      mManager->setBCSpec(bcSpec);
-    }
-
     inline void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
       switch (spaceType) {

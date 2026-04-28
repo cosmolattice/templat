@@ -8,7 +8,6 @@
 // File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
 
 #include "TempLat/lattice/field/assignablefieldcollection.h"
-#include "TempLat/lattice/ghostcells/boundaryconditions.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2get.h"
 #include "TempLat/util/rangeiteration/make_list_tag.h"
 #include "TempLat/util/rangeiteration/sum_in_range.h"
@@ -55,30 +54,6 @@ namespace TempLat
     {
       fs[0] = T(1);
       fs[0].updateGhosts();
-    }
-
-    // U = c0 I + i (c1 sigma1 + c2 sigma2 + c3 sigma3); U† flips sign of c1,c2,c3 only.
-    // So antiperiodic-link in dim d => c0 periodic, c1..c3 antiperiodic. Other BC types pass through.
-    SU2Field(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, BCSpec<NDim> linkBC,
-             LatticeParameters<T> pLatPar = LatticeParameters<T>())
-        : fs{{
-              Field<T, NDim>(name + "_0", toolBox, pLatPar, deriveC0BC(linkBC)), //
-              Field<T, NDim>(name + "_1", toolBox, pLatPar, linkBC),              //
-              Field<T, NDim>(name + "_2", toolBox, pLatPar, linkBC),              //
-              Field<T, NDim>(name + "_3", toolBox, pLatPar, linkBC)               //
-          }},
-          mName(name), mLayout(toolBox->mLayouts.getConfigSpaceLayout())
-    {
-      fs[0] = T(1);
-      fs[0].updateGhosts();
-    }
-
-    static BCSpec<NDim> deriveC0BC(const BCSpec<NDim> &linkBC)
-    {
-      BCSpec<NDim> out = linkBC;
-      for (auto &b : out)
-        if (b == BCType::Antiperiodic) b = BCType::Periodic;
-      return out;
     }
 
     template <int N> const auto &SU2Get(Tag<N> t) const

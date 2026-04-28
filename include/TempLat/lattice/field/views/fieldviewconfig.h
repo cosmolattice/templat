@@ -46,13 +46,6 @@ namespace TempLat
       initFromToolBox(toolBox);
     }
 
-    ConfigView(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar,
-               BCSpec<NDim> bcSpec)
-        : AbstractField<T, NDim>(name, toolBox, pLatPar, bcSpec), mDisableFFTBlocking(false)
-    {
-      initFromToolBox(toolBox);
-    }
-
     auto getView() const { return mView; }
 
     template <typename R> void assign(R &&g)
