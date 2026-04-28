@@ -26,16 +26,17 @@ namespace TempLat
     SU2Wrapper<double, double, double, double> w2(2.0, 3.0, 4.0, 4.0);
     tdd.verify(w2.toString() == "SU2(2,3,4,4)");
 
-    auto toolbox = MemoryToolBox<3>::makeShared(16, 0);
+    auto toolbox = MemoryToolBox<3>::makeShared(16, 1);
 
     SU2Field<double, 3> f1("f", toolbox);
     f1 = w2;
 
-    // First one will be off, because the SU2Get(0_c) is not used in the assignment, but the others should be correct.
-    // tdd.verify(device::memory::getAtOnePoint(f1.SU2Get(0_c), device::IdxArray<3>{0, 0, 0}) == 2.0);
-    tdd.verify(device::memory::getAtOnePoint(f1.SU2Get(1_c), device::IdxArray<3>{0, 0, 0}) == 3.0);
-    tdd.verify(device::memory::getAtOnePoint(f1.SU2Get(2_c), device::IdxArray<3>{0, 0, 0}) == 4.0);
-    tdd.verify(device::memory::getAtOnePoint(f1.SU2Get(3_c), device::IdxArray<3>{0, 0, 0}) == 4.0);
+    // getAtOnePoint uses raw memory indices; with nGhost=1, spatial {0,0,0} lives at memory {1,1,1}.
+    // First component will be off because SU2Get(0_c) is not used in the assignment.
+    // tdd.verify(device::memory::getAtOnePoint(f1.SU2Get(0_c), device::IdxArray<3>{1, 1, 1}) == 2.0);
+    tdd.verify(device::memory::getAtOnePoint(f1.SU2Get(1_c), device::IdxArray<3>{1, 1, 1}) == 3.0);
+    tdd.verify(device::memory::getAtOnePoint(f1.SU2Get(2_c), device::IdxArray<3>{1, 1, 1}) == 4.0);
+    tdd.verify(device::memory::getAtOnePoint(f1.SU2Get(3_c), device::IdxArray<3>{1, 1, 1}) == 4.0);
   }
 
 } // namespace TempLat

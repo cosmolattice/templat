@@ -82,6 +82,9 @@ namespace TempLat
 
     template <typename T> void update(MemoryBlock<T, NDim> &block)
     {
+      if (mGhostDepth == 0)
+        throw GhostUpdaterException("Cannot update ghost cells with ghost depth 0. "
+                                    "Use nGhost >= 1 when creating MemoryToolBox.");
 #ifdef HAVE_MPI
       // There is no MPI splitting in one dimension. Also, when we have only a single node, there is no need to do MPI
       // communication.
