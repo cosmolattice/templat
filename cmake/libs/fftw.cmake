@@ -1,3 +1,13 @@
+# Brief check: is there an environment variable FFTW_DIR that points to a
+# directory? If so, we can use it to find FFTW.
+if(DEFINED ENV{FFTW_DIR} AND IS_DIRECTORY "$ENV{FFTW_DIR}")
+  set(FFTW_DIR "$ENV{FFTW_DIR}")
+  message(
+    STATUS
+      "Using fftw directory hint from environment variable FFTW_DIR=$ENV{FFTW_DIR}"
+  )
+endif()
+
 set(FFTW_INCLUDES
     "${FFTW_DIR}/include"
     CACHE PATH "Path to FFTW include directory")
