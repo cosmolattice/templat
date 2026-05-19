@@ -385,7 +385,11 @@ namespace TempLat
       auto sizes = toolBox->mLayouts.getConfigSpaceSizes();   // Local mpi sizes.
 
       auto inicoord = sparsesave ? mdown[dim] : 0;
-      auto endcoord = sparsesave ? mup[dim] : sizes[dim];
+      // Bugfix: non-sparse endcoord must be the GLOBAL grid size. The recursion
+      // below skips coords where `starts[dim]+i >= endcoord`; `starts[dim]+i` is
+      // a global coordinate while `sizes[dim]` is the LOCAL MPI size, so every
+      // rank with starts[dim]>0 skipped its whole range and wrote nothing.
+      auto endcoord = sparsesave ? mup[dim] : (device::Idx)toolBox->mNGridPointsVec[dim];
       auto stepcoord = sparsesave ? mstep[dim] : 1;
 
       const auto mLayout = toolBox->mLayouts.getConfigSpaceLayout();
