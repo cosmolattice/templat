@@ -8,12 +8,20 @@ if(DEFINED ENV{FFTW_DIR} AND IS_DIRECTORY "$ENV{FFTW_DIR}")
   )
 endif()
 
-set(FFTW_INCLUDES
-    "${FFTW_DIR}/include"
-    CACHE PATH "Path to FFTW include directory")
-set(FFTW_LIB_DIR
-    "${FFTW_DIR}/lib"
-    CACHE PATH "Path to FFTW library directory")
+# Only seed these as hints when FFTW_DIR is actually known. Pre-populating the
+# find_path/find_library result variables (FFTW_INCLUDES/FFTW_LIB_DIR) with an
+# empty FFTW_DIR would cache bogus "/include" and "/lib" paths and, because
+# find_path/find_library are no-ops once their result variable already holds a
+# value, suppress the normal system search entirely. Leaving them unset lets
+# find.cmake discover FFTW in the standard prefixes (e.g. Homebrew).
+if(FFTW_DIR)
+  set(FFTW_INCLUDES
+      "${FFTW_DIR}/include"
+      CACHE PATH "Path to FFTW include directory")
+  set(FFTW_LIB_DIR
+      "${FFTW_DIR}/lib"
+      CACHE PATH "Path to FFTW library directory")
+endif()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/libs/fftw/find.cmake)
 
