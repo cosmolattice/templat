@@ -140,7 +140,7 @@ namespace TempLat
     auto getDx() const { return GetDx::getDx(fs[0]); }
     auto getKIR() const { return GetKIR::getKIR(fs[0]); }
 
-    inline auto getToolBox() { return GetToolBox::get(fs[0]); }
+    inline auto getToolBox() const { return GetToolBox::get(fs[0]); }
 
     inline void updateGhosts()
     {
