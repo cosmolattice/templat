@@ -13,6 +13,7 @@
 #include "TempLat/util/rangeiteration/tagliteral.h"
 #include "TempLat/lattice/algebra/su2algebra/su2unaryoperator.h"
 #include "TempLat/lattice/algebra/su2algebra/su2multiply.h"
+#include "TempLat/lattice/algebra/su2algebra/su2shift.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2getgetreturntype.h"
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 
@@ -105,6 +106,13 @@ namespace TempLat
   {
     return dagger(m.getSecond()) * dagger(m.getFirst());
   }
+
+  // Commute dagger past a shift: (shift(X))^dagger = shift(X^dagger). A shift is a coordinate relabeling
+  // and the dagger a per-site quaternion conjugation, so they commute; cost-neutral at eval. Unlike the
+  // anti-homomorphism this fires unconditionally - it lets nested dag(shift(dag(Y))) collapse to
+  // shift(Y) via the involution above (e.g. inside the axion-current theta_ijk).
+  template <class R, int... N> auto dagger(const SU2Shifter<R, N...> &s) { return shift<N...>(dagger(s.getOperand())); }
+  template <class R, int N> auto dagger(const SU2ShifterByOne<R, N> &s) { return shift<N>(dagger(s.getOperand())); }
 
   template <class R>
     requires HasSU2Get<R>

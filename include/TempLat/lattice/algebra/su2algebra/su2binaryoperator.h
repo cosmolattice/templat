@@ -21,6 +21,10 @@
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
 
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
+
 namespace TempLat
 {
   /** @brief A class which implements basic features of su2 binary operators.
@@ -83,6 +87,24 @@ namespace TempLat
     {
       PostGet::apply(mR);
       PostGet::apply(mT);
+    }
+
+    /** @brief Space/ghost confirmation by walking this SU(2) expression's own (linear) structure -
+     *  forwarded to both operands, mirroring the generic BinaryOperator. This lets an SU(2) assignment
+     *  confirm space/ghosts on the whole expression instead of building the exponential per-component
+     *  SU2Get expansion just for confirmation (see su2liealgebrafield.h / su2field.h operator=). */
+    void doWeNeedGhosts() const
+    {
+      GhostsHunter::apply(mR);
+      GhostsHunter::apply(mT);
+    }
+
+    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mT); }
+
+    template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mR, newLayout, spaceType);
+      ConfirmSpace::apply(mT, newLayout, spaceType);
     }
 
     static constexpr size_t size = 4;

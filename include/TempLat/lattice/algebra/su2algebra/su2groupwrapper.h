@@ -18,6 +18,9 @@
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
 {
@@ -78,6 +81,24 @@ namespace TempLat
       PostGet::apply(mA);
       PostGet::apply(mB);
       PostGet::apply(mC);
+    }
+
+    // Space/ghost confirmation forwarded to the 3 stored component expressions (see SU2Field operator=).
+    void doWeNeedGhosts() const
+    {
+      GhostsHunter::apply(mA);
+      GhostsHunter::apply(mB);
+      GhostsHunter::apply(mC);
+    }
+    device::Idx confirmGhostsUpToDate() const
+    {
+      return ConfirmGhosts::apply(mA) + ConfirmGhosts::apply(mB) + ConfirmGhosts::apply(mC);
+    }
+    template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mA, newLayout, spaceType);
+      ConfirmSpace::apply(mB, newLayout, spaceType);
+      ConfirmSpace::apply(mC, newLayout, spaceType);
     }
 
     std::string toString() const

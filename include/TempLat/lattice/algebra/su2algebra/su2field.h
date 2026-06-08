@@ -76,10 +76,14 @@ namespace TempLat
 
     template <typename R> void operator=(R &&r)
     {
-      fs[0].onBeforeAssignment(r.SU2Get(0_c));
-      fs[1].onBeforeAssignment(r.SU2Get(1_c));
-      fs[2].onBeforeAssignment(r.SU2Get(2_c));
-      fs[3].onBeforeAssignment(r.SU2Get(3_c));
+      // Confirm config-space / ghost requirements by walking the WHOLE SU(2) expression r (linear in its
+      // structure), instead of building r.SU2Get(k) per component (the exponential per-component
+      // expansion, instantiated only to be walked then discarded). One call per target component is
+      // kept: onBeforeAssignment also confirms the target field fs[k] and flags its host mirror.
+      fs[0].onBeforeAssignment(r);
+      fs[1].onBeforeAssignment(r);
+      fs[2].onBeforeAssignment(r);
+      fs[3].onBeforeAssignment(r);
 
       PreGet::apply(r);
 
@@ -141,6 +145,29 @@ namespace TempLat
     auto getKIR() const { return GetKIR::getKIR(fs[0]); }
 
     inline auto getToolBox() const { return GetToolBox::get(fs[0]); }
+
+    // Space/ghost confirmation forwarded to the 4 component fields, so this leaf can be walked as a whole
+    // SU(2) expression (see operator=). GhostsHunter::apply on a Field is a no-op (matches the prior
+    // per-component path where r.SU2Get(k) was the bare field fs[k]).
+    void doWeNeedGhosts() const
+    {
+      GhostsHunter::apply(fs[0]);
+      GhostsHunter::apply(fs[1]);
+      GhostsHunter::apply(fs[2]);
+      GhostsHunter::apply(fs[3]);
+    }
+    device::Idx confirmGhostsUpToDate() const
+    {
+      return ConfirmGhosts::apply(fs[0]) + ConfirmGhosts::apply(fs[1]) + ConfirmGhosts::apply(fs[2]) +
+             ConfirmGhosts::apply(fs[3]);
+    }
+    void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(fs[0], newLayout, spaceType);
+      ConfirmSpace::apply(fs[1], newLayout, spaceType);
+      ConfirmSpace::apply(fs[2], newLayout, spaceType);
+      ConfirmSpace::apply(fs[3], newLayout, spaceType);
+    }
 
     inline void updateGhosts()
     {

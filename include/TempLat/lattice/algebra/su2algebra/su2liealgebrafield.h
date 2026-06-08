@@ -64,9 +64,13 @@ namespace TempLat
 
     template <typename R> void operator=(R &&r)
     {
-      fs[0].onBeforeAssignment(r.SU2Get(1_c));
-      fs[1].onBeforeAssignment(r.SU2Get(2_c));
-      fs[2].onBeforeAssignment(r.SU2Get(3_c));
+      // Confirm config-space / ghost requirements by walking the WHOLE SU(2) expression r (linear),
+      // instead of building r.SU2Get(k) per component (the exponential per-component expansion built
+      // only for confirmation, then discarded - values use the fused DoEval::eval below). One call per
+      // target component is kept (onBeforeAssignment also confirms the target field fs[k]).
+      fs[0].onBeforeAssignment(r);
+      fs[1].onBeforeAssignment(r);
+      fs[2].onBeforeAssignment(r);
 
       PreGet::apply(r);
 
@@ -115,6 +119,24 @@ namespace TempLat
     auto getKIR() const { return GetKIR::getKIR(fs[0]); }
 
     inline auto getToolBox() const { return GetToolBox::get(fs[0]); }
+
+    // Space/ghost confirmation forwarded to the 3 algebra component fields (see operator=).
+    void doWeNeedGhosts() const
+    {
+      GhostsHunter::apply(fs[0]);
+      GhostsHunter::apply(fs[1]);
+      GhostsHunter::apply(fs[2]);
+    }
+    device::Idx confirmGhostsUpToDate() const
+    {
+      return ConfirmGhosts::apply(fs[0]) + ConfirmGhosts::apply(fs[1]) + ConfirmGhosts::apply(fs[2]);
+    }
+    void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(fs[0], newLayout, spaceType);
+      ConfirmSpace::apply(fs[1], newLayout, spaceType);
+      ConfirmSpace::apply(fs[2], newLayout, spaceType);
+    }
 
     inline void updateGhosts()
     {

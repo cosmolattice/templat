@@ -19,6 +19,10 @@
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
 
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
+
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2get.h"
 
 namespace TempLat
@@ -60,6 +64,18 @@ namespace TempLat
     void preGet() { PreGet::apply(mR); }
 
     void postGet() { PostGet::apply(mR); }
+
+    /** @brief Space/ghost confirmation by walking the operand's structure (see SU2BinaryOperator). Note:
+     *  shifters (SU2Shifter/SU2ShifterByOne) OVERRIDE doWeNeedGhosts to trigger the actual ghost
+     *  exchange for the shifted read. */
+    void doWeNeedGhosts() const { GhostsHunter::apply(mR); }
+
+    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR); }
+
+    template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mR, newLayout, spaceType);
+    }
 
     inline auto getToolBox() const { return GetToolBox::get(mR); }
 
