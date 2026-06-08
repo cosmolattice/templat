@@ -105,8 +105,15 @@ namespace TempLat::device_kokkos
                   size_t byteCount, int count, MPI_Datatype dataType)
     {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
+      // upP2P/downP2P describe the *neighbor*: upP2P = P2P-able with upper neighbor.
+      // Sends and link-quality checks are gated by the neighbor flags. Receives use the
+      // pull model — filling recvUp reads from the LOWER neighbor's sendUp, and filling
+      // recvDown reads from the UPPER neighbor's sendDown — so they are gated by the
+      // OPPOSITE neighbor's P2P-ability.
       bool upP2P = isP2PUp(dimension);
       bool downP2P = isP2PDown(dimension);
+      bool canPullRecvUp = downP2P;
+      bool canPullRecvDown = upP2P;
 
       if (upP2P || downP2P) {
         // Kokkos::fence was already called by the ghost updater (packing complete on GPU).
@@ -114,8 +121,8 @@ namespace TempLat::device_kokkos
                              (!downP2P || mFullDuplex[dimension * 2 + 1]);
 
         // Post non-P2P MPI receives before the barrier (overlaps with barrier wait)
-        if (!upP2P) mExchange.IrecvUp(dataType, dimension, recvUpPtr, count);
-        if (!downP2P) mExchange.IrecvDown(dataType, dimension, recvDownPtr, count);
+        if (!canPullRecvUp) mExchange.IrecvUp(dataType, dimension, recvUpPtr, count);
+        if (!canPullRecvDown) mExchange.IrecvDown(dataType, dimension, recvDownPtr, count);
 
         // Barrier: all same-node ranks have finished packing → send buffers are safe to read
         MPI_Barrier(mShmComm);
@@ -126,9 +133,9 @@ namespace TempLat::device_kokkos
 
         if (allFullDuplex) {
           // --- Single-phase: NVLink/xGMI is full-duplex, no bidirectional contention ---
-          if (upP2P)
+          if (canPullRecvUp)
             p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
-          if (downP2P)
+          if (canPullRecvDown)
             p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
           p2p::streamSynchronize();
         } else {
@@ -140,17 +147,17 @@ namespace TempLat::device_kokkos
           int downReadSource = mNeighborRanks[dimension * 2 + 0]; // upper neighbor
 
           // Phase 0: reads where this rank has the lower rank number
-          if (upP2P && mMyRank < upReadSource)
+          if (canPullRecvUp && mMyRank < upReadSource)
             p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
-          if (downP2P && mMyRank < downReadSource)
+          if (canPullRecvDown && mMyRank < downReadSource)
             p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
           p2p::streamSynchronize();
           MPI_Barrier(mShmComm);
 
           // Phase 1: reads where this rank has the higher rank number
-          if (upP2P && mMyRank > upReadSource)
+          if (canPullRecvUp && mMyRank > upReadSource)
             p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
-          if (downP2P && mMyRank > downReadSource)
+          if (canPullRecvDown && mMyRank > downReadSource)
             p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
           p2p::streamSynchronize();
         }

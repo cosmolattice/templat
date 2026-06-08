@@ -26,7 +26,15 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    MPICartesianExchange(MPICartesianGroup group) : mGroup(group), mNeighbours(mGroup) {}
+    MPICartesianExchange(MPICartesianGroup group) : mGroup(group), mNeighbours(mGroup)
+    {
+#ifdef HAVE_MPI
+      // The P2P-mixed exchange path may post only a subset of {IsendUp, IrecvUp, IsendDown, IrecvDown}.
+      // waitall() always passes all 4 slots to MPI_Waitall, which only tolerates unused slots if they
+      // are MPI_REQUEST_NULL (not uninitialized memory).
+      mRequests.fill(MPI_REQUEST_NULL);
+#endif
+    }
 
     void exchangeUp(MPI_Datatype dataType, ptrdiff_t dimension, void *ptrSend, void *ptrReceive, int sendCount = 1)
     {
