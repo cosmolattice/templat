@@ -30,15 +30,17 @@ namespace TempLat
   }
 } // namespace TempLat
 
+// NOTE: the empty-range guard is keyed on the (end < beg) range test, NOT on `requires { expr; }`.
+// A `requires { expr; }` guard would place a nested Total's inner `[&](auto j){...}` lambda inside a
+// requires-expression, which clang rejects ("non-local lambda expression cannot have a capture-default"),
+// breaking nested `Total(i, ..., Total(j, ...))` (B2SU2, theta_ijk, ...). Gating on the range keeps the
+// empty-range safety (for end < beg the `expr` branch is never instantiated) without that hazard.
 #define Total(i, beg, end, expr)                                                                                       \
   TempLat::sum_in_range<beg, end + 1>([&](auto i) {                                                                    \
-    if constexpr (requires { expr; }) {                                                                                \
-      return expr;                                                                                                     \
-    } else if constexpr (end < beg) {                                                                                  \
+    if constexpr ((end) < (beg)) {                                                                                     \
       return TempLat::ZeroType();                                                                                      \
     } else {                                                                                                           \
-      static_assert(end < beg, "Total: end must be less than beg if expr is not valid");                               \
-      return TempLat::ZeroType();                                                                                      \
+      return expr;                                                                                                     \
     }                                                                                                                  \
   })
 

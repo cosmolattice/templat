@@ -32,6 +32,10 @@ namespace TempLat
     tdd.verify(Total(i, 1, 25, i) == (25 + 1) * 25 / 2);
 
     tdd.verify(Total(i, 1, 0, this_should_compile::func(i)).eval(0) == 0.);
+
+    // Nested Total must compile on clang (the inner [&] lambda must not land inside a requires-expr).
+    // Sum_{i=1..3} Sum_{j=1..3} i*j = (1+2+3)^2 = 36.
+    tdd.verify(Total(i, 1, 3, Total(j, 1, 3, i * j)) == 36);
   }
 
 } // namespace TempLat
