@@ -56,6 +56,11 @@ namespace TempLat
     auto getDx() const { return GetDx::getDx(mR); }
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
+    /** @brief Access the two operands. Used by the algebraic simplification rules (e.g. the dagger
+     *  anti-homomorphism (A.B)^dagger = B^dagger.A^dagger, see su2dagger.h). */
+    const R &getFirst() const { return mR; }
+    const T &getSecond() const { return mT; }
+
     inline auto getToolBox() const
     {
       using AT = decltype(GetToolBox::get(mR));

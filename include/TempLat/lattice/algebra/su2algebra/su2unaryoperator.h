@@ -53,6 +53,10 @@ namespace TempLat
     auto getDx() const { return GetDx::getDx(mR); }
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
+    /** @brief Access the single operand. Used by the algebraic simplification rules (e.g. dagger
+     *  involution / shift, see su2dagger.h). */
+    const R &getOperand() const { return mR; }
+
     void preGet() { PreGet::apply(mR); }
 
     void postGet() { PostGet::apply(mR); }

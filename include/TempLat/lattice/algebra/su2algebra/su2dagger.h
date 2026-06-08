@@ -7,9 +7,12 @@
 
 // File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2019
 
+#include <type_traits>
+
 #include "TempLat/lattice/algebra/su2algebra/helpers/hassu2get.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
 #include "TempLat/lattice/algebra/su2algebra/su2unaryoperator.h"
+#include "TempLat/lattice/algebra/su2algebra/su2multiply.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2getgetreturntype.h"
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 
@@ -68,6 +71,40 @@ namespace TempLat
   {
     return SU2Dagger<R>(r);
   };
+
+  // ---------------------------------------------------------------------------------------------------
+  // Algebraic simplification of dagger expressions.
+  //
+  // SU(2) dagger is the quaternion conjugate, an anti-involution: (U^dagger)^dagger = U and
+  // (A.B)^dagger = B^dagger.A^dagger, valid for any quaternion-valued expression (unit or scaled). We
+  // apply these ONLY when they remove a dagger (i.e. when a sub-dagger cancels): the plain
+  // anti-homomorphism dag(A.B) -> dag(B).dag(A) on two non-dagger operands would turn one 3-component
+  // negation into two, a pessimisation, so we never fire it there. The dag(dag U) -> U case is also
+  // folded by the optimiser at runtime, but eliminating it here additionally shrinks the instantiated
+  // type. Net effect: removes daggers the back-end optimiser cannot (it does not know the quaternion
+  // anti-homomorphism), and exposes leaf-level operands for common-subexpression elimination.
+  // ---------------------------------------------------------------------------------------------------
+
+  template <class T> struct IsSU2DaggerT : std::false_type
+  {
+  };
+  template <class R> struct IsSU2DaggerT<SU2Dagger<R>> : std::true_type
+  {
+  };
+  template <class T>
+  concept IsSU2Dagger = IsSU2DaggerT<std::decay_t<T>>::value;
+
+  // Involution: (U^dagger)^dagger = U.
+  template <class R> auto dagger(const SU2Dagger<R> &r) { return r.getOperand(); }
+
+  // Anti-homomorphism, fired only when at least one operand is itself a dagger, so that the rewrite
+  // cancels that dagger through the involution above: (A.B)^dagger = B^dagger.A^dagger.
+  template <class A, class B>
+    requires(IsSU2Dagger<A> || IsSU2Dagger<B>)
+  auto dagger(const SU2Multiplication<A, B> &m)
+  {
+    return dagger(m.getSecond()) * dagger(m.getFirst());
+  }
 
   template <class R>
     requires HasSU2Get<R>
