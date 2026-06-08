@@ -28,8 +28,18 @@ namespace TempLat
   {
     return sum_in_range_impl<begin>(std::forward<F>(func), std::make_integer_sequence<int, end - begin>());
   }
-
-#define Total(i, beg, end, expr) sum_in_range<beg, end + 1>([&](auto i) { return expr; })
 } // namespace TempLat
+
+#define Total(i, beg, end, expr)                                                                                       \
+  TempLat::sum_in_range<beg, end + 1>([&](auto i) {                                                                    \
+    if constexpr (requires { expr; }) {                                                                                \
+      return expr;                                                                                                     \
+    } else if constexpr (end < beg) {                                                                                  \
+      return TempLat::ZeroType();                                                                                      \
+    } else {                                                                                                           \
+      static_assert(end < beg, "Total: end must be less than beg if expr is not valid");                               \
+      return TempLat::ZeroType();                                                                                      \
+    }                                                                                                                  \
+  })
 
 #endif
