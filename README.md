@@ -115,24 +115,26 @@ TempLat fully abstracts away the management and dispatching to actual devices, w
 
 All custom CMake flags can be passed when configuring the user project, e.g. `cmake -DMPI=ON -DHDF5=ON ../`.
 
-| Flag              | Description                        | Default                                |
-| ----------------- | ---------------------------------- | -------------------------------------- |
-| `PARAFAFT`        | ParaFaft support for parallel FFTs | `OFF`                                  |
-| `MPI`             | MPI support                        | `OFF`                                  |
-| `HDF5`            | HDF5 support                       | `OFF`                                  |
-| `TEMPLAT_TEST`   | Enable TempLat's tests             | `OFF`                                  |
-| `DEVICE_PROVIDER` | Backend for parallelization        | `Kokkos`                               |
-| `CUDA`            | CUDA support for NVIDIA GPUs       | `OFF`                                  |
-| `HIP`             | HIP support for AMD GPUs           | `OFF`                                  |
-| `OPENMP`          | OpenMP CPU parallelization         | `OFF`                                  |
-| `PTHREADS`        | C++ threads CPU parallelization    | `OFF`                                  |
-| `NOTHREADING`     | No parallelization                 | `OFF`                                  |
-| `NATIVE`          | Pass `--march=native` to compiler  | `ON` (non-macOS), `OFF` (macOS)        |
-| `KOKKOSFFT`       | KokkosFFT for single-node GPU FFTs | `ON` when CUDA/HIP enabled, else `OFF` |
-| `PARAFAFT_CUFFTMP`| cuFFTMp backend inside ParaFaFT    | `OFF`                                  |
+| Flag               | Description                        | Default                                |
+| ------------------ | ---------------------------------- | -------------------------------------- |
+| `PARAFAFT`         | ParaFaft support for parallel FFTs | `OFF`                                  |
+| `MPI`              | MPI support                        | `OFF`                                  |
+| `HDF5`             | HDF5 support                       | `OFF`                                  |
+| `TEMPLAT_TEST`     | Enable TempLat's tests             | `OFF`                                  |
+| `DEVICE_PROVIDER`  | Backend for parallelization        | `Kokkos`                               |
+| `CUDA`             | CUDA support for NVIDIA GPUs       | `OFF`                                  |
+| `HIP`              | HIP support for AMD GPUs           | `OFF`                                  |
+| `OPENMP`           | OpenMP CPU parallelization         | `OFF`                                  |
+| `PTHREADS`         | C++ threads CPU parallelization    | `OFF`                                  |
+| `NOTHREADING`      | No parallelization                 | `OFF`                                  |
+| `NATIVE`           | Pass `--march=native` to compiler  | `ON` (non-macOS), `OFF` (macOS)        |
+| `KOKKOSFFT`        | KokkosFFT for single-node GPU FFTs | `ON` when CUDA/HIP enabled, else `OFF` |
+| `PARAFAFT_CUFFTMP` | cuFFTMp backend inside ParaFaFT    | `OFF`                                  |
 
 ### Runtime Environment Variables
 
-| Variable          | Description                                                                                                                                                                                                                                                                      |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GPU_NOCONSTRAIN` | Set to `1` to allow more MPI ranks per node than GPUs (oversubscription, e.g. via CUDA MPS). By default the session aborts if `local_ranks > num_devices`. Device assignment wraps via `shmrank % num_devices`; same-GPU peers use CUDA IPC directly with no MPI on the halo path. |
+| Variable             | Description                                                                                                                                                                                                     |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `KOKKOS_NUM_THREADS` | Requested number of CPU threads per process. Treated as an upper bound: the effective count is `min(value, hardwareCores / MPI-ranks-per-node)`.                                                                |
+| `OMP_NUM_THREADS`    | Same effect as `KOKKOS_NUM_THREADS`. If both variables are set, the larger value wins.                                                                                                                          |
+| `GPU_NOCONSTRAIN`    | Set to `1` to allow more MPI ranks per node than GPUs (oversubscription, e.g. via CUDA MPS). By default the session aborts if `local_ranks > num_devices`. Device assignment wraps via `shmrank % num_devices`. |
