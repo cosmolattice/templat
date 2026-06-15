@@ -425,7 +425,8 @@ namespace TempLat
           subMemoryPos[i] = memoryPos[i];
 
         std::vector<vType> sdata(toolBox->mNGridPointsVec[dim]);
-        std::vector<vType> sdatasparse(sparsesizes.back());
+        std::vector<vType> sdatasparse;
+        sdatasparse.reserve(sparsesizes.back());
         // If the input is a field, we can copy directly from memory
         if constexpr (requires(R _r) { _r.getView(); }) {
           // And apply this to get the subview, with the last dimension as a range starting from memoryPos[dim] (which
@@ -454,10 +455,16 @@ namespace TempLat
           // Finally, we can copy this subview to host and write it to the selected hyperslab in the dataset.
           device::memory::copyDeviceToHost(device_buf, sdata.data());
         }
-        for (auto it = sdata.begin(); it < sdata.end(); it += stepcoord)
-          sdatasparse.push_back(*it); // TODO: Jorge: I don't like this, although it is non-critical
-        subdims.back() = (endcoord - inicoord) / stepcoord;
-        mDataset.writeSlices(sdata, subdims, offsets);
+        // Keep every stepcoord-th point of the contiguous rod, sampling only the
+        // filled prefix [0, endcoord-inicoord). The dataset's last-axis extent is
+        // (endcoord-inicoord)/stepcoord, so cap at that count to stay consistent.
+        const auto sparseCount = (endcoord - inicoord) / stepcoord;
+        for (device::Idx j = 0;
+             j < endcoord - inicoord && (device::Idx)sdatasparse.size() < sparseCount;
+             j += stepcoord)
+          sdatasparse.push_back(sdata[j]);
+        subdims.back() = sparseCount;
+        mDataset.writeSlices(sdatasparse, subdims, offsets);
       } else {
         // Recursive call to loop over an arbitrary number of dimensions.
         if constexpr (NDim > 1) {
