@@ -81,6 +81,35 @@ namespace TempLat
       return total;
     }
 
+    UnbinnedRadialProjectionResult &sumInsteadOfAverage()
+    {
+      floatType intMultiplicity = 0;
+
+      for (auto &&it : *this) {
+        intMultiplicity = std::get<1>(it).multiplicity * (mIsInFourier ? 2 : 1); // Multiply by 2 if in Fourier space (only half of the last coordinate is iterated
+        // over in this case because of reflection symmetry for real data).
+        std::get<1>(it).average *= intMultiplicity;
+      }
+      return *this;
+    }
+
+    UnbinnedRadialProjectionResult &renormalizeBins()
+    {
+      /*After finalizing, we scale the bins so that they can be compared to the binned power psectrum. This is equal to considering the unbinned power spectrum with bins of variable width*/
+      floatType binWidth;
+
+      binWidth = (std::get<0>((*this)[1]) - std::get<0>((*this)[0])) / 2 - 0.5;
+      std::get<1>((*this)[0]).average /= binWidth;
+      for (size_t i = 1; i < (*this).size() - 1; ++i) {
+        binWidth = (std::get<0>((*this)[i+1]) - std::get<0>((*this)[i-1])) / 2;
+        std::get<1>((*this)[i]).average /= binWidth;
+      }
+      binWidth = 2 * (std::get<0>((*this)[(*this).size()])+std::get<0>((*this)[(*this).size()-1]));
+      std::get<1>((*this)[(*this).size()]).average /= binWidth;
+
+      return *this;
+    }
+
     std::string toString(int verbosity = 0) const
     {
       if ((device::Idx)this->size() < 1) return "";
@@ -133,6 +162,7 @@ namespace TempLat
           this->push_back(next);
         }
       }
+
 
       return *this;
     }
