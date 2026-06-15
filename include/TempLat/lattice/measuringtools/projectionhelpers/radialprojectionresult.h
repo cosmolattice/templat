@@ -199,11 +199,9 @@ namespace TempLat
 
       mFullResult.clear();
       for (size_t i = 0; i < mNBins; ++i) {
-        if (mMultiplicities[i] > 0.) {
-          RadialProjectionSingleBinAndValue<T> next(mBinBounds.getFinal(i, mMultiplicities[i]),
-                                                    mValues.getFinal(i, mMultiplicities[i]));
-          this->push_back(next);
-        }
+        RadialProjectionSingleBinAndValue<T> next(mBinBounds.getFinal(i, mMultiplicities[i]),
+                                                  mValues.getFinal(i, mMultiplicities[i]));
+        this->push_back(next);
       }
       return *this;
     }

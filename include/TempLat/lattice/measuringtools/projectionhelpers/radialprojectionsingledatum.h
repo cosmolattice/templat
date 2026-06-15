@@ -33,7 +33,7 @@ namespace TempLat
     }
 
     RadialProjectionSingleDatum(T sum, T sumOfSquares, T inputMinVal, T inputMaxVal, floatType inputMultiplicity)
-        : multiplicity(inputMultiplicity), average(multiplicity > 0 ? sum / multiplicity : sum),
+        : multiplicity(inputMultiplicity), average(multiplicity > 0 ? sum / multiplicity : 0.),
           sampleVariance(multiplicity > 0. ? sumOfSquares / multiplicity - average * average : 0.), minVal(inputMinVal),
           maxVal(inputMaxVal)
     {
