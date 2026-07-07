@@ -12,3 +12,4 @@
 #include "TempLat/lattice/algebra/gaugealgebra/fieldstrength.h"
 #include "TempLat/lattice/algebra/gaugealgebra/magneticfield.h"
 #include "TempLat/lattice/algebra/gaugealgebra/u1exponential.h"
+#include "TempLat/lattice/algebra/gaugealgebra/u1field.h"
