@@ -6,6 +6,7 @@
 #include "TempLat/lattice/algebra/complexalgebra/complexfieldshift.h"
 #include "TempLat/lattice/algebra/complexalgebra/complexfieldconjugate.h"
 #include "TempLat/lattice/algebra/complexalgebra/complexfield.h"
+#include "TempLat/lattice/algebra/complexalgebra/arg.h"
 #include "TempLat/lattice/algebra/complexalgebra/complexfieldaverager.h"
 #include "TempLat/lattice/algebra/complexalgebra/complexfieldfourierview.h"
 #include "TempLat/lattice/algebra/complexalgebra/complexwrapper.h"

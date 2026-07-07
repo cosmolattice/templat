@@ -31,7 +31,7 @@ namespace TempLat
 
     ComplexFieldShifter(const R &pR) : ComplexFieldUnaryOperator<R>(pR)
     {
-      shiftString = shift<N...>(mR.ComplexFieldGet(0_c)).getString({N...});
+      shiftString = GetString::get(shift<N...>(mR.ComplexFieldGet(0_c)));
     }
 
     template <int M> auto ComplexFieldGet(Tag<M> t) const
