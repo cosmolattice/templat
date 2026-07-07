@@ -59,8 +59,9 @@ namespace TempLat
   /** @brief Specialize for possible zero input! */
   constexpr inline ZeroType operator-(ZeroType a) { return a; }
 
-  /** @brief Specialize for double minus signs. */
-  template <typename T> auto operator-(Operators::UnaryMinus<Operators::UnaryMinus<T>> &&a) { return std::move(a); }
+  /** @brief Specialize for double minus signs: -(-(-x)) collapses to -x. The argument a == -(-x) == +x,
+   * so -a == -x, which is exactly the inner UnaryMinus<T> node a.mR. */
+  template <typename T> auto operator-(Operators::UnaryMinus<Operators::UnaryMinus<T>> &&a) { return a.mR; }
 } // namespace TempLat
 
 #endif

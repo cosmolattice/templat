@@ -14,34 +14,34 @@
 
 namespace TempLat
 {
-  /** @brief A class which returns teh phase of a complex field, between -pi and pi
+  /** @brief A class which returns the phase of a complex field, between -pi and pi
    *
-   * Unit test: ctest -R test-imag
+   * Unit test: ctest -R test-arg
    **/
   template <class T>
     requires HasComplexFieldGet<T>
-  static auto arg2(T &&t)
+  auto arg2(T &&t)
   {
     return arg2(t.ComplexFieldGet(Tag<1>()), t.ComplexFieldGet(Tag<0>()));
   }
 
   template <class T>
     requires IsComplexType<T>
-  static auto arg2(T &&t)
+  auto arg2(T &&t)
   {
     return arg2(t.imag(), t.real());
   }
 
   template <class T>
-  requires HasComplexFieldGet<T>
-  static auto arg(T &&t)
+    requires HasComplexFieldGet<T>
+  auto arg(T &&t)
   {
     return arg(t.ComplexFieldGet(Tag<1>()), t.ComplexFieldGet(Tag<0>()));
   }
 
   template <class T>
-  requires IsComplexType<T>
-  static auto arg(T &&t)
+    requires IsComplexType<T>
+  auto arg(T &&t)
   {
     return arg(t.imag(), t.real());
   }

@@ -32,7 +32,7 @@ namespace TempLat
   // itself a class template parameterized on the floating-point precision, so the alias is a template alias.
 #ifdef DEVICE_CUDA
   template <typename T> using ParaFaFT_Backend = parafaft::CuFFTBackend<T>;
-#elif defined(CL_HIP)
+#elif defined(DEVICE_HIP)
   template <typename T> using ParaFaFT_Backend = parafaft::HipFFTBackend<T>;
 #else
   template <typename T> using ParaFaFT_Backend = parafaft::FFTWBackend<T>;

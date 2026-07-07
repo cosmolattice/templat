@@ -18,14 +18,14 @@ namespace TempLat
    **/
   template <class T>
     requires HasComplexFieldGet<T>
-  static auto Imag(T &&t)
+  auto Imag(T &&t)
   {
     return t.ComplexFieldGet(Tag<1>());
   }
 
   template <class T>
     requires IsComplexType<T>
-  static auto Imag(T &&t)
+  auto Imag(T &&t)
   {
     return t.imag();
   }

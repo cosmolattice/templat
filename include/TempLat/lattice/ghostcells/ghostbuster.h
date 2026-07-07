@@ -92,26 +92,8 @@ namespace TempLat
     template <template <typename S, size_t _NDim, typename... MArgs> class M, typename T, typename... Args>
     void operator()(M<T, NDim, Args...> &obj)
     {
-      Timer timer;
       bustTheGhosts(obj);
     }
-
-    /** @brief overload for passing objects which have a data() and a size() method, like std::vector<T> */
-    template <template <typename S, typename... MArgs> class M, typename T, typename... Args>
-    void operator()(M<T, Args...> &obj)
-    {
-      operator()((T *)obj.data(), obj.size());
-    }
-
-#ifdef __INTEL_COMPILER
-    // for some reasons, icc does not understand the default nested template for zero arguments.
-
-    /** @brief overload for passing objects which have a data() and a size() method, like std::vector<T> */
-    template <template <typename S, size_t _NDim> class M, typename T> void operator()(M<T, NDim> &obj)
-    {
-      operator()((T *)obj.data(), obj.size());
-    }
-#endif
 
   public:
     /* Put all member variables and private methods here. These may change arbitrarily. */

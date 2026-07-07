@@ -19,6 +19,9 @@
 namespace TempLat
 {
 
+  // Own exception so this header is self-contained (radialprojectionresult.h declares a separate one).
+  MakeException(UnbinnedRadialProjectionResultFinalizationException);
+
   /** @brief A class which holds the result of a radial projection without binning.
    *  For each possible value of the Fourier coordinate it saves:
    *  the average value,
@@ -41,7 +44,7 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     UnbinnedRadialProjectionResult(size_t nBins, bool pIsInFourier = false)
         : std::vector<std::tuple<T, RadialProjectionSingleDatum<T>>>(), finalizedOnce(false), mNBins(nBins),
-          mValues(mNBins), unset(false), mIsInFourier(pIsInFourier)
+          mValues(mNBins), mIsInFourier(pIsInFourier)
     {
       mMultiplicitiesDevice = DeviceView("RadialProjectionResult::mMultiplicitiesDevice", mNBins);
       mMultiplicities = device::memory::createMirrorView(mMultiplicitiesDevice);
@@ -96,16 +99,22 @@ namespace TempLat
     UnbinnedRadialProjectionResult &renormalizeBins()
     {
       /*After finalizing, we scale the bins so that they can be compared to the binned power psectrum. This is equal to considering the unbinned power spectrum with bins of variable width*/
-      floatType binWidth;
+      const size_t n = (*this).size();
+      if (n < 2) return *this; // need at least two bins to form a finite bin width
 
-      binWidth = (std::get<0>((*this)[1]) - std::get<0>((*this)[0])) / 2 - 0.5;
-      std::get<1>((*this)[0]).average /= binWidth;
-      for (size_t i = 1; i < (*this).size() - 1; ++i) {
-        binWidth = (std::get<0>((*this)[i+1]) - std::get<0>((*this)[i-1])) / 2;
-        std::get<1>((*this)[i]).average /= binWidth;
+      // Divide a bin's average by its width, guarding against coincident positions (width 0).
+      auto rescale = [&](size_t i, floatType binWidth) {
+        if (binWidth != floatType(0)) std::get<1>((*this)[i]).average /= binWidth;
+      };
+
+      // First bin: forward half-difference, minus the 0.5 offset of the lowest binned mode.
+      rescale(0, (std::get<0>((*this)[1]) - std::get<0>((*this)[0])) / 2 - 0.5);
+      // Interior bins: central difference.
+      for (size_t i = 1; i + 1 < n; ++i) {
+        rescale(i, (std::get<0>((*this)[i + 1]) - std::get<0>((*this)[i - 1])) / 2);
       }
-      binWidth = 2 * (std::get<0>((*this)[(*this).size()])+std::get<0>((*this)[(*this).size()-1]));
-      std::get<1>((*this)[(*this).size()]).average /= binWidth;
+      // Last bin: backward difference (was an out-of-bounds read/write at index size()).
+      rescale(n - 1, std::get<0>((*this)[n - 1]) - std::get<0>((*this)[n - 2]));
 
       return *this;
     }
@@ -114,9 +123,10 @@ namespace TempLat
     {
       if ((device::Idx)this->size() < 1) return "";
       std::stringstream sstream;
-      sstream << this->front().getHeader(verbosity) << "\n";
+      // Each entry is a (bin position, datum) tuple; the datum carries the header/value formatting.
+      sstream << std::get<1>(this->front()).getHeader(1, "#", true, verbosity) << "\n";
       for (auto &&it : *this) {
-        sstream << it.toString(verbosity) << "\n";
+        sstream << std::get<0>(it) << " " << std::get<1>(it).toString(true, verbosity) << "\n";
       }
       return sstream.str();
     }
@@ -144,7 +154,8 @@ namespace TempLat
      * of RadialProjectionSingleBinAndValue<T>. */
     UnbinnedRadialProjectionResult &finalize(MPICommReference comm)
     {
-      if (finalizedOnce) throw RadialProjectionResultFinalizationException("Can only finalize once per instance.");
+      if (finalizedOnce)
+        throw UnbinnedRadialProjectionResultFinalizationException("Can only finalize once per instance.");
 
       finalizedOnce = true;
       pull();
@@ -179,8 +190,6 @@ namespace TempLat
     HostMirror mMultiplicities;
     DeviceView mMultiplicitiesDevice;
 
-    bool unset;
-    bool mUseBinCentralValues;
     bool mIsInFourier;
 
     void pull()

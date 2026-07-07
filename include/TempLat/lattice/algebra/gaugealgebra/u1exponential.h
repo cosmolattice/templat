@@ -38,7 +38,7 @@ namespace TempLat
     DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
       const auto val = DoEval::eval(mR, idx...);
-      return device::array<decltype(val), 2>{cos(val), sin(val)};
+      return device::array<decltype(val), 2>{device::cos(val), device::sin(val)};
     }
 
     std::string toString() const { return "U1(" + GetString::get(mR) + ")"; }

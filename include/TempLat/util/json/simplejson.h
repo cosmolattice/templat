@@ -1001,7 +1001,7 @@ namespace json
       auto aRange = a.ArrayRange();
       auto bRange = b.ArrayRange();
       auto ita = aRange.begin();
-      auto itb = aRange.begin();
+      auto itb = bRange.begin();
       for (; ita < aRange.end() && itb < bRange.end(); ++ita, ++itb) {
         if (!(*ita == *itb))
           return *ita > *itb; /* this is where this routine becomes recursive, as they are json objects */

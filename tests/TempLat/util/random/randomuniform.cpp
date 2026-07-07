@@ -92,6 +92,17 @@ namespace TempLat
       }
       tdd.verify(sequencesMatch, "saveState/loadState round-trip produces identical sequence");
     }
+    {
+      // --- Regression test for G6: a seed containing whitespace must survive save/loadState. ---
+      // loadState reads the seed with `iss >> *mStringSeed`, which stops at the first whitespace, while
+      // saveState writes the full string. A multi-word seed therefore round-trips to a different generator.
+      RandomUniform<T> rng("Hello world"); // note the space
+      RandomUniform<T> rng2("placeholder seed");
+      rng2.loadState(rng.saveState());
+      tdd.verify(rng2.getSeedString() == std::string("Hello world"),
+                 "whitespace-containing seed survives saveState/loadState round-trip");
+      tdd.verify(rng == rng2, "restored generator matches the original for a whitespace-containing seed");
+    }
   }
 
 } // namespace TempLat

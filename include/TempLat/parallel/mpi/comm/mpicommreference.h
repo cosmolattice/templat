@@ -45,9 +45,20 @@ namespace TempLat
     /** @brief Copy assignment: must implement this for the bookkeeping. */
     MPICommReference &operator=(const MPICommReference &other)
     {
+      if (this == &other) return *this;
+#ifdef HAVE_MPI
+      // Release the comm we currently hold before overwriting it (mirror the destructor), otherwise its
+      // bookkeeping count leaks and a subgroup comm is never freed.
+      ptrdiff_t referenceCount = BookKeeper(mComm, false, true);
+      if (mComm != MPI_COMM_WORLD && mComm != MPI_COMM_NULL && referenceCount < 1) {
+        MPI_Comm_free(&mComm);
+      }
+#endif
       mComm = other.mComm;
       mSize = other.mSize;
       mRank = other.mRank;
+      // Keep the base reducer pointed at the new comm; otherwise Allreduce runs on the stale communicator.
+      MPIAllReduce::operator=(other);
       BookKeeper(mComm, true, false);
       return *this;
     }

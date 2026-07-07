@@ -32,6 +32,14 @@ namespace TempLat
     // myClass b(4);
     tdd.verify(AlmostEqual((-a).eval(0), -4));
     tdd.verify(AlmostEqual((-HalfType()).eval(0, 0, 0), -0.5));
+
+    // Sanity: a double negation evaluates to the original value.
+    tdd.verify(AlmostEqual((-(-a)).eval(0), 4));
+
+    // --- Regression test for G4: a triple negation must evaluate to -x. ---
+    // The double-minus collapse overload operator-(UnaryMinus<UnaryMinus<T>>&&) returns its argument
+    // unchanged, so -(-(-a)) collapses to +a (== 4) instead of -a (== -4).
+    tdd.verify(AlmostEqual((-(-(-a))).eval(0), -4));
   }
 
 } // namespace TempLat

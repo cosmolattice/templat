@@ -36,7 +36,10 @@ namespace TempLat
         // say << maxVal;
         // say << customRange;
 
-        RadialBinComputer pc(minVal, customRange < 0 ? maxVal : customRange, newNBins);
+        const T effectiveMax = customRange < 0 ? maxVal : customRange;
+        T deltaKBin = (effectiveMax - minVal) / (T)newNBins;
+        if (!(deltaKBin > 0)) deltaKBin = 1; // guard against zero/negative width (coincident bounds)
+        RadialBinComputer pc(minVal, effectiveMax, newNBins, deltaKBin);
         result.clear();
         result.resize(newNBins);
         for (auto &&it : old) {

@@ -16,9 +16,9 @@ namespace TempLat
   namespace export_device_namespace = device_kokkos;
 } // namespace TempLat
 
-#elif DEVICE_STD
+#elif defined(DEVICE_STD)
 
-#include "TempLat/parallel/std/std.h"
+#include "TempLat/parallel/devices/std/std.h"
 namespace TempLat
 {
   namespace export_device_namespace = std_device;

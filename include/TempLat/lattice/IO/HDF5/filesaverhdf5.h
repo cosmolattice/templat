@@ -152,7 +152,9 @@ namespace TempLat
     { // used to store a number. The name is the one of the dataset which contains this number.
       using vType = GetGetReturnType<R>::type;
       mDataset = mFile.createDataset<vType>(name, std::vector<hsize_t>(1, 1));
-      mDataset.writeElement(&t, std::vector<hsize_t>(1, 0));
+      // writeElement takes the value by value and passes &data to H5Dwrite itself; passing &t here would
+      // deduce T = R* and store the pointer's address bits instead of the scalar.
+      mDataset.writeElement(t, std::vector<hsize_t>(1, 0));
       mDataset.close();
     }
 

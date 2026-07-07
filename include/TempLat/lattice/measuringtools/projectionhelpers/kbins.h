@@ -28,7 +28,9 @@ namespace TempLat
       size_t ind = 0;
       for (auto &&it : res) {
         if (!AlmostEqual(it.getBin().average, 0)) {
-          ind = std::min(std::round((it.getBin().average)) - 1, ks.size() - 1.0);
+          // Clamp both ends: round(avg)-1 can be negative for a first-bin mean in (0, 0.5), which would
+          // underflow the size_t index and write out of bounds.
+          ind = (size_t)std::max(0.0, std::min(std::round((it.getBin().average)) - 1, ks.size() - 1.0));
           //  say<<ind<<"\n";
           vs[ind] += it.getValue().average * it.getValue().multiplicity;
           ms[ind] += it.getValue().multiplicity;
@@ -36,7 +38,7 @@ namespace TempLat
       }
       for (size_t i = 0; i < ks.size(); ++i) {
         ks[i] = i + 1;
-        vs[i] /= ms[i];
+        if (ms[i] != 0) vs[i] /= ms[i]; // leave empty bins at zero instead of dividing by zero
       }
     }
 

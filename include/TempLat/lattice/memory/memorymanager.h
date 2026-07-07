@@ -247,27 +247,6 @@ namespace TempLat
 
     MemoryLayoutState mLayoutState;
     GhostStateKeeper mGhostStateKeeper;
-
-    void checkRealBounds(device::Idx i)
-    {
-      if (i < 0 || i >= (device::Idx)mBlock.size()) {
-        throw MemoryManagerAccessOutOfBounds("Accessing memory out of bounds ", getName(),
-                                             ", mBlock.size(): ", mBlock.size(), "index:", i);
-      }
-    }
-
-    void checkComplexBounds(device::Idx i)
-    {
-      if (i < 0 || 2 * i >= (device::Idx)mBlock.size()) {
-        throw MemoryManagerAccessOutOfBounds("Accessing memory out of bounds ", getName(),
-                                             ", mBlock.size(): ", mBlock.size(), "index:", i);
-      }
-      /* also check that the casting works out correctly */
-      void *ptr1 = &(reinterpret_cast<complex<T> *>((T *)mBlock)[i]);
-      void *ptr2 = &(mBlock[2 * i]);
-      if (ptr1 != ptr2)
-        throw MemoryManagerAccessOutOfBounds("pointer casting from double to complex failed:", ptr1, "!=", ptr2);
-    }
   };
 
 } // namespace TempLat

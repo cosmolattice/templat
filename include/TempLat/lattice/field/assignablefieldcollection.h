@@ -39,13 +39,13 @@ namespace TempLat
     {
     }
 
-    void operator=(const AssignableCollectionBase<Args...> &other)
+    void operator=(const AssignableCollectionBase<Q, Args...> &other)
     {
       for_in_range<0, size>([&](auto j) { std::get<j>(fs) = std::get<j>(other.fs); });
     }
 
     template <typename R>
-      requires(!std::is_same_v<R, AssignableCollectionBase<Args...>>)
+      requires(!std::is_same_v<R, AssignableCollectionBase<Q, Args...>>)
     void operator=(R &&r)
     {
       using nakedR = std::decay_t<R>;

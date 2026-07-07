@@ -16,7 +16,7 @@
 
 namespace TempLat
 {
-  herr_t print_dataset_name(hid_t group_id, const char *name, const H5L_info_t *info, void *op_data)
+  inline herr_t print_dataset_name(hid_t group_id, const char *name, const H5L_info_t *info, void *op_data)
   {
     (void)info;
     (void)op_data;
@@ -47,7 +47,7 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    HDF5Group() = default;
+    HDF5Group() : alreadyClosed(true) {} // default-constructed: no live handle, so destruction must not close
 
     HDF5Group(const hid_t &id) : HDF5Object(id), alreadyClosed(false) {}
 

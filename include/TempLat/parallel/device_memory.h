@@ -17,7 +17,7 @@
 #endif
 #include "TempLat/parallel/devices/kokkos/kokkos_p2p.h"
 
-#elif DEVICE_STD
+#elif defined(DEVICE_STD)
 
 #include "TempLat/parallel/devices/std/std_memory.h"
 

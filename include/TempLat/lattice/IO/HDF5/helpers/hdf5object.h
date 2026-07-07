@@ -26,7 +26,7 @@ namespace TempLat
   {
   public:
     /* Put public methods here. These should change very little over time. */
-    HDF5Object() = default;
+    HDF5Object() : mId(-1) {} // H5I_INVALID_HID, so a default-constructed handle is never a live id
 
     HDF5Object(const hid_t &id) : mId(id) {}
 
@@ -45,6 +45,7 @@ namespace TempLat
 
       H5Awrite(attr_id, HDF5Type<T>().type, value);
       H5Aclose(attr_id);
+      H5Sclose(dataspace_id);
     }
 
     void addAtribute(std::string name, std::string value) // single value attribute
@@ -61,6 +62,7 @@ namespace TempLat
 
       H5Awrite(attr_id, HDF5Type<T>().type, values.data());
       H5Aclose(attr_id);
+      H5Sclose(dataspace_id);
     }
 
   private:

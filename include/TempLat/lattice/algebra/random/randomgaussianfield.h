@@ -35,13 +35,20 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     RandomGaussianFieldHelper(std::string baseSeed, device::memory::host_ptr<MemoryToolBox<NDim>> pToolBox)
         : DimensionCountRecorder<NDim>(SpaceStateType::undefined), prng(baseSeed), mToolBox(pToolBox),
-          mLayout(mToolBox->mLayouts.getFourierSpaceLayout()), generation(RNGInteger(0)),
+          mLayout(mToolBox->mLayouts.getFourierSpaceLayout()), generation(RNGInteger(0)), mGenerationSnapshot(0),
           mGlobalSizes(mLayout.getGlobalSizes())
     {
       DimensionCountRecorder<NDim>::confirmSpace(mLayout, SpaceStateType::Fourier);
     }
 
     void reset() { *generation = 0; }
+
+    void preGet()
+    {
+      // `generation` is a host-only host_ptr (its device copy is null). Snapshot its value on the host into a
+      // plain, device-copyable member so eval() -- which runs on-device -- never dereferences the host_ptr.
+      mGenerationSnapshot = *generation;
+    }
 
     void postGet()
     {
@@ -122,11 +129,11 @@ namespace TempLat
 
       if (hermitianType == HermitianRedundancy::none) {
         const auto [r, c] = gidx_to_idx2(global_coord);
-        const complex<T> val = to_complex(prng.getPair(r, c, *generation, Real, Unitary));
+        const complex<T> val = to_complex(prng.getPair(r, c, mGenerationSnapshot, Real, Unitary));
         return val;
       } else {
         const auto [r, c] = gidx_to_idx2(hermitianPartner);
-        const complex<T> val = to_complex(prng.getPair(r, c, *generation, Real, Unitary));
+        const complex<T> val = to_complex(prng.getPair(r, c, mGenerationSnapshot, Real, Unitary));
         return (hermitianType == HermitianRedundancy::positivePartner)   ? val
                : (hermitianType == HermitianRedundancy::negativePartner) ? device::conj(val)
                : (hermitianType == HermitianRedundancy::realValued)      ? complex<T>(device::real(val))
@@ -144,6 +151,7 @@ namespace TempLat
     device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
     LayoutStruct<NDim> mLayout;
     device::memory::host_ptr<RNGInteger> generation;
+    RNGInteger mGenerationSnapshot; // device-copyable snapshot of *generation, set on host in preGet()
     device::IdxArray<NDim> mGlobalSizes;
   };
 

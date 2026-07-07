@@ -28,6 +28,7 @@ namespace TempLat
 
     inline static std::vector<ptrdiff_t> getConf(ptrdiff_t nPoints, ptrdiff_t nThreads)
     {
+      if (nThreads <= 0) return {}; // no threads: nothing to distribute (and avoid a divide-by-zero)
       auto quotRem = std::imaxdiv(nPoints, nThreads);
       std::vector<ptrdiff_t> res;
       for (ptrdiff_t i = 0; i < nThreads; ++i) {

@@ -49,7 +49,8 @@ namespace TempLat
       {
         const auto res = atan2(DoEval::eval(mR, idx...), DoEval::eval(mT, idx...));
         using NT = std::decay_t<decltype(res)>;
-        return AlmostEqual(res, 0) ? 0 : ((res > Constants::pi<NT>) ? res - 2 * Constants::pi<NT> : res);
+        // atan2 returns [-pi, pi]; map the -pi endpoint to +pi so the phase lives in ]-pi, pi].
+        return AlmostEqual(res, 0) ? 0 : (AlmostEqual(res, -Constants::pi<NT>) ? Constants::pi<NT> : res);
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
