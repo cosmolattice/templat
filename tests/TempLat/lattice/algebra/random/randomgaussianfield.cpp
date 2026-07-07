@@ -67,6 +67,17 @@ namespace TempLat
       tdd.verify(rewinding);
     }
 
+    // test that copies retain the same state
+    auto myFieldCopy = myField;
+    std::cout << "myField state: " << myField.saveState() << "\n";
+    tdd.verify(myField.saveState() == myFieldCopy.saveState());
+    b.inFourierSpace() = myField;
+    std::cout << "myField state: " << myField.saveState() << "\n";
+    tdd.verify(myField.saveState() == myFieldCopy.saveState());
+    b.inFourierSpace() = myField;
+    std::cout << "myField state: " << myField.saveState() << "\n";
+    tdd.verify(myField.saveState() == myFieldCopy.saveState());
+
     {
       // Test saveState/loadState round-trip
       RandomGaussianField<double, 3> rng("serialization_test", toolBox);
