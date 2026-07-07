@@ -46,6 +46,8 @@ namespace TempLat
       if (mSpaceType != SpaceStateType::Configuration) throw(MaximumWrongSpace("Maximum works only in real space."));
       onBeforeAverageConfiguration(mT);
 
+      const LayoutStruct<NDim> mLayout = mToolBox->mLayouts.getConfigSpaceLayout();
+
       // --------------------------------------------------------
       // Reduce the result on the local lattice
       // --------------------------------------------------------
@@ -55,8 +57,7 @@ namespace TempLat
       {
         device::apply([&](auto &&...args) { update = device::max(DoEval::eval(mT, args...), update); }, idx);
       };
-      device::iteration::reduce("Averager", mToolBox->mLayouts.getConfigSpaceLayout(), functor,
-                                device::iteration::Max<vType>(localResult));
+      device::iteration::reduce("Maximum", mLayout, functor, device::iteration::Max<vType>(localResult));
 
       // --------------------------------------------------------
       // Reduce the result across all processes
