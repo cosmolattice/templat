@@ -201,7 +201,9 @@ namespace TempLat
 
 namespace
 {
+#ifndef HAVE_MPI
   TempLat::TDDContainer<TempLat::NeutDiffTester<1>> test1;
+#endif
   TempLat::TDDContainer<TempLat::NeutDiffTester<2>> test2;
   TempLat::TDDContainer<TempLat::NeutDiffTester<3>> test3;
   TempLat::TDDContainer<TempLat::NeutDiffTester<4>> test4;

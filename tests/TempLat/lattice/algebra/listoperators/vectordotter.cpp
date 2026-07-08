@@ -62,7 +62,9 @@ namespace TempLat
 
 namespace
 {
+#ifndef HAVE_MPI
   TempLat::TDDContainer<TempLat::VectorDotterTester<1>> test1;
+#endif
   TempLat::TDDContainer<TempLat::VectorDotterTester<2>> test2;
   TempLat::TDDContainer<TempLat::VectorDotterTester<3>> test3;
   TempLat::TDDContainer<TempLat::VectorDotterTester<4>> test4;

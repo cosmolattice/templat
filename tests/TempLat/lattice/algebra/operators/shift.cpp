@@ -91,7 +91,9 @@ namespace TempLat
 
 namespace
 {
+#ifndef HAVE_MPI
   TempLat::TDDContainer<TempLat::ExpressionShifterTester<1>> test1;
+#endif
   TempLat::TDDContainer<TempLat::ExpressionShifterTester<2>> test2;
   TempLat::TDDContainer<TempLat::ExpressionShifterTester<3>> test3;
   TempLat::TDDContainer<TempLat::ExpressionShifterTester<4>> test4;
