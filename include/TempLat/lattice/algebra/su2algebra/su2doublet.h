@@ -119,10 +119,9 @@ namespace TempLat
 
     inline void updateGhosts()
     {
-      fs[0].updateGhosts();
-      fs[1].updateGhosts();
-      fs[2].updateGhosts();
-      fs[3].updateGhosts();
+      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
+                                        fs[2].getMemoryManager().get(), fs[3].getMemoryManager().get()};
+      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
     }
 
     using Getter = SU2DoubletGetter;

@@ -12,6 +12,9 @@
 #include "TempLat/lattice/memory/memorylayoutstate.h"
 #include "TempLat/lattice/memory/memorytoolbox.h"
 #include "TempLat/parallel/device_memory.h"
+
+#include <span>
+#include <vector>
 namespace TempLat
 {
   MakeException(MemoryManagerAccessOutOfBounds);
@@ -202,6 +205,53 @@ namespace TempLat
     {
       mToolBox->mGhostUpdater.update(mBlock);
       mBlock.flagHostMirrorOutdated();
+    }
+
+    /** @brief Coalesced confirmGhostsUpToDate over the managers of a multi-component field. Only the
+     *  components whose ghosts are stale are exchanged, but they travel as one message per
+     *  dimension/direction instead of one per component. Static so it may reach the private state of the
+     *  sibling managers; they must all share one MemoryToolBox (one GhostUpdater / buffer set). */
+    static device::Idx confirmGhostsUpToDateBatch(std::span<MemoryManager<T, NDim> *const> mgrs)
+    {
+      device::Idx result = 0;
+      if (mgrs.empty()) return result;
+      auto toolBox = mgrs[0]->mToolBox;
+      std::vector<MemoryBlock<T, NDim> *> stale;
+      stale.reserve(mgrs.size());
+      for (auto *m : mgrs) {
+        if (m->mToolBox.get() != toolBox.get())
+          throw MemoryManagerAccessOutOfBounds("confirmGhostsUpToDateBatch: managers do not share a MemoryToolBox.");
+        result += m->confirmConfigSpace();
+        if (m->mGhostStateKeeper.isStale()) stale.push_back(&m->mBlock);
+      }
+      if (!stale.empty()) {
+        ++result;
+        toolBox->mGhostUpdater.updateBatch(std::span<MemoryBlock<T, NDim> *const>(stale.data(), stale.size()));
+        for (auto *m : mgrs)
+          m->mGhostStateKeeper.setUpToDate();
+      }
+      for (auto *m : mgrs)
+        m->mBlock.flagHostMirrorOutdated();
+      return result;
+    }
+
+    /** @brief Coalesced forced updateGhosts over the managers of a multi-component field. Matches the
+     *  per-component updateGhosts() semantics (unconditional, no state-keeper reset) but sends all
+     *  components in one message per dimension/direction. */
+    static void updateGhostsBatch(std::span<MemoryManager<T, NDim> *const> mgrs)
+    {
+      if (mgrs.empty()) return;
+      auto toolBox = mgrs[0]->mToolBox;
+      std::vector<MemoryBlock<T, NDim> *> blocks;
+      blocks.reserve(mgrs.size());
+      for (auto *m : mgrs) {
+        if (m->mToolBox.get() != toolBox.get())
+          throw MemoryManagerAccessOutOfBounds("updateGhostsBatch: managers do not share a MemoryToolBox.");
+        blocks.push_back(&m->mBlock);
+      }
+      toolBox->mGhostUpdater.updateBatch(std::span<MemoryBlock<T, NDim> *const>(blocks.data(), blocks.size()));
+      for (auto *m : mgrs)
+        m->mBlock.flagHostMirrorOutdated();
     }
 
     /** @brief this is the only state the one may need to set from the outside: if a field is updated in the integrator.

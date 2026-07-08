@@ -92,6 +92,26 @@ namespace TempLat
 #endif
     }
 
+#ifdef HAVE_MPI
+    /** @brief Non-blocking up/down exchange where each of the four messages carries its own absolute-address
+     *  datatype (built by the caller, typically MPI_Type_create_hindexed_block over several component faces)
+     *  and is addressed with MPI_BOTTOM. Posting order (recvs before sends, Up before Down) matches
+     *  waitall()/exchangeUpDownNonBlocking so the single ghost tag stays matched on two-rank dimensions. */
+    void exchangeUpDownBottom(ptrdiff_t dimension, MPI_Datatype sendUpType, MPI_Datatype recvUpType,
+                              MPI_Datatype sendDownType, MPI_Datatype recvDownType)
+    {
+      MPI_Irecv(MPI_BOTTOM, 1, recvUpType, mNeighbours.getLowerNeighbour(dimension), MPITags::dataShiftGhostCells,
+                mGroup.getComm(), &mRequests[0]);
+      MPI_Irecv(MPI_BOTTOM, 1, recvDownType, mNeighbours.getUpperNeighbour(dimension), MPITags::dataShiftGhostCells,
+                mGroup.getComm(), &mRequests[1]);
+      MPI_Isend(MPI_BOTTOM, 1, sendUpType, mNeighbours.getUpperNeighbour(dimension), MPITags::dataShiftGhostCells,
+                mGroup.getComm(), &mRequests[2]);
+      MPI_Isend(MPI_BOTTOM, 1, sendDownType, mNeighbours.getLowerNeighbour(dimension), MPITags::dataShiftGhostCells,
+                mGroup.getComm(), &mRequests[3]);
+      waitall();
+    }
+#endif
+
     const MPICartesianGroup &getMPICartesianGroup() const { return mGroup; }
 
     MPICartesianNeighbours &getNeighbours() { return mNeighbours; }

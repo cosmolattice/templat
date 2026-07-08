@@ -18,6 +18,11 @@ namespace TempLat
     static constexpr int gatherAsVector = __LINE__;
     static constexpr int rangeExchangeSend = __LINE__;
     static constexpr int dataShiftGhostCells = __LINE__;
+    // Zero-byte synchronization tokens for the GPU P2P ghost exchange (replace shared-memory barriers
+    // with pairwise neighbor handshakes). Distinct from dataShiftGhostCells so they never match data.
+    static constexpr int ghostP2PPackToken = __LINE__;  // "my send buffer is packed, safe to read"
+    static constexpr int ghostP2PReadToken = __LINE__;  // "I finished reading you, buffer safe to reuse"
+    static constexpr int ghostP2PPhaseToken = __LINE__; // PCIe two-phase: "my phase-0 read on our link is done"
   }; // namespace MPITags
 
   /** @brief A class which just compiles.

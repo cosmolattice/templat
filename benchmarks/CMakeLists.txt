@@ -10,4 +10,13 @@ foreach(fn ${bench_sources})
 
   add_executable(${target_name} ${fn})
   target_link_libraries(${target_name} TempLat::TempLat)
+
+  # Grid/step overrides for the halo_scaling benchmark (compile-time constants).
+  # Set e.g. -DHALO_NGRID=256 -DHALO_NSTEPS=100 at configure time.
+  if(DEFINED HALO_NGRID)
+    target_compile_definitions(${target_name} PRIVATE HALO_NGRID=${HALO_NGRID})
+  endif()
+  if(DEFINED HALO_NSTEPS)
+    target_compile_definitions(${target_name} PRIVATE HALO_NSTEPS=${HALO_NSTEPS})
+  endif()
 endforeach()
