@@ -61,7 +61,8 @@ namespace TempLat
             uint64_t b0 = (static_cast<uint64_t>(nGridPoints[0]) + p - 1) / p;
             uint64_t b1 = (static_cast<uint64_t>(nGridPoints[1]) + p - 1) / p;
             uint64_t inner = 1;
-            for (size_t i = 2; i < NDim; ++i) inner *= static_cast<uint64_t>(nGridPoints[i]);
+            for (size_t i = 2; i < NDim; ++i)
+              inner *= static_cast<uint64_t>(nGridPoints[i]);
             return b0 * b1 * inner;
           };
           const uint64_t perPair = perPairCount(nProcesses);
@@ -76,8 +77,8 @@ namespace TempLat
                 "). FFTW-MPI uses an `int` count and does not split the transpose, so this fails "
                 "at runtime with MPI_ERR_ARG (\"invalid count argument\"). Either (a) rebuild "
                 "with ParaFaFT (-DPARAFAFT=ON), which uses a pencil decomposition that avoids "
-                "this limit; or (b) use at least ", minP,
-                " MPI ranks; or (c) reduce the lattice size.");
+                "this limit; or (b) use at least ",
+                minP, " MPI ranks; or (c) reduce the lattice size.");
           }
         }
       }

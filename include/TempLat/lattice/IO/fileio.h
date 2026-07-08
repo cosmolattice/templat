@@ -82,14 +82,14 @@ namespace TempLat
 #endif
     }
 
-    template<typename R>
-    auto setSaverLimits(R down, R up, R step)
+    template <typename R> auto setSaverLimits(R down, R up, R step)
     {
 #ifdef HAVE_HDF5
       saver.setLimits(down, up, step, NDim);
 #else
-      throw(FileIOException("You tried to set a subvolume for the HDF5 snapshots, but the HDF5 library is not available. Make sure "
-                            "you have it installed and that you compiled CosmoLattice with it."));
+      throw(FileIOException(
+          "You tried to set a subvolume for the HDF5 snapshots, but the HDF5 library is not available. Make sure "
+          "you have it installed and that you compiled CosmoLattice with it."));
 #endif
     }
 

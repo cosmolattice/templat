@@ -19,25 +19,21 @@ namespace TempLat
   template <typename T> struct SymTracelessGetGetReturnType {
     using type = typename GetGetReturnType<
         std::decay_t<decltype(std::declval<T>().SymTracelessGet(std::declval<Tag<0>>()))>>::type;
-
   };
 
   template <typename T> struct SymGetGetReturnType {
-    using type = typename GetGetReturnType<
-    std::decay_t<decltype(std::declval<T>().SymGet(std::declval<Tag<0>>()))>>::type;
-
+    using type =
+        typename GetGetReturnType<std::decay_t<decltype(std::declval<T>().SymGet(std::declval<Tag<0>>()))>>::type;
   };
 
   template <typename T> struct HermGetGetReturnType {
-    using type = typename GetGetReturnType<
-    std::decay_t<decltype(std::declval<T>().HermFieldGet(std::declval<Tag<0>>()))>>::type;
-
+    using type =
+        typename GetGetReturnType<std::decay_t<decltype(std::declval<T>().HermFieldGet(std::declval<Tag<0>>()))>>::type;
   };
 
   template <typename T> struct MatrixGetGetReturnType {
     using type = typename GetGetReturnType<
-    std::decay_t<decltype(std::declval<T>().MatrixFieldGet(std::declval<Tag<0>>()))>>::type;
-
+        std::decay_t<decltype(std::declval<T>().MatrixFieldGet(std::declval<Tag<0>>()))>>::type;
   };
 
 } // namespace TempLat

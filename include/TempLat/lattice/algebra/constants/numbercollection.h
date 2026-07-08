@@ -26,8 +26,7 @@ namespace TempLat
    *
    * Unit test: ctest -R test-numbercollection
    **/
-  template <typename T, int N>
-  struct NumberCollection {
+  template <typename T, int N> struct NumberCollection {
     std::array<Number<T>, N> data{};
 
     // --- List-algebra integration ---
@@ -35,24 +34,27 @@ namespace TempLat
     static constexpr size_t size = N;
 
     // --- Component access (makes IsTempLatGettable) ---
-    template <int M>
-    Number<T> &getComp(Tag<M>) { return data[M]; }
+    template <int M> Number<T> &getComp(Tag<M>) { return data[M]; }
 
-    template <int M>
-    const Number<T> &getComp(Tag<M>) const { return data[M]; }
+    template <int M> const Number<T> &getComp(Tag<M>) const { return data[M]; }
 
     // --- Tag<I> accessor (matches FieldCollection interface) ---
     template <int M>
       requires(M >= 0 && M < N)
-    Number<T> &operator()(Tag<M>) { return data[M]; }
+    Number<T> &operator()(Tag<M>)
+    {
+      return data[M];
+    }
 
     template <int M>
       requires(M >= 0 && M < N)
-    const Number<T> &operator()(Tag<M>) const { return data[M]; }
+    const Number<T> &operator()(Tag<M>) const
+    {
+      return data[M];
+    }
 
     // --- Element-wise operator+= from list expressions ---
-    template <typename R>
-    NumberCollection &operator+=(R &&r)
+    template <typename R> NumberCollection &operator+=(R &&r)
     {
       for_in_range<0, N>([&](auto i) { data[int(i)] += GetComponent::get(r, i); });
       return *this;
@@ -65,8 +67,7 @@ namespace TempLat
       requires(!std::is_same_v<std::decay_t<R>, NumberCollection>)
     NumberCollection &operator=(R &&r)
     {
-      for_in_range<0, N>(
-          [&](auto i) { data[int(i)].value = DoEval::eval(GetComponent::get(r, i), size_t{0}); });
+      for_in_range<0, N>([&](auto i) { data[int(i)].value = DoEval::eval(GetComponent::get(r, i), size_t{0}); });
       return *this;
     }
 

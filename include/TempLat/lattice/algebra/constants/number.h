@@ -34,8 +34,7 @@ namespace TempLat
    *
    * Unit test: ctest -R test-number
    **/
-  template <typename T>
-  struct Number {
+  template <typename T> struct Number {
     T value;
 
     template <typename... IDX>
@@ -65,12 +64,20 @@ namespace TempLat
     }
 
     // 3. Arithmetic (plain double/float)
-    Number &operator+=(T v) { value += v; return *this; }
+    Number &operator+=(T v)
+    {
+      value += v;
+      return *this;
+    }
 
     // 4. ZeroType: no-op
     Number &operator+=(ZeroType) { return *this; }
 
-    Number &operator=(T v) { value = v; return *this; }
+    Number &operator=(T v)
+    {
+      value = v;
+      return *this;
+    }
   };
 } // namespace TempLat
 

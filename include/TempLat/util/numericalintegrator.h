@@ -27,7 +27,7 @@ namespace TempLat
       const size_t n = vec.size();
       if (n < 2) return T(0); // no interval to integrate over
 
-      const size_t m = n - 1;                              // number of equispaced intervals
+      const size_t m = n - 1;                                   // number of equispaced intervals
       const size_t simpsonIntervals = (m % 2 == 0) ? m : m - 1; // largest even interval count
 
       T res = T(0);

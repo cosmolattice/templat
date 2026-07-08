@@ -19,7 +19,7 @@ namespace TempLat
    **/
   class MatrixGetter
   {
-    public:
+  public:
     template <typename R, int N>
       requires(HasMatrixGet<R>)
     static auto get(R &&r, Tag<N> t)

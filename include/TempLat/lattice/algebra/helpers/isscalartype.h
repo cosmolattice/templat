@@ -21,7 +21,8 @@ namespace TempLat
 {
   template <typename T>
   concept IsScalarType =
-  (std::is_arithmetic_v<T> || HasEvalMethod<T>) && !HasComplexFieldGet<T> && !HasSU2Get<T> && !HasSU2DoubletGet<T> && !HasSymGet<T> && !HasHermGet<T> && !HasMatrixGet<T> && !HasSymTracelessGet<T>;
+      (std::is_arithmetic_v<T> || HasEvalMethod<T>) && !HasComplexFieldGet<T> && !HasSU2Get<T> &&
+      !HasSU2DoubletGet<T> && !HasSymGet<T> && !HasHermGet<T> && !HasMatrixGet<T> && !HasSymTracelessGet<T>;
 
 } // namespace TempLat
 

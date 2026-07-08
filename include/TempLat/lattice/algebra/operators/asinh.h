@@ -43,10 +43,7 @@ namespace TempLat
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> auto d(const U &other)
-      {
-        return 1 / sqrt(1 + mR * mR) * GetDeriv::get(mR, other);
-      }
+      template <typename U> auto d(const U &other) { return 1 / sqrt(1 + mR * mR) * GetDeriv::get(mR, other); }
 
       virtual std::string operatorString() const override { return "asinh"; }
     };

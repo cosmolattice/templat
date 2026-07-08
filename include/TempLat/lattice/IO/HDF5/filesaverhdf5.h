@@ -461,8 +461,7 @@ namespace TempLat
         // filled prefix [0, endcoord-inicoord). The dataset's last-axis extent is
         // (endcoord-inicoord)/stepcoord, so cap at that count to stay consistent.
         const auto sparseCount = (endcoord - inicoord) / stepcoord;
-        for (device::Idx j = 0;
-             j < endcoord - inicoord && (device::Idx)sdatasparse.size() < sparseCount;
+        for (device::Idx j = 0; j < endcoord - inicoord && (device::Idx)sdatasparse.size() < sparseCount;
              j += stepcoord)
           sdatasparse.push_back(sdata[j]);
         subdims.back() = sparseCount;

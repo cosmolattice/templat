@@ -89,7 +89,9 @@ namespace TempLat
       floatType intMultiplicity = 0;
 
       for (auto &&it : *this) {
-        intMultiplicity = std::get<1>(it).multiplicity * (mIsInFourier ? 2 : 1); // Multiply by 2 if in Fourier space (only half of the last coordinate is iterated
+        intMultiplicity =
+            std::get<1>(it).multiplicity *
+            (mIsInFourier ? 2 : 1); // Multiply by 2 if in Fourier space (only half of the last coordinate is iterated
         // over in this case because of reflection symmetry for real data).
         std::get<1>(it).average *= intMultiplicity;
       }
@@ -98,7 +100,8 @@ namespace TempLat
 
     UnbinnedRadialProjectionResult &renormalizeBins()
     {
-      /*After finalizing, we scale the bins so that they can be compared to the binned power psectrum. This is equal to considering the unbinned power spectrum with bins of variable width*/
+      /*After finalizing, we scale the bins so that they can be compared to the binned power psectrum. This is equal to
+       * considering the unbinned power spectrum with bins of variable width*/
       const size_t n = (*this).size();
       if (n < 2) return *this; // need at least two bins to form a finite bin width
 
@@ -173,7 +176,6 @@ namespace TempLat
           this->push_back(next);
         }
       }
-
 
       return *this;
     }
