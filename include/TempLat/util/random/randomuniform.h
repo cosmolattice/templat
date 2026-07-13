@@ -57,8 +57,9 @@ namespace TempLat
      */
     void loadState(const std::string &state)
     {
-      std::istringstream iss(state);
-      iss >> *mStringSeed;
+      // saveState() serializes the full seed string verbatim, so restore it whole -- do not use
+      // operator>>, which would truncate a seed at the first whitespace.
+      *mStringSeed = state;
       mHashSeed = KeccakHash::compute(*mStringSeed);
       mSeed = static_cast<INT>((uint64_t)mHashSeed);
     }

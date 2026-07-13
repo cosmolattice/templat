@@ -19,7 +19,7 @@ namespace TempLat
    **/
   class SymTracelessGetter
   {
-    public:
+  public:
     template <typename R, int N>
       requires(HasSymTracelessGet<R>)
     static auto get(R &&r, Tag<N> t)

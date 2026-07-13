@@ -19,7 +19,7 @@ namespace TempLat
    **/
   class HermGetter
   {
-    public:
+  public:
     template <typename R, int N>
       requires(HasHermGet<R>)
     static auto get(R &&r, Tag<N> t)

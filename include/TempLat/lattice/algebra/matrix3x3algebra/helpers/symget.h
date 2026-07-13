@@ -19,7 +19,7 @@ namespace TempLat
    **/
   class SymGetter
   {
-    public:
+  public:
     template <typename R, int N>
       requires(HasSymGet<R>)
     static auto get(R &&r, Tag<N> t)

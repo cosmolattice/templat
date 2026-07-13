@@ -36,8 +36,7 @@ namespace TempLat::device_kokkos
   template <size_t NDim> class ExchangeManager
   {
   public:
-    ExchangeManager(MPICartesianExchange exchange, [[maybe_unused]] MPI_Comm shmComm,
-                    [[maybe_unused]] int myDeviceId)
+    ExchangeManager(MPICartesianExchange exchange, [[maybe_unused]] MPI_Comm shmComm, [[maybe_unused]] int myDeviceId)
         : mExchange(exchange)
     {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
@@ -117,15 +116,17 @@ namespace TempLat::device_kokkos
 
       if (upP2P || downP2P) {
         // Kokkos::fence was already called by the ghost updater (packing complete on GPU).
-        bool allFullDuplex = (!upP2P || mFullDuplex[dimension * 2 + 0]) &&
-                             (!downP2P || mFullDuplex[dimension * 2 + 1]);
+        bool allFullDuplex = (!upP2P || mFullDuplex[dimension * 2 + 0]) && (!downP2P || mFullDuplex[dimension * 2 + 1]);
 
-        // Post non-P2P MPI receives before the barrier (overlaps with barrier wait)
+        // Post non-P2P MPI receives before the handshake (overlaps with the token wait)
         if (!canPullRecvUp) mExchange.IrecvUp(dataType, dimension, recvUpPtr, count);
         if (!canPullRecvDown) mExchange.IrecvDown(dataType, dimension, recvDownPtr, count);
 
-        // Barrier: all same-node ranks have finished packing → send buffers are safe to read
-        MPI_Barrier(mShmComm);
+        // Pack-done handshake (replaces the pre-read shared-memory barrier): a pairwise 0-byte exchange
+        // with each P2P neighbour of this dimension. It tells my readers my send buffers are packed, and
+        // confirms the neighbours I pull from have packed theirs — the only ordering the old global
+        // barrier actually provided for this rank. Device ordering still comes from the pack fence.
+        p2pHandshake(dimension, upP2P, downP2P, MPITags::ghostP2PPackToken);
 
         // Post non-P2P MPI sends (can overlap with P2P reads)
         if (!upP2P) mExchange.IsendUp(dataType, dimension, sendUpPtr, count);
@@ -133,17 +134,15 @@ namespace TempLat::device_kokkos
 
         if (allFullDuplex) {
           // --- Single-phase: NVLink/xGMI is full-duplex, no bidirectional contention ---
-          if (canPullRecvUp)
-            p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
-          if (canPullRecvDown)
-            p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
+          if (canPullRecvUp) p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
+          if (canPullRecvDown) p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
           p2p::streamSynchronize();
         } else {
           // --- Two-phase: PCIe bidirectional contention avoidance ---
           // Simultaneous bidirectional P2P reads on a shared PCIe switch degrade throughput
           // by 10x+. Split reads by rank ordering: phase 0 if myRank < sourceRank,
           // phase 1 if myRank > sourceRank. No bidirectional pair in either phase.
-          int upReadSource = mNeighborRanks[dimension * 2 + 1];  // lower neighbor
+          int upReadSource = mNeighborRanks[dimension * 2 + 1];   // lower neighbor
           int downReadSource = mNeighborRanks[dimension * 2 + 0]; // upper neighbor
 
           // Phase 0: reads where this rank has the lower rank number
@@ -152,7 +151,11 @@ namespace TempLat::device_kokkos
           if (canPullRecvDown && mMyRank < downReadSource)
             p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
           p2p::streamSynchronize();
-          MPI_Barrier(mShmComm);
+
+          // Phase-ordering handshake (replaces the mid shared-memory barrier): on each P2P link the
+          // lower-ranked rank reads in phase 0 then signals the higher-ranked rank, which waits for that
+          // token before its phase-1 read — so the two reads on a link never overlap on the PCIe switch.
+          p2pPhaseHandshake(dimension, canPullRecvUp, canPullRecvDown, upReadSource, downReadSource);
 
           // Phase 1: reads where this rank has the higher rank number
           if (canPullRecvUp && mMyRank > upReadSource)
@@ -165,8 +168,9 @@ namespace TempLat::device_kokkos
         // Wait for non-P2P MPI to complete
         if (!upP2P || !downP2P) mExchange.waitall();
 
-        // Barrier: all same-node ranks have finished reading → send buffers safe to reuse
-        MPI_Barrier(mShmComm);
+        // Read-done handshake (replaces the post-read shared-memory barrier): my send buffers are safe to
+        // repack only once my P2P readers have finished pulling from them. Same pairwise neighbour set.
+        p2pHandshake(dimension, upP2P, downP2P, MPITags::ghostP2PReadToken);
 
         return;
       }
@@ -195,6 +199,36 @@ namespace TempLat::device_kokkos
       mExchange.exchangeDown(dataType, dimension, ptrSend, ptrReceive, sendCount);
     }
 
+    /**
+     * @brief Non-blocking in-place exchange of both up and down faces for one dimension (CPU path).
+     *
+     * Replaces the two sequential blocking MPI_Sendrecv (exchangeUp + exchangeDown) with four
+     * concurrent Isend/Irecv and a single waitall, so the up and down transfers overlap.
+     * Safe with the single dataShiftGhostCells tag: MPI non-overtaking matches (source,tag) in
+     * posting order, and every rank posts recvs-before-sends and Up-before-Down consistently, so
+     * even when a dimension has only two ranks (upper == lower neighbour) the matches are correct.
+     * Send and receive regions never overlap (owned face vs ghost slice), so in-place is safe.
+     * The dimension sweep stays sequential in GhostUpdater to preserve corner correctness.
+     */
+    void exchangeUpDownNonBlocking(MPI_Datatype dataType, ptrdiff_t dimension, void *sendUpPtr, void *recvUpPtr,
+                                   void *sendDownPtr, void *recvDownPtr, int sendCount = 1)
+    {
+      mExchange.IrecvUp(dataType, dimension, recvUpPtr, sendCount);
+      mExchange.IrecvDown(dataType, dimension, recvDownPtr, sendCount);
+      mExchange.IsendUp(dataType, dimension, sendUpPtr, sendCount);
+      mExchange.IsendDown(dataType, dimension, sendDownPtr, sendCount);
+      mExchange.waitall();
+    }
+
+    /** @brief Coalesced non-blocking up/down exchange: each of the four messages carries its own
+     *  absolute-address datatype and is addressed with MPI_BOTTOM. Used by the CPU component-coalesced
+     *  ghost exchange to send all components of a multi-component field as one message per direction. */
+    void exchangeUpDownBottom(ptrdiff_t dimension, MPI_Datatype sendUpType, MPI_Datatype recvUpType,
+                              MPI_Datatype sendDownType, MPI_Datatype recvDownType)
+    {
+      mExchange.exchangeUpDownBottom(dimension, sendUpType, recvUpType, sendDownType, recvDownType);
+    }
+
   private:
     MPICartesianExchange mExchange;
 
@@ -217,6 +251,64 @@ namespace TempLat::device_kokkos
 
     bool isP2PUp(size_t d) const { return mP2PAvailable[d * 2 + 0]; }
     bool isP2PDown(size_t d) const { return mP2PAvailable[d * 2 + 1]; }
+
+    /**
+     * @brief Pairwise 0-byte handshake with the (up to two) P2P neighbours of a dimension.
+     *
+     * Replaces a shared-memory MPI_Barrier with a symmetric MPI_Sendrecv per P2P link. Deadlock-free by
+     * construction: Sendrecv posts its send and receive together, and both ends of a link run the mirror
+     * call (my upper link is the neighbour's lower link). On a two-rank dimension the upper and lower
+     * neighbour are the same rank; the two Sendrecvs to it match FIFO by MPI non-overtaking. Relies on
+     * the P2P classification being symmetric (canAccessPeer is symmetric in practice), which is also what
+     * the original barrier-based scheme required to make progress.
+     */
+    void p2pHandshake(size_t dimension, bool withUpper, bool withLower, int tag)
+    {
+      char sbuf = 0, rbuf = 0;
+      if (withUpper) {
+        int up = mNeighborRanks[dimension * 2 + 0];
+        MPI_Sendrecv(&sbuf, 1, MPI_BYTE, up, tag, &rbuf, 1, MPI_BYTE, up, tag, mCartComm, MPI_STATUS_IGNORE);
+      }
+      if (withLower) {
+        int lo = mNeighborRanks[dimension * 2 + 1];
+        MPI_Sendrecv(&sbuf, 1, MPI_BYTE, lo, tag, &rbuf, 1, MPI_BYTE, lo, tag, mCartComm, MPI_STATUS_IGNORE);
+      }
+    }
+
+    /**
+     * @brief Phase-ordering handshake for the two-phase (PCIe) P2P read, replacing the mid barrier.
+     *
+     * On each P2P link the lower-ranked rank reads in phase 0 and the higher-ranked rank in phase 1. After
+     * its phase-0 read this rank sends a token to every source it out-ranks-below (mMyRank < source), and
+     * waits for a token from every source it out-ranks-above (mMyRank > source) before starting phase 1.
+     * So on any link the phase-1 read cannot begin until the phase-0 read on that same link has finished —
+     * exactly the contention avoidance the barrier gave, but only between the two ranks that share the link.
+     * Separate send/recv buffers keep concurrent Isend/Irecv (distinct sources) non-aliasing.
+     */
+    void p2pPhaseHandshake(size_t dimension, bool haveUp, bool haveDown, int upSource, int downSource)
+    {
+      std::array<MPI_Request, 4> reqs;
+      std::array<char, 4> buf{}; // one distinct byte per in-flight message so concurrent recvs never alias
+      int n = 0;
+      const int tag = MPITags::ghostP2PPhaseToken;
+      if (haveUp && mMyRank < upSource) {
+        MPI_Isend(&buf[n], 1, MPI_BYTE, upSource, tag, mCartComm, &reqs[n]);
+        ++n;
+      }
+      if (haveDown && mMyRank < downSource) {
+        MPI_Isend(&buf[n], 1, MPI_BYTE, downSource, tag, mCartComm, &reqs[n]);
+        ++n;
+      }
+      if (haveUp && mMyRank > upSource) {
+        MPI_Irecv(&buf[n], 1, MPI_BYTE, upSource, tag, mCartComm, &reqs[n]);
+        ++n;
+      }
+      if (haveDown && mMyRank > downSource) {
+        MPI_Irecv(&buf[n], 1, MPI_BYTE, downSource, tag, mCartComm, &reqs[n]);
+        ++n;
+      }
+      if (n > 0) MPI_Waitall(n, reqs.data(), MPI_STATUSES_IGNORE);
+    }
 
     void probeP2P(MPI_Comm shmComm)
     {
@@ -256,8 +348,7 @@ namespace TempLat::device_kokkos
       MPI_Group_free(&shmGroup);
     }
 
-    void checkAndEnableP2P(size_t dim, int dir, int neighborRank,
-                           const std::vector<std::pair<int, int>> &rankDeviceMap)
+    void checkAndEnableP2P(size_t dim, int dir, int neighborRank, const std::vector<std::pair<int, int>> &rankDeviceMap)
     {
       size_t idx = dim * 2 + dir;
 

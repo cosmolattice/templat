@@ -44,7 +44,7 @@ namespace TempLat
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> auto d(const U &other) { return GetDeriv::get(mR, other) * sinh(*this); }
+      template <typename U> auto d(const U &other) { return GetDeriv::get(mR, other) * sinh(mR); }
 
       virtual std::string operatorString() const override { return "cosh"; }
     };

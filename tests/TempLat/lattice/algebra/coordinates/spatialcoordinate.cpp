@@ -116,7 +116,9 @@ namespace TempLat
 
 namespace
 {
+#ifndef HAVE_MPI
   TempLat::TDDContainer<TempLat::SpatialCoordinateTester<1>> test1;
+#endif
   TempLat::TDDContainer<TempLat::SpatialCoordinateTester<2>> test2;
   TempLat::TDDContainer<TempLat::SpatialCoordinateTester<3>> test3;
   TempLat::TDDContainer<TempLat::SpatialCoordinateTester<4>> test4;

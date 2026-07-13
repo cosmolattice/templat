@@ -79,7 +79,7 @@ namespace TempLat
         return powr<N>(DoEval::eval(mR, idx...));
       }
 
-      std::string toString() const { return "(" + GetString::get(mR) + ")^" + std::to_string(2); }
+      std::string toString() const { return "(" + GetString::get(mR) + ")^" + std::to_string(N); }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
       template <typename U> auto d(const U &other) const

@@ -15,10 +15,11 @@
 
 namespace TempLat
 {
-  /** @brief A class which multiplies two symmetric-traceless fields.
+  /** @brief A class which multiplies two general (full, 9-component) 3x3 matrix fields.
+   *  Distinct from the symmetric-traceless products (sym/herm/scalar SymTracelessMultiplication),
+   *  which store fewer independent components and use the traceless relation.
    *
-   *
-   * Unit test: ctest -R test-symmetrictracelessfieldmultiply
+   * Unit test: ctest -R test-matrixmatrixmultiply
    **/
   template <class R, class T> class MatrixMatrixMultiplication : public MatrixBinaryOperator<R, T>
   {
@@ -95,15 +96,16 @@ namespace TempLat
       auto cL = DoEval::eval(mR, idx...);
       auto cR = DoEval::eval(mT, idx...);
       device::array<decltype(cL[0] * cR[0]), 9> result;
+      // Row-major 3x3 product: result[3*row + col] = sum_k cL[3*row + k] * cR[3*k + col].
       result[0] = cL[0] * cR[0] + cL[1] * cR[3] + cL[2] * cR[6];
       result[1] = cL[0] * cR[1] + cL[1] * cR[4] + cL[2] * cR[7];
-      result[2] = cL[0] * cR[2] + cL[1] * cR[5] - cL[2] * cR[8];
+      result[2] = cL[0] * cR[2] + cL[1] * cR[5] + cL[2] * cR[8];
       result[3] = cL[3] * cR[0] + cL[4] * cR[3] + cL[5] * cR[6];
       result[4] = cL[3] * cR[1] + cL[4] * cR[4] + cL[5] * cR[7];
-      result[5] = cL[3] * cR[2] + cL[4] * cR[5] - cL[5] * cR[8];
-      result[8] = cL[6] * cR[0] + cL[7] * cR[3] - cL[8] * cR[6];
-      result[8] = cL[6] * cR[1] + cL[7] * cR[4] - cL[8] * cR[7];
-      result[8] = cL[6] * cR[2] + cL[7] * cR[5] - cL[8] * cR[8];
+      result[5] = cL[3] * cR[2] + cL[4] * cR[5] + cL[5] * cR[8];
+      result[6] = cL[6] * cR[0] + cL[7] * cR[3] + cL[8] * cR[6];
+      result[7] = cL[6] * cR[1] + cL[7] * cR[4] + cL[8] * cR[7];
+      result[8] = cL[6] * cR[2] + cL[7] * cR[5] + cL[8] * cR[8];
       return result;
     }
 

@@ -158,8 +158,9 @@ namespace TempLat
     }
     device::Idx confirmGhostsUpToDate() const
     {
-      return ConfirmGhosts::apply(fs[0]) + ConfirmGhosts::apply(fs[1]) + ConfirmGhosts::apply(fs[2]) +
-             ConfirmGhosts::apply(fs[3]);
+      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
+                                        fs[2].getMemoryManager().get(), fs[3].getMemoryManager().get()};
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(mgrs);
     }
     void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
@@ -171,10 +172,9 @@ namespace TempLat
 
     inline void updateGhosts()
     {
-      fs[0].updateGhosts();
-      fs[1].updateGhosts();
-      fs[2].updateGhosts();
-      fs[3].updateGhosts();
+      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
+                                        fs[2].getMemoryManager().get(), fs[3].getMemoryManager().get()};
+      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
     }
 
     template <typename... IDX>

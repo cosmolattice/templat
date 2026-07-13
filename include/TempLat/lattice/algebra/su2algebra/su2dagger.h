@@ -86,11 +86,9 @@ namespace TempLat
   // anti-homomorphism), and exposes leaf-level operands for common-subexpression elimination.
   // ---------------------------------------------------------------------------------------------------
 
-  template <class T> struct IsSU2DaggerT : std::false_type
-  {
+  template <class T> struct IsSU2DaggerT : std::false_type {
   };
-  template <class R> struct IsSU2DaggerT<SU2Dagger<R>> : std::true_type
-  {
+  template <class R> struct IsSU2DaggerT<SU2Dagger<R>> : std::true_type {
   };
   template <class T>
   concept IsSU2Dagger = IsSU2DaggerT<std::decay_t<T>>::value;

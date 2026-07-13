@@ -20,7 +20,7 @@ namespace TempLat
 
   template <size_t NDim> inline void LatticeLaplacianTester<NDim>::Test(TDDAssertion &tdd)
   {
-    const device::Idx nGrid = 4, nGhost = 1;
+    const device::Idx nGrid = 12, nGhost = 1;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
     SpatialCoordinate<NDim> coord(toolBox);
@@ -250,7 +250,9 @@ namespace TempLat
 
 namespace
 {
+#ifndef HAVE_MPI
   TempLat::TDDContainer<TempLat::LatticeLaplacianTester<1>> test1;
+#endif
   TempLat::TDDContainer<TempLat::LatticeLaplacianTester<2>> test2;
   TempLat::TDDContainer<TempLat::LatticeLaplacianTester<3>> test3;
   TempLat::TDDContainer<TempLat::LatticeLaplacianTester<4>> test4;

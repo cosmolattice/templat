@@ -77,7 +77,7 @@ namespace TempLat
       virtual std::string operatorString() const override { return std::to_string(N) + "*"; }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> auto d(const U &other) { return N * mR; }
+      template <typename U> auto d(const U &other) { return N * GetDeriv::get(mR, other); }
     };
   } // namespace Operators
 

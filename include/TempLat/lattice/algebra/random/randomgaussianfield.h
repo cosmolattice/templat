@@ -35,17 +35,25 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     RandomGaussianFieldHelper(std::string baseSeed, device::memory::host_ptr<MemoryToolBox<NDim>> pToolBox)
         : DimensionCountRecorder<NDim>(SpaceStateType::undefined), prng(baseSeed), mToolBox(pToolBox),
-          mLayout(mToolBox->mLayouts.getFourierSpaceLayout()), generation(0), mGlobalSizes(mLayout.getGlobalSizes())
+          mLayout(mToolBox->mLayouts.getFourierSpaceLayout()), generation(RNGInteger(0)), mGenerationSnapshot(0),
+          mGlobalSizes(mLayout.getGlobalSizes())
     {
       DimensionCountRecorder<NDim>::confirmSpace(mLayout, SpaceStateType::Fourier);
     }
 
-    void reset() { generation = 0; }
+    void reset() { *generation = 0; }
+
+    void preGet()
+    {
+      // `generation` is a host-only host_ptr (its device copy is null). Snapshot its value on the host into a
+      // plain, device-copyable member so eval() -- which runs on-device -- never dereferences the host_ptr.
+      mGenerationSnapshot = *generation;
+    }
 
     void postGet()
     {
       // This is called after the get, so we can increase the generation.
-      generation++;
+      (*generation)++;
     }
 
     /**
@@ -56,7 +64,7 @@ namespace TempLat
     {
       std::ostringstream oss;
       oss << prng.saveState() << "\n"; // Underlying RNG state
-      oss << generation << " ";        // Generation counter
+      oss << *generation << " ";       // Generation counter
       return oss.str();
     }
 
@@ -70,7 +78,7 @@ namespace TempLat
       std::string uniformState;
       std::getline(iss, uniformState);
       prng.loadState(uniformState);
-      iss >> generation;
+      iss >> *generation;
     }
 
     DEVICE_INLINE_FUNCTION std::tuple<RNGInteger, RNGInteger> gidx_to_idx2(const device::IdxArray<NDim> &gidx) const
@@ -121,11 +129,11 @@ namespace TempLat
 
       if (hermitianType == HermitianRedundancy::none) {
         const auto [r, c] = gidx_to_idx2(global_coord);
-        const complex<T> val = to_complex(prng.getPair(r, c, generation, Real, Unitary));
+        const complex<T> val = to_complex(prng.getPair(r, c, mGenerationSnapshot, Real, Unitary));
         return val;
       } else {
         const auto [r, c] = gidx_to_idx2(hermitianPartner);
-        const complex<T> val = to_complex(prng.getPair(r, c, generation, Real, Unitary));
+        const complex<T> val = to_complex(prng.getPair(r, c, mGenerationSnapshot, Real, Unitary));
         return (hermitianType == HermitianRedundancy::positivePartner)   ? val
                : (hermitianType == HermitianRedundancy::negativePartner) ? device::conj(val)
                : (hermitianType == HermitianRedundancy::realValued)      ? complex<T>(device::real(val))
@@ -142,7 +150,8 @@ namespace TempLat
     RandomGaussian<T> prng;
     device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
     LayoutStruct<NDim> mLayout;
-    RNGInteger generation;
+    device::memory::host_ptr<RNGInteger> generation;
+    RNGInteger mGenerationSnapshot; // device-copyable snapshot of *generation, set on host in preGet()
     device::IdxArray<NDim> mGlobalSizes;
   };
 

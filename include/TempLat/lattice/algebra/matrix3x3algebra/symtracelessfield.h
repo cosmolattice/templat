@@ -198,11 +198,10 @@ namespace TempLat
 
     void updateGhosts()
     {
-      m0.updateGhosts();
-      m1.updateGhosts();
-      m2.updateGhosts();
-      m3.updateGhosts();
-      m4.updateGhosts();
+      MemoryManager<T, NDim> *mgrs[] = {m0.getMemoryManager().get(), m1.getMemoryManager().get(),
+                                        m2.getMemoryManager().get(), m3.getMemoryManager().get(),
+                                        m4.getMemoryManager().get()};
+      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
     }
 
     void setGhostsAreStale()

@@ -195,7 +195,9 @@ namespace TempLat
 
 namespace
 {
+#ifndef HAVE_MPI
   TempLat::TDDContainer<TempLat::ForwDijTester<1>> test1;
+#endif
   TempLat::TDDContainer<TempLat::ForwDijTester<2>> test2;
   TempLat::TDDContainer<TempLat::ForwDijTester<3>> test3;
   TempLat::TDDContainer<TempLat::ForwDijTester<4>> test4;

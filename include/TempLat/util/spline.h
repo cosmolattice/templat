@@ -462,7 +462,7 @@ namespace TempLat
           A(n - 1, n - 3) = -(x[n - 1] - x[n - 2]);
           A(n - 1, n - 2) = x[n - 1] - x[n - 3];
           A(n - 1, n - 1) = -(x[n - 2] - x[n - 3]);
-          rhs[0] = T(0);
+          rhs[n - 1] = T(0); // right boundary row (was clobbering rhs[0], the left boundary)
         } else {
           assert(false);
         }

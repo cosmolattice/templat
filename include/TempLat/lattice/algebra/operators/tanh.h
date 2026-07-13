@@ -11,6 +11,7 @@
 #include "TempLat/lattice/algebra/constants/onetype.h"
 #include "TempLat/lattice/algebra/constants/zerotype.h"
 #include "TempLat/lattice/algebra/helpers/getderiv.h"
+#include "TempLat/lattice/algebra/operators/cosh.h"
 #include "TempLat/lattice/algebra/operators/multiply.h"
 #include "TempLat/lattice/algebra/operators/sinh.h"
 #include "TempLat/lattice/algebra/operators/unaryoperator.h"
@@ -45,7 +46,7 @@ namespace TempLat
       }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
-      template <typename U> auto d(const U &other) { return GetDeriv::get(mR, other) / pow<2>(sinh(*this)); }
+      template <typename U> auto d(const U &other) { return GetDeriv::get(mR, other) / pow<2>(cosh(mR)); }
 
       virtual std::string operatorString() const override { return "tanh"; }
     };

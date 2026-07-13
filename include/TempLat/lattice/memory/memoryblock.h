@@ -163,13 +163,6 @@ namespace TempLat
     DEVICE_INLINE_FUNCTION
     T *data() const { return mData.data(); }
 
-    MemoryBlock duplicate()
-    {
-      MemoryBlock newblock(mSize);
-      device::memory::copyDeviceToDevice(mData, newblock.getRawView());
-      return newblock;
-    }
-
     friend std::ostream &operator<<(std::ostream &ostream, const MemoryBlock &mb)
     {
       ostream << "Memory Block. Size: " << mb.mSize << ", allocated: " << mb.mData.is_allocated() << "\n";

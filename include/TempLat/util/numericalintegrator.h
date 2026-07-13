@@ -24,10 +24,23 @@ namespace TempLat
 
     template <typename T> static T integrate(const std::vector<T> &vec, T dt)
     {
-      T res = 0;
-      if (vec.size() == 3) {
-        res = dt / 3.0 * (vec[0] + 4 * vec[1] + vec[2]);
+      const size_t n = vec.size();
+      if (n < 2) return T(0); // no interval to integrate over
+
+      const size_t m = n - 1;                                   // number of equispaced intervals
+      const size_t simpsonIntervals = (m % 2 == 0) ? m : m - 1; // largest even interval count
+
+      T res = T(0);
+      // Composite Simpson over an even number of intervals (weights 1,4,2,4,...,4,1).
+      if (simpsonIntervals >= 2) {
+        T sum = vec[0] + vec[simpsonIntervals];
+        for (size_t i = 1; i < simpsonIntervals; ++i)
+          sum += (i % 2 == 1 ? T(4) : T(2)) * vec[i];
+        res += dt / 3.0 * sum;
       }
+      // If the interval count is odd, close the leftover interval with the trapezoidal rule.
+      if (simpsonIntervals != m) res += dt / 2.0 * (vec[m - 1] + vec[m]);
+
       return res;
     }
   };

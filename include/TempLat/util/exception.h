@@ -69,7 +69,7 @@ namespace TempLat
   {                                                                                                                    \
   public:                                                                                                              \
     name(const char *iitheWhat) : TempLat::Exception(iitheWhat) {};                                                    \
-    template <typename... Args> name(Args... args) : TempLat::Exception(args...){};                                    \
+    template <typename... Args> name(Args... args) : TempLat::Exception(args...) {};                                   \
   }
 
 #endif

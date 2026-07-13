@@ -42,7 +42,7 @@ namespace TempLat
       static_assert(N >= 0 && N < size, "getComp: N must be between 0 and size-1 for AssignableTuple");
       return (*this)(t + Tag<Shift>());
     }
-    
+
     using Getter = GetComponent;
     static constexpr int SHIFTIND = Shift;
   };
