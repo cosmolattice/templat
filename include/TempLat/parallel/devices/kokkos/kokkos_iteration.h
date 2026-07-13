@@ -22,13 +22,25 @@ namespace TempLat::device_kokkos::iteration
     Kokkos::parallel_for(name, getLocalKokkosPolicy(starts, stops),
                          device_kokkos::KokkosNDLambdaWrapper<NDim, Functor>(functor));
   }
-  // 2. foreach: LayoutStruct
+  // 2. foreach: LayoutStruct. This is the overload every field assignment goes through, i.e. every
+  // hot kernel. On CPU we dispatch only over the outer dimensions and walk the contiguous one in the
+  // functor, so that the vectorizer gets a loop it can actually reason about; see
+  // KokkosNDLambdaWrapperInnerLoop. On GPU the full-rank MDRange is what gives coalesced access, and
+  // is kept.
   template <size_t NDim, typename Functor>
     requires requires(Functor functor) { functor(device_kokkos::IdxArray<NDim>{}); }
   void foreach (const std::string &name, const LayoutStruct<NDim> &mLayout, const Functor &functor)
   {
-    Kokkos::parallel_for(name, device_kokkos::getLocalKokkosPolicy(mLayout),
-                         device_kokkos::KokkosNDLambdaWrapper<NDim, Functor>(functor));
+    if constexpr (!device_kokkos::reverse_access_pattern && NDim >= 2) {
+      const auto localSizes = mLayout.getSizesInMemory();
+      const device_kokkos::Idx nGhosts = mLayout.getNGhosts();
+      Kokkos::parallel_for(name, device_kokkos::getLocalKokkosOuterPolicy(mLayout),
+                           device_kokkos::KokkosNDLambdaWrapperInnerLoop<NDim, Functor>(
+                               functor, nGhosts, nGhosts + (device_kokkos::Idx)localSizes[NDim - 1]));
+    } else {
+      Kokkos::parallel_for(name, device_kokkos::getLocalKokkosPolicy(mLayout),
+                           device_kokkos::KokkosNDLambdaWrapper<NDim, Functor>(functor));
+    }
   }
   // 3. foreach: CheckerboardLayout
   template <size_t NDim, typename Functor>

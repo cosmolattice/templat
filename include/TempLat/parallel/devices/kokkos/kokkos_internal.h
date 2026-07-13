@@ -66,6 +66,31 @@ namespace TempLat
       }
     }
 
+    /**
+     * @brief The CPU counterpart of getLocalKokkosPolicy: a policy over the OUTER NDim-1 dimensions
+     * only. The contiguous last dimension is left to KokkosNDLambdaWrapperInnerLoop, which walks it
+     * in a plain loop that the vectorizer can see. Never used on GPU, where the full-rank MDRange
+     * with the reversed access pattern is what gives coalesced access.
+     */
+    template <size_t NDim> auto getLocalKokkosOuterPolicy(const LayoutStruct<NDim> &layout)
+    {
+      static_assert(NDim >= 2, "The outer policy needs a dimension left over for the inner loop.");
+      const auto localSizes = layout.getSizesInMemory();
+      const size_t nGhosts = layout.getNGhosts();
+
+      if constexpr (NDim == 2) {
+        return Kokkos::RangePolicy<DefaultExecutionSpace>(nGhosts, nGhosts + localSizes[0]);
+      } else {
+        Kokkos::Array<uint64_t, NDim - 1> start_iteration;
+        Kokkos::Array<uint64_t, NDim - 1> stop_iteration;
+        for (int d = 0; d < (int)NDim - 1; ++d) {
+          start_iteration[d] = nGhosts;
+          stop_iteration[d] = nGhosts + localSizes[d];
+        }
+        return Kokkos::MDRangePolicy<DefaultExecutionSpace, Kokkos::Rank<NDim - 1>>(start_iteration, stop_iteration);
+      }
+    }
+
     template <size_t NDim, typename I>
     auto getLocalKokkosPolicy(const device_kokkos::array<I, NDim> &starts, const device_kokkos::array<I, NDim> &stops)
     {
@@ -199,6 +224,42 @@ namespace TempLat
       }
 
       FUN fun;
+    };
+
+    /**
+     * @brief The CPU dispatch: a functor which wraps a lambda and walks the contiguous last
+     * dimension itself.
+     *
+     * Kokkos' MDRange tiles all NDim dimensions, and its innermost tile loop is one the vectorizer
+     * gives up on -- it has runtime bounds and no independence guarantee, so GCC emits scalar code
+     * for every lattice kernel. Handing the last (unit-stride) dimension back to a plain loop that
+     * carries TEMPLAT_ASSUME_INDEPENDENT is what lets it vectorize: measured on the SU(2) kick, 125
+     * -> 46 ns/site, and 8 -> 8064 packed FP instructions. See benchmarks/PERFORMANCE.md.
+     *
+     * The functor is copied once, here at construction; the inner loop must not copy it again. The
+     * expression trees it holds are NOT cheap to copy (their leaves carry a shared_ptr to the memory
+     * manager, so a copy means atomic refcount traffic), and copying one per row costs more than
+     * vectorising it saves.
+     *
+     * @tparam NDim Dimension of the lattice; the wrapped functor still takes all NDim indices.
+     * @tparam FUN The lambda to which we forward the indices
+     */
+    template <size_t NDim, typename FUN> struct KokkosNDLambdaWrapperInnerLoop {
+      KokkosNDLambdaWrapperInnerLoop(const FUN &_fun, Idx _innerStart, Idx _innerStop)
+          : fun(_fun), innerStart(_innerStart), innerStop(_innerStop) {};
+
+      template <typename... Args>
+        requires(sizeof...(Args) == NDim - 1)
+      DEVICE_INLINE_FUNCTION void operator()(const Args &...args) const
+      {
+        const Idx start = innerStart, stop = innerStop;
+        TEMPLAT_ASSUME_INDEPENDENT
+        for (Idx i = start; i < stop; ++i)
+          fun(device_kokkos::IdxArray<NDim>{{static_cast<Idx>(args)..., i}});
+      }
+
+      FUN fun;
+      Idx innerStart, innerStop;
     };
 
     /**

@@ -37,6 +37,12 @@
 #include "TempLat/util/rangeiteration/sum_in_range.h"
 #include "TempLat/util/staticif.h"
 
+#if defined(KICK_FUSED) || defined(KICK_SCATTER)
+#include "TempLat/lattice/algebra/helpers/doeval.h"
+#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
+#include "TempLat/parallel/device_iteration.h"
+#endif
+
 #include <cmath>
 #include <cstdio>
 
@@ -48,9 +54,15 @@ int main(int argc, char **argv)
 
   constexpr size_t NDim = 3;
   using T = double;
-  constexpr size_t nGrid = 64;
+#ifndef U1_NGRID
+#define U1_NGRID 64
+#endif
+#ifndef U1_NSTEPS
+#define U1_NSTEPS 100
+#endif
+  constexpr size_t nGrid = U1_NGRID;
   constexpr size_t nGhost = 1;
-  constexpr size_t nSteps = 100;
+  constexpr size_t nSteps = U1_NSTEPS;
   constexpr T dt = 0.02;
 
   auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost, false);
@@ -82,10 +94,120 @@ int main(int argc, char **argv)
     for (size_t step = 0; step < nSteps; ++step) {
       // Kick: dE_i/dt = -sum_{j != i} Im[ P_ij(x) - P_ij(x - j) ]
       measurer.measure("E kick", [&]() {
+#if defined(KICK_SCATTER)
+        // Scatter kick: each plaquette computed ONCE (3 per site, vs 12 plaquette evaluations
+        // for the per-direction gather below), its Im part added (+/- dt) to the four momenta
+        // it touches: 2 on-site and 2 one step up. No extra field.
+        //
+        // The sweep is extended by one layer into the LOWER ghost shell (starts at gg-1), which
+        // is what makes it correct without any reverse/additive halo: E_a(y) needs the plaquette
+        // at y - b^ for every b != a, and for y on the lower face of the owned box that site is
+        // exactly a lower-ghost site. The mirror-image writes that run off the upper face land in
+        // E's own ghost cells, which are never read (E is only ever used site-locally, in the
+        // drift and in the energy), so they are simply discarded -- and their physical content is
+        // not lost: it is re-supplied by the lower-ghost plaquette on the neighbouring rank (or,
+        // at one rank, by the periodic wrap of the ghost layer itself).
+        //
+        // Cost of correctness = recomputing the plaquettes on the ghost shell, i.e. (L+1)^3 / L^3
+        // sites. Serial backend => sequential, so plain += is race-free. A threaded build would
+        // additionally need a coloring (or per-thread slab ownership) for the += .
+        static_assert(NDim == 3, "scatter kick prototype hardcodes NDim=3");
+        auto q12 = Imag(plaq(U, 1_c, 2_c));
+        auto q13 = Imag(plaq(U, 1_c, 3_c));
+        auto q23 = Imag(plaq(U, 2_c, 3_c));
+        GhostsHunter::apply(q12);
+        GhostsHunter::apply(q13);
+        GhostsHunter::apply(q23);
+        auto e1 = E(1_c).getView();
+        auto e2 = E(2_c).getView();
+        auto e3 = E(3_c).getView();
+        const auto lay = E(1_c).getLayout();
+        const auto Ls = lay.getLocalSizes();
+        const device::Idx gg = lay.getNGhosts();
+        device::IdxArray<NDim> starts, stops;
+        for (size_t d = 0; d < NDim; ++d) {
+          starts[d] = gg - 1;    // one layer into the lower ghost shell
+          stops[d] = gg + Ls[d]; // owned box (writes to x+1 reach the upper ghost layer)
+        }
+        device::iteration::foreach (
+            "kick_scatter", starts, stops, DEVICE_LAMBDA(const device::IdxArray<NDim> &idx) {
+              device::apply(
+                  [&](auto &&...args) {
+                    const device::Idx c[3] = {device::Idx(args)...};
+                    const double s12 = dt * DoEval::eval(q12, args...);
+                    const double s13 = dt * DoEval::eval(q13, args...);
+                    const double s23 = dt * DoEval::eval(q23, args...);
+                    const device::Idx u0 = c[0] + 1, u1 = c[1] + 1, u2 = c[2] + 1;
+                    // plane (1,2): a=1(dim0) b=2(dim1)
+                    e1(c[0], c[1], c[2]) -= s12;
+                    e2(c[0], c[1], c[2]) += s12;
+                    e1(c[0], u1, c[2]) += s12; // E_1(x+2^)
+                    e2(u0, c[1], c[2]) -= s12; // E_2(x+1^)
+                    // plane (1,3): a=1(dim0) b=3(dim2)
+                    e1(c[0], c[1], c[2]) -= s13;
+                    e3(c[0], c[1], c[2]) += s13;
+                    e1(c[0], c[1], u2) += s13; // E_1(x+3^)
+                    e3(u0, c[1], c[2]) -= s13; // E_3(x+1^)
+                    // plane (2,3): a=2(dim1) b=3(dim2)
+                    e2(c[0], c[1], c[2]) -= s23;
+                    e3(c[0], c[1], c[2]) += s23;
+                    e2(c[0], c[1], u2) += s23; // E_2(x+3^)
+                    e3(c[0], u1, c[2]) -= s23; // E_3(x+2^)
+                  },
+                  idx);
+            });
+#elif defined(KICK_FUSED)
+        // Sweep-fusion prototype: instead of NDim separate whole-lattice assignments
+        // (each one re-streaming U from RAM), evaluate all NDim direction updates in a
+        // SINGLE pass over the lattice, so U/E are streamed once per step. The RHS is
+        // byte-for-byte the same expression as the per-direction version below.
+        static_assert(NDim == 3, "fused kick prototype hardcodes NDim=3");
+        auto kickRHS = [&](auto i) {
+          return E(i) - dt * Total(j, 1, NDim,
+                                   IfElse(i != j, Imag(plaq(U, i, j)) - shift(Imag(plaq(U, i, j)), -j), ZeroType()));
+        };
+        auto r1 = kickRHS(1_c);
+        auto r2 = kickRHS(2_c);
+        auto r3 = kickRHS(3_c);
+        // Refresh U's ghosts exactly as the per-assignment path would (assign() calls
+        // GhostsHunter::apply on its RHS); the hand-written foreach below bypasses it.
+        GhostsHunter::apply(r1);
+        GhostsHunter::apply(r2);
+        GhostsHunter::apply(r3);
+        auto v1 = E(1_c).getView();
+        auto v2 = E(2_c).getView();
+        auto v3 = E(3_c).getView();
+        device::iteration::foreach ("kick_fused", E(1_c).getLayout(),
+                                    DEVICE_LAMBDA(const device::IdxArray<NDim> &idx) {
+                                      device::apply(
+                                          [&](auto &&...args) {
+#ifdef KICK_FUSED_TMP
+                                            // All reads first, then all writes: removes the
+                                            // store-between-loads aliasing barrier so the
+                                            // compiler MAY CSE the U-link loads shared across
+                                            // directions.
+                                            const auto t1 = DoEval::eval(r1, args...);
+                                            const auto t2 = DoEval::eval(r2, args...);
+                                            const auto t3 = DoEval::eval(r3, args...);
+                                            v1(args...) = t1;
+                                            v2(args...) = t2;
+                                            v3(args...) = t3;
+#else
+                                            v1(args...) = DoEval::eval(r1, args...);
+                                            v2(args...) = DoEval::eval(r2, args...);
+                                            v3(args...) = DoEval::eval(r3, args...);
+#endif
+                                          },
+                                          idx);
+                                    });
+        // E is only ever read site-locally (drift, energy), so its ghosts are never
+        // needed; no setGhostsAreStale() required here.
+#else
         for_in_range<1, NDim + 1>([&](auto i) {
           E(i) = E(i) - dt * Total(j, 1, NDim,
                                    IfElse(i != j, Imag(plaq(U, i, j)) - shift(Imag(plaq(U, i, j)), -j), ZeroType()));
         });
+#endif
         device::iteration::fence();
       });
       // Drift: U_i <- e^{i dt E_i} U_i. Multiplicative update, stays exactly on the group,
