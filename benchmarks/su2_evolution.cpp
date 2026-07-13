@@ -127,10 +127,8 @@ int main(int argc, char **argv)
 
   // H = 2 sum_i <Pi_i . Pi_i> + 2 sum_{i != j} <1 - c0(P_ij)>, per site.
   auto energy = [&]() {
-    T elec = 2.0 * Total(i, 1, NDim,
-                         average(pow<2>(Pi(i)(1_c)) + pow<2>(Pi(i)(2_c)) + pow<2>(Pi(i)(3_c))));
-    T mag = 2.0 * Total(i, 1, NDim,
-                        Total(j, 1, NDim, IfElse(i != j, average(1.0 - plaq(U, i, j).SU2Get(0_c)), 0.0)));
+    T elec = 2.0 * Total(i, 1, NDim, average(pow<2>(Pi(i)(1_c)) + pow<2>(Pi(i)(2_c)) + pow<2>(Pi(i)(3_c))));
+    T mag = 2.0 * Total(i, 1, NDim, Total(j, 1, NDim, IfElse(i != j, average(1.0 - plaq(U, i, j).SU2Get(0_c)), 0.0)));
     return std::make_pair(elec, mag);
   };
 
@@ -214,17 +212,17 @@ int main(int argc, char **argv)
                     // One plane (a, b), fully unrolled: a/b are template params so every view index
                     // and every neighbour offset folds at compile time.
                     auto plane = [&]<int a, int b>(const device::array<T, 4> &P, const T A[4], const T D[4],
-                                                   device::Idx ba0, device::Idx ba1, device::Idx ba2,
-                                                   device::Idx ab0, device::Idx ab1, device::Idx ab2) {
+                                                   device::Idx ba0, device::Idx ba1, device::Idx ba2, device::Idx ab0,
+                                                   device::Idx ab1, device::Idx ab2) {
                       const T p[3] = {dt * P[1], dt * P[2], dt * P[3]};
                       T rD[3], rA[3];
                       adDagger(D, p, rD); // for Pi_a(x + b^)
                       adDagger(A, p, rA); // for Pi_b(x + a^)
                       constexpr_for<0, 3>([&](auto m) {
-                        pv[a][m](i0, i1, i2) -= p[m];          // Pi_a(x)     -= dt p
-                        pv[b][m](i0, i1, i2) += p[m];          // Pi_b(x)     += dt p
-                        pv[a][m](ba0, ba1, ba2) += rD[m];      // Pi_a(x + b^) += dt Ad(D^dag) p
-                        pv[b][m](ab0, ab1, ab2) -= rA[m];      // Pi_b(x + a^) -= dt Ad(A^dag) p
+                        pv[a][m](i0, i1, i2) -= p[m];     // Pi_a(x)     -= dt p
+                        pv[b][m](i0, i1, i2) += p[m];     // Pi_b(x)     += dt p
+                        pv[a][m](ba0, ba1, ba2) += rD[m]; // Pi_a(x + b^) += dt Ad(D^dag) p
+                        pv[b][m](ab0, ab1, ab2) -= rA[m]; // Pi_b(x + a^) -= dt Ad(A^dag) p
                       });
                     };
 
@@ -237,10 +235,27 @@ int main(int argc, char **argv)
                   },
                   idx);
             });
-#else
+#elif defined(KICK_FUSED)
+        // The natural way to write it -- and 12-20% slower. The whole Total over j is one expression,
+        // so all 12 four-link products are live at once; vectorized, that is far more than the 32 zmm
+        // registers hold, and GCC spills (3276 stack-touching vector moves in the loop, against 1500
+        // for the split form below and 83 for a hand-written kernel). Kept so the comparison stays
+        // reproducible: benchmarks/PERFORMANCE.md section 2.
         for_in_range<1, NDim + 1>([&](auto i) {
           Pi(i) = Pi(i) - dt * Total(j, 1, NDim,
                                      IfElse(i != j, plaq(U, i, j) - plaqBack(U, i, j), ZeroType()));
+        });
+#else
+        // Same arithmetic, accumulated one transverse direction at a time. This costs one extra Pi
+        // read+write per j and buys a live set that fits in the register file -- a net 12-20%. Do NOT
+        // split further (one assignment per term): the extra Pi traffic then outweighs the spills it
+        // saves. Energy drift is bit-identical to the fused form, as it must be.
+        for_in_range<1, NDim + 1>([&](auto i) {
+          for_in_range<1, NDim + 1>([&](auto j) {
+            if constexpr (decltype(i)::value != decltype(j)::value) {
+              Pi(i) = Pi(i) - dt * (plaq(U, i, j) - plaqBack(U, i, j));
+            }
+          });
         });
 #endif
         device::iteration::fence();

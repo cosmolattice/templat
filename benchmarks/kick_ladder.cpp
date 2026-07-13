@@ -11,15 +11,19 @@
  *   -DKICK_VARIANT=0  TempLat as-is: Pi(i) = Pi(i) - dt * Total(j, plaq - plaqBack)
  *   -DKICK_VARIANT=1  same expression tree, but the site loop is a hand-written triple loop here
  *                     calling DoEval::eval(e, x, y, z)   -> isolates Kokkos' MDRange dispatch
- *   -DKICK_VARIANT=2  as 1, but the leaves load through raw T* __restrict__ + constant strides
- *                     instead of Kokkos::View::operator()  -> isolates the View accessor.
- *                     NOT IMPLEMENTED YET (needs a raw-pointer leaf in ConfigView::eval); this is
- *                     the rung to build if you want the ~2x that still separates 0 from 3.
+ *   -DKICK_VARIANT=2  as 1, but the leaves load through raw T* __restrict__ instead of
+ *                     Kokkos::View::operator()  -> isolates the View accessor. MEASURED AND REFUTED:
+ *                     identical to the View to within noise. The code is gone; the rung #errors.
  *   -DKICK_VARIANT=3  the ceiling: plain restrict-qualified triple loop, no expression templates,
  *                     no Kokkos. Performance probe only (own arrays, not bit-compared).
+ *   -DKICK_VARIANT=4  the fused kick split into one assignment per transverse direction j. The fused
+ *                     expression's live set does not fit in the register file, so it SPILLS -- this
+ *                     is what the remaining gap to the ceiling is made of. 12-20% faster than 0.
+ *   -DKICK_VARIANT=5  split further, one assignment per term. Over-splitting: the extra Pi traffic
+ *                     costs more than the spills it saves. Slower than 4.
  *
- * Variants 0-2 share su2_evolution.cpp's deterministic plane-wave IC, so plaq and the relative
- * energy drift are an exact correctness gate and must be identical across them.
+ * Variants 0, 1, 4, 5 share su2_evolution.cpp's deterministic plane-wave IC, so plaq and the relative
+ * energy drift are an exact correctness gate and must be identical across all of them (they are).
  */
 
 #include "TempLat/session/sessionguard.h"
@@ -240,9 +244,10 @@ int main(int argc, char **argv)
     PreGet::apply(r);
 
 #if KICK_VARIANT == 2
-#error "Variant 2 is not implemented yet: it needs a raw-pointer leaf (a trivially-copyable accessor \
-built from mView.data() / mView.stride(d), routed through ConfigView::eval) so that the loads inside \
-the expression tree bypass Kokkos::View::operator(). Add that first; see benchmarks/PERFORMANCE.md."
+#error "Variant 2 (raw-pointer leaves instead of Kokkos::View::operator()) was BUILT AND MEASURED, \
+and it is a dead end: it matches the View to within noise. The View accessor is not the cost. The \
+code was reverted rather than left behind a flag; see benchmarks/PERFORMANCE.md for the numbers and \
+for what the remaining gap to the ceiling actually is (register spills -- try variants 4 and 5)."
 #else
     const auto v1 = f1.getView();
     const auto v2 = f2.getView();
@@ -276,6 +281,26 @@ the expression tree bypass Kokkos::View::operator(). Add that first; see benchma
   double kickSeconds = 0.0, driftSeconds = 0.0;
   for (size_t step = 0; step < nSteps; ++step) {
     auto t0 = std::chrono::steady_clock::now();
+#if KICK_VARIANT == 4 || KICK_VARIANT == 5
+    // Split the fused kick into smaller assignments. The fused form materializes all 12 four-link
+    // products in one expression, whose live set does not fit in 32 zmm registers -- GCC spills, and
+    // the kick executes 4.4x the loads of a hand-written kernel doing the same arithmetic. Splitting
+    // trades a little extra Pi traffic (one read+write per assignment) for a smaller live set.
+    //   4: one assignment per transverse direction j   (Pi -= dt (plaq - plaqBack))
+    //   5: one assignment per term                     (Pi -= dt plaq;  Pi += dt plaqBack)
+    for_in_range<1, NDim + 1>([&](auto i) {
+      for_in_range<1, NDim + 1>([&](auto j) {
+        if constexpr (decltype(i)::value != decltype(j)::value) {
+#if KICK_VARIANT == 4
+          Pi(i) = Pi(i) - dt * (plaq(U, i, j) - plaqBack(U, i, j));
+#else
+          Pi(i) = Pi(i) - dt * plaq(U, i, j);
+          Pi(i) = Pi(i) + dt * plaqBack(U, i, j);
+#endif
+        }
+      });
+    });
+#else
     for_in_range<1, NDim + 1>([&](auto i) {
       auto force = Pi(i) - dt * Total(j, 1, NDim, IfElse(i != j, plaq(U, i, j) - plaqBack(U, i, j), ZeroType()));
 #if KICK_VARIANT == 0
@@ -284,6 +309,7 @@ the expression tree bypass Kokkos::View::operator(). Add that first; see benchma
       assignManually(Pi(i), force);
 #endif
     });
+#endif
     device::iteration::fence();
     auto t1 = std::chrono::steady_clock::now();
     for_in_range<1, NDim + 1>([&](auto i) { U(i) = exp(dt * Pi(i)) * U(i); });

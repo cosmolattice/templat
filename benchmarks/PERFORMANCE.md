@@ -67,24 +67,90 @@ no longer taking effect, and the CPU dispatch being refactored away.
 
 ### How to localise a future regression
 
-Build `benchmarks/kick_ladder.cpp` at `-DKICK_VARIANT=0..3`. It runs the same kick, on the same
-layout, at four levels: TempLat as-is (0), a hand-written site loop over `DoEval::eval` (1), the same
-with raw-pointer leaves (2), and a hand-written ceiling with no Kokkos and no expression templates (3).
+Build `benchmarks/kick_ladder.cpp` at `-DKICK_VARIANT=0..5`. It runs the same kick, on the same layout,
+at rungs of increasing distance from the library: TempLat as-is (0), a hand-written site loop over
+`DoEval::eval` (1), raw-pointer leaves (2 — refuted, see below), a hand-written ceiling with no Kokkos
+and no expression templates (3), and the de-fused kick (4, 5 — see §2).
 Whichever rung recovers the time tells you which layer is at fault. Variant 1 at 45.8 ns/site vs
 variant 0 at 125.5 is what proved the dispatch — not the expression templates — was the problem;
 variant 1 with the pragma removed goes straight back to 126.4 ns/site and 0 packed ops, which is what
 proved it was the aliasing assertion specifically and not the loop shape.
 
-The ceiling (variant 3) is ~27 ns/site, so there is still ~2x on the table between TempLat and a
-hand-written kernel. That gap is *not* the dispatch and not the pragma. Untested candidates: the
-`Kokkos::View` accessor's index arithmetic (variant 2 exists to measure this, and has not been run —
-it needs a raw-pointer leaf in `ConfigView::eval`), and row alignment (with `nGhosts = 1` every
-contiguous row starts at element offset 1, so every vector load is unaligned; padding the contiguous
-dimension to a 64 B multiple in `views/fieldviewconfig.h` is cheap to try).
+---
+
+## 2. The remaining gap to a hand-written kernel is register spills
+
+The ceiling (variant 3) is ~27–32 ns/site against TempLat's ~46–61, so there is still ~1.5–2x between
+the library and a hand-written kernel. It has been chased, and it is **not** the dispatch, **not** the
+pragma, and **not** the leaf accessor. It is that the fused kick expression does not fit in the
+register file.
+
+`perf stat`, 64³, single core (TempLat runs kick+drift, the ceiling only the kick, so the FP counts
+are the fair comparison, not the totals):
+
+| | instructions | cycles | FP ops | IPC | loads | stores |
+|---|---|---|---|---|---|---|
+| TempLat | 10.7e9 | 7.77e9 | 33.0e9 | 1.38 | 5.33e9 | 1.61e9 |
+| ceiling | 3.64e9 | 3.22e9 | 26.0e9 | 1.13 | 1.22e9 | 0.40e9 |
+
+TempLat's **IPC is higher** than the ceiling's, and it does comparable FP work. It simply executes ~3x
+the instructions to do it: **4.4x the loads and 4x the stores.** Statically, the kick loop contains
+**3276 stack-touching vector moves against the ceiling's 83.** `Pi(i) = Pi(i) - dt * Total(j, plaq -
+plaqBack)` materializes all twelve four-link products in one expression; vectorized, each live
+quaternion component is a full zmm, and the live set does not fit in 32 registers. GCC spills it and
+reloads. (It is not unrolling: `-fno-unroll-loops` leaves all 3276 spills in place.)
+
+**The lever is to stop fusing so much.** Splitting the kick into one assignment per transverse
+direction — `for j != i: Pi(i) = Pi(i) - dt*(plaq(U,i,j) - plaqBack(U,i,j))` — trades one extra Π
+read+write for a live set that fits, and is **11–22% faster**, with `plaq`/`edrift` bit-identical.
+Spills drop 3276 -> 1500. `su2_evolution.cpp` **now does this by default**; `-DKICK_FUSED` restores the
+fused form for comparison.
+
+| kick, ns/site | fused | de-fused |
+|---|---|---|
+| 64³ | 46.9 | **41.9** |
+| 192³ | 55.9 | **43.4** |
+
+Do not over-split: one assignment per *term* (`kick_ladder` variant 5) drops spills further, to 1166,
+but is slower — the extra Π traffic then outweighs the spills it saves. There is an optimum and it is
+not at either end.
+
+**This applies to CosmoLattice, and probably more so.** `CosmoInterface/evolvers/kernels/su2kernels.h`
+builds `-normGrad * (GradSU2 - GradSU2Back) - normSU2Source * SU2Source`, where `GradSU2` and
+`GradSU2Back` are each a `Total(j, ...)` over plaquettes, and the evolvers apply it as a single
+`piSU2(n) += (w * dt) * SU2Kernels::get(model, n)`. That is the fused shape with an *extra* source term
+in the live set. Not yet measured there — but it is the same expression pathology, and the same
+de-fusing should apply.
+
+Closing the rest of the gap means shrinking the live set *inside* the plaquette evaluation — a fused
+primitive that accumulates the algebra components without materializing every intermediate quaternion
+(compare the `su2dotter` fused-eval primitive, which was introduced for the same class of reason).
+That is real work and it has not been attempted.
+
+### Two things that sound right and are not
+
+**Raw-pointer leaves (`RawAccessor`) — built, measured, refuted.** Replacing `Kokkos::View::operator()`
+in `ConfigView::eval` with a POD `T* __restrict__` + strides accessor performs **identically to the
+View** (52.6 vs 53.8 ns/site at 64³; 61.9 vs 59.7 at 192³) and generates near-identical code. The View
+accessor is not the cost. The code was reverted rather than left behind a flag.
+
+If you do rebuild it, note the trap that cost the first attempt: the **last stride must be a
+compile-time 1**, not a stored runtime value. Storing it costs *3x the packed FP instructions and 2x
+the integer multiplies*, because unit-stride along the contiguous dimension is exactly what tells the
+vectorizer a row can be loaded as a vector instead of gathered. `Kokkos::View` gets this right for
+`LayoutRight`; a naive replacement does not.
+
+**Row alignment.** With `nGhosts = 1` every contiguous row starts at element offset 1, so every vector
+load is unaligned — but the hand-written ceiling has exactly the same property, so this *cannot*
+explain the gap between them. It is a candidate for beating the ceiling, not for reaching it.
+
+**A kernel-form snapshot of the tree (`asKernel()`, POD leaves).** This was the planned fallback for
+this gap. It would make leaf pointers loop-invariant — which the measurements above say was never the
+problem. It does nothing about register pressure. Do not spend the ~30 operator node types on it.
 
 ---
 
-## 2. Refuted ideas
+## 3. Refuted ideas
 
 Do not re-try these without reading why they lost.
 
@@ -111,7 +177,7 @@ note about `shared_ptr` leaves above. The current fix hoists the dimension *with
 
 ---
 
-## 3. Where the time goes now
+## 4. Where the time goes now
 
 - The **kick is compute-bound** (~98% of its time is arithmetic, not memory traffic) and is ~85% of a
   leapfrog step. It was the right thing to attack, and vectorization was the right lever.
