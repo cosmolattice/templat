@@ -192,7 +192,28 @@ int main(int argc, char **argv)
   constexpr size_t nGhost = 1;
   constexpr T amp = 0.5;
 
+  // A cubic box CANNOT see the cache-blocking regression that the cluster hit: its contiguous rows are
+  // short, so sweeping a whole row per (x,y) keeps the stencil's neighbour rows in cache no matter
+  // what the dispatch does. The 2D-pencil decomposition MPI actually uses leaves the contiguous
+  // dimension UNDIVIDED (local box e.g. 48 x 32 x 6144), and that is where blocking starts to matter.
+  // Set -DSU2_NX/-DSU2_NY/-DSU2_NZ to reproduce a pencil on a single rank.
+#if defined(SU2_NX) || defined(SU2_NY) || defined(SU2_NZ)
+#ifndef SU2_NX
+#define SU2_NX SU2_NGRID
+#endif
+#ifndef SU2_NY
+#define SU2_NY SU2_NGRID
+#endif
+#ifndef SU2_NZ
+#define SU2_NZ SU2_NGRID
+#endif
+  const device::IdxArray<NDim> boxSizes{{SU2_NX, SU2_NY, SU2_NZ}};
+  const double sites = (double)SU2_NX * SU2_NY * SU2_NZ;
+  auto toolBox = MemoryToolBox<NDim>::makeShared(boxSizes, nGhost, false);
+#else
+  const double sites = (double)nGrid * nGrid * nGrid;
   auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost, false);
+#endif
   toolBox->unsetVerbose();
 
   FieldCollection<SU2Field<T, NDim>, NDim, false, 1> U("U", toolBox);
@@ -321,7 +342,6 @@ for what the remaining gap to the ceiling actually is (register spills -- try va
   }
 
   const auto [elec1, mag1] = energy();
-  const double sites = (double)nGrid * nGrid * nGrid;
 
   std::printf("variant  = %d\n", KICK_VARIANT);
   std::printf("N        = %zu\n", nGrid);

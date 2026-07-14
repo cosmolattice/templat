@@ -31,13 +31,21 @@ namespace TempLat::device_kokkos::iteration
     requires requires(Functor functor) { functor(device_kokkos::IdxArray<NDim>{}); }
   void foreach (const std::string &name, const LayoutStruct<NDim> &mLayout, const Functor &functor)
   {
+    // -DTEMPLAT_LEGACY_MDRANGE restores the pre-vectorization dispatch (Kokkos' full-rank tiled
+    // MDRange, which emits scalar code). It exists to A/B the dispatch in situ: the CPU kernels are
+    // 2.5x faster this way on every machine and geometry measured HERE, but a cluster run reported the
+    // SU(2) kick 10% SLOWER at scale, and that has not been reproduced or explained. Until it is, keep
+    // the escape hatch -- and see benchmarks/PERFORMANCE.md before deleting it.
+#ifndef TEMPLAT_LEGACY_MDRANGE
     if constexpr (!device_kokkos::reverse_access_pattern && NDim >= 2) {
       const auto localSizes = mLayout.getSizesInMemory();
       const device_kokkos::Idx nGhosts = mLayout.getNGhosts();
       Kokkos::parallel_for(name, device_kokkos::getLocalKokkosOuterPolicy(mLayout),
                            device_kokkos::KokkosNDLambdaWrapperInnerLoop<NDim, Functor>(
                                functor, nGhosts, nGhosts + (device_kokkos::Idx)localSizes[NDim - 1]));
-    } else {
+    } else
+#endif
+    {
       Kokkos::parallel_for(name, device_kokkos::getLocalKokkosPolicy(mLayout),
                            device_kokkos::KokkosNDLambdaWrapper<NDim, Functor>(functor));
     }

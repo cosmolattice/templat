@@ -235,27 +235,27 @@ int main(int argc, char **argv)
                   },
                   idx);
             });
-#elif defined(KICK_FUSED)
-        // The natural way to write it -- and 12-20% slower. The whole Total over j is one expression,
-        // so all 12 four-link products are live at once; vectorized, that is far more than the 32 zmm
-        // registers hold, and GCC spills (3276 stack-touching vector moves in the loop, against 1500
-        // for the split form below and 83 for a hand-written kernel). Kept so the comparison stays
-        // reproducible: benchmarks/PERFORMANCE.md section 2.
-        for_in_range<1, NDim + 1>([&](auto i) {
-          Pi(i) = Pi(i) - dt * Total(j, 1, NDim,
-                                     IfElse(i != j, plaq(U, i, j) - plaqBack(U, i, j), ZeroType()));
-        });
-#else
-        // Same arithmetic, accumulated one transverse direction at a time. This costs one extra Pi
-        // read+write per j and buys a live set that fits in the register file -- a net 12-20%. Do NOT
-        // split further (one assignment per term): the extra Pi traffic then outweighs the spills it
-        // saves. Energy drift is bit-identical to the fused form, as it must be.
+#elif defined(KICK_DEFUSED)
+        // Accumulate one transverse direction at a time. The fused expression below keeps all 12
+        // four-link products live at once, which does not fit in the register file, so it spills
+        // (3276 stack-touching vector moves against 1500 here) -- and de-fusing duly wins 11-20% ON A
+        // SINGLE RANK. It LOSES 33-37% at full machine occupancy, because the extra Pi read+write per
+        // j is memory traffic, and at scale the kick is bandwidth-bound, not compute-bound. Kept only
+        // to reproduce that: this is a trap, see benchmarks/PERFORMANCE.md section 2.
         for_in_range<1, NDim + 1>([&](auto i) {
           for_in_range<1, NDim + 1>([&](auto j) {
             if constexpr (decltype(i)::value != decltype(j)::value) {
               Pi(i) = Pi(i) - dt * (plaq(U, i, j) - plaqBack(U, i, j));
             }
           });
+        });
+#else
+        // The fused kick. It spills registers and is ~11-20% slower on one rank -- and it is still the
+        // right default, because it moves the least memory, and every core beyond the first is fighting
+        // for DRAM bandwidth. Optimise this kernel for BYTES, not for FLOPs or registers.
+        for_in_range<1, NDim + 1>([&](auto i) {
+          Pi(i) = Pi(i) - dt * Total(j, 1, NDim,
+                                     IfElse(i != j, plaq(U, i, j) - plaqBack(U, i, j), ZeroType()));
         });
 #endif
         device::iteration::fence();
