@@ -10,6 +10,8 @@
 #include "TempLat/lattice/algebra/helpers/hasstaticgetter.h"
 #include "TempLat/lattice/algebra/helpers/haseval.h"
 #include "TempLat/lattice/algebra/complexalgebra/complexfieldbinaryoperator.h"
+#include "TempLat/lattice/algebra/complexalgebra/real.h"
+#include "TempLat/lattice/algebra/complexalgebra/imag.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/hassu2get.h"

@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Adrien Florio,  Year: 2019
 
 #include "TempLat/lattice/algebra/complexalgebra/helpers/hascomplexfieldget.h"
+#include "TempLat/lattice/algebra/complexalgebra/ascomplexfield.h"
 #include "TempLat/lattice/algebra/helpers/iscomplextype.h"
 
 namespace TempLat
@@ -28,6 +29,15 @@ namespace TempLat
   auto Imag(T &&t)
   {
     return t.imag();
+  }
+
+  /** @brief Imaginary part of a getter whose eval() returns a complex value. Bridges it into the
+   *  complex-field protocol first, so Imag(f) == Imag(asComplexField(f)). */
+  template <class T>
+    requires HasComplexEval<std::decay_t<T>>
+  auto Imag(T &&t)
+  {
+    return asComplexField(std::forward<T>(t)).ComplexFieldGet(1_c);
   }
 } // namespace TempLat
 

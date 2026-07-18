@@ -1,3 +1,4 @@
+#include "TempLat/lattice/algebra/complexalgebra/ascomplexfield.h"
 #include "TempLat/lattice/algebra/complexalgebra/asfourier.h"
 #include "TempLat/lattice/algebra/complexalgebra/complexfieldmultiply.h"
 #include "TempLat/lattice/algebra/complexalgebra/scalarcomplexmultiply.h"

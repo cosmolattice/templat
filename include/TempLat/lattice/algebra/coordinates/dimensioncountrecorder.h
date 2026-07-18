@@ -37,7 +37,10 @@ namespace TempLat
     void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
       if (mFixedSingleSpaceType != SpaceStateType::undefined && mFixedSingleSpaceType != spaceType) {
-#ifndef DEVICE_KOKKOS
+        // Guard on DEVICE_REGION (actual device-code compilation) rather than DEVICE_KOKKOS: confirmSpace is
+        // called from host code during onBeforeAssignment, so the throw must survive on the host in a Kokkos
+        // build and be dropped only inside device kernels, where `throw` is illegal.
+#ifndef DEVICE_REGION
         throw DimensionCountRecorder_CoordinateSpaceException(
             "You are using coordinates in one space for an expression in another space. This coordinate object insists "
             "on",

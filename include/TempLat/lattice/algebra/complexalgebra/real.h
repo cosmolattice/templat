@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Adrien Florio,  Year: 2019
 
 #include "TempLat/lattice/algebra/complexalgebra/helpers/hascomplexfieldget.h"
+#include "TempLat/lattice/algebra/complexalgebra/ascomplexfield.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
 #include "TempLat/lattice/algebra/helpers/iscomplextype.h"
 
@@ -19,7 +20,7 @@ namespace TempLat
    * Unit test: ctest -R test-real
    **/
   template <class T>
-    requires requires(T t) { t.ComplexFieldGet(0_c); }
+    requires HasComplexFieldGet<T>
   auto Real(T &&t)
   {
     return t.ComplexFieldGet(0_c);
@@ -30,6 +31,15 @@ namespace TempLat
   auto Real(T &&t)
   {
     return t.real();
+  }
+
+  /** @brief Real part of a getter whose eval() returns a complex value (e.g. RandomGaussianField in
+   *  Fourier space). Bridges it into the complex-field protocol first, so Real(f) == Real(asComplexField(f)). */
+  template <class T>
+    requires HasComplexEval<std::decay_t<T>>
+  auto Real(T &&t)
+  {
+    return asComplexField(std::forward<T>(t)).ComplexFieldGet(0_c);
   }
 } // namespace TempLat
 
