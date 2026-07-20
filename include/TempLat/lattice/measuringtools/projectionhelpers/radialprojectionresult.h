@@ -195,14 +195,19 @@ namespace TempLat
       mValues.finalize(comm);
       mBinBounds.finalize(comm);
 
+      std::vector<T> updatedCentralBinBounds;
+
       auto &mFullResult = *this;
 
       mFullResult.clear();
       for (size_t i = 0; i < mNBins; ++i) {
+        if (mMultiplicities[i] == 0) continue;
         RadialProjectionSingleBinAndValue<T> next(mBinBounds.getFinal(i, mMultiplicities[i]),
                                                   mValues.getFinal(i, mMultiplicities[i]));
         this->push_back(next);
+        updatedCentralBinBounds.push_back(centralBinBounds[i]);
       }
+      centralBinBounds = updatedCentralBinBounds; //Needed to ensure the number of bins is consistent within the different members of this class.
       return *this;
     }
 
