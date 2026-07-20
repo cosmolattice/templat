@@ -46,8 +46,8 @@ namespace TempLat
     template <typename U> friend class RadialProjectionResult;
 
     // Put public methods here. These should change very little over time.
-    RadialProjectionResult(size_t nBins, bool pUseBinCentralValues = false, bool pIsInFourier = false)
-        : std::vector<RadialProjectionSingleBinAndValue<T>>(), finalizedOnce(false), mNBins(nBins), mValues(mNBins),
+    RadialProjectionResult(size_t nBins, T deltakBins, bool pUseBinCentralValues = false, bool pIsInFourier = false)
+        : std::vector<RadialProjectionSingleBinAndValue<T>>(), finalizedOnce(false), mNBins(nBins), mDeltakBins(deltakBins), mValues(mNBins),
           mBinBounds(mNBins), mUseBinCentralValues(pUseBinCentralValues), mIsInFourier(pIsInFourier)
     {
       mMultiplicitiesDevice = DeviceView("RadialProjectionResult::mMultiplicitiesDevice", mNBins);
@@ -109,12 +109,12 @@ namespace TempLat
       auto kIR = (*this).getCentralBinBounds()[0];
       if (useCentralBin) {
         for (size_t i = 0; i < this->size(); ++i)
-          total += (*this)[i].getValue().average / (i + 1);
+          total += (*this)[i].getValue().average / centralBinBounds[i];
       } else {
         for (auto &&it : *this)
           total += it.getValue().average * kIR / it.getBin().average;
       }
-      return total;
+      return total * mDeltakBins;
     }
 
     /** @brief Rescale the bin positions with a normalization (for example dimensionful).
@@ -215,6 +215,7 @@ namespace TempLat
     /* Put all member variables and private methods here. These may change arbitrarily. */
     bool finalizedOnce;
     size_t mNBins;
+    T mDeltakBins;
     RadialProjectionSingleQuantity<T> mValues, mBinBounds;
     std::vector<T> centralBinBounds; // Naive central values of the bin. Does not need to be set.
 

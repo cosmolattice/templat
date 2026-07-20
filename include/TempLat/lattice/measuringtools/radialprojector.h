@@ -71,7 +71,7 @@ namespace TempLat
       sType minValue = !excludeOrigin ? 0.0 : deltakBins >= 1.0 ? 0.5 : 1.0 - deltakBins / 2.;
       device::Idx nLinearBins = ceil((maxValue - minValue) / deltakBins);
 
-      RadialProjectionResult<sType> baseWorkSpace(nLinearBins, mUseBinCentralValues,
+      RadialProjectionResult<sType> baseWorkSpace(nLinearBins, deltakBins, mUseBinCentralValues,
                                                   mSpaceType == SpaceStateType::Fourier);
 
       RadialProjectionResult<sType> myResult =

@@ -50,8 +50,6 @@ namespace TempLat
       mMultiplicities = device::memory::createMirrorView(mMultiplicitiesDevice);
     }
 
-    auto getNBins() { return mNBins; }
-
     /** \brief Rescale the results with a function of x or k (bin location),
      *  using for now a simple lambda function of single float parameter, which
      *  is your x in f(x). In other words, you give f(x).
@@ -79,7 +77,7 @@ namespace TempLat
     {
       auto total = 0.;
       for (size_t i = 0; i < this->size(); ++i) {
-        total += std::get<1>((*this)[i]).average / std::get<0>((*this)[i]) * std::get<1>((*this)[i]).multiplicity;
+        total += std::get<1>((*this)[i]).average / std::get<0>((*this)[i])  * binWidths[i];
       }
       return total;
     }
@@ -102,24 +100,39 @@ namespace TempLat
     {
       /*After finalizing, we scale the bins so that they can be compared to the binned power psectrum. This is equal to
        * considering the unbinned power spectrum with bins of variable width*/
+      setBinWidths();
+
       const size_t n = (*this).size();
       if (n < 2) return *this; // need at least two bins to form a finite bin width
 
       // Divide a bin's average by its width, guarding against coincident positions (width 0).
-      auto rescale = [&](size_t i, floatType binWidth) {
-        if (binWidth != floatType(0)) std::get<1>((*this)[i]).average /= binWidth;
+      auto rescale = [&](size_t i, floatType width) {
+        if (width != floatType(0)) {
+          std::get<1>((*this)[i]).average /= width;
+        }
       };
 
-      // First bin: forward half-difference, minus the 0.5 offset of the lowest binned mode.
-      rescale(0, (std::get<0>((*this)[1]) - std::get<0>((*this)[0])) / 2 - 0.5);
-      // Interior bins: central difference.
-      for (size_t i = 1; i + 1 < n; ++i) {
-        rescale(i, (std::get<0>((*this)[i + 1]) - std::get<0>((*this)[i - 1])) / 2);
-      }
-      // Last bin: backward difference (was an out-of-bounds read/write at index size()).
-      rescale(n - 1, std::get<0>((*this)[n - 1]) - std::get<0>((*this)[n - 2]));
+      for (size_t i = 0; i < n; ++i) rescale(i, binWidths[i]);
 
       return *this;
+    }
+
+    void setBinWidths()
+    {
+      /*After finalizing, we scale the bins so that they can be compared to the binned power psectrum. This is equal to
+       * considering the unbinned power spectrum with bins of variable width*/
+      const size_t n = (*this).size();
+      if (n < 2) return; // need at least two bins to form a finite bin width
+
+
+      // First bin: forward half-difference, minus the 0.5 offset of the lowest binned mode.
+      binWidths[0] = (std::get<0>((*this)[1]) - std::get<0>((*this)[0])) / 2 - 0.5;
+      // Interior bins: central difference.
+      for (size_t i = 1; i + 1 < n; ++i) {
+        binWidths[i] = (std::get<0>((*this)[i + 1]) - std::get<0>((*this)[i - 1])) / 2;
+      }
+      // Last bin: backward difference (was an out-of-bounds read/write at index size()).
+      binWidths[n-1] = std::get<0>((*this)[n - 1]) - std::get<0>((*this)[n - 2]);
     }
 
     std::string toString(int verbosity = 0) const
@@ -172,10 +185,11 @@ namespace TempLat
       mFullResult.clear();
       for (size_t i = 0; i < mNBins; ++i) {
         if (mMultiplicities[i] > 0.) {
-          std::tuple<T, RadialProjectionSingleDatum<T>> next(std::sqrt(i), mValues.getFinal(i, mMultiplicities[i]));
+          std::tuple<T, RadialProjectionSingleDatum<T>> next(static_cast<T>(std::sqrt(i)), mValues.getFinal(i, mMultiplicities[i]));
           this->push_back(next);
         }
       }
+      binWidths.resize(this->size(), 1.);
 
       return *this;
     }
@@ -185,6 +199,7 @@ namespace TempLat
     bool finalizedOnce;
     size_t mNBins;
     RadialProjectionSingleQuantity<T> mValues;
+    std::vector<T> binWidths; // Width of the bins
 
     using DeviceView = device::memory::NDView<floatType, 1>;
     using HostMirror = typename DeviceView::host_mirror_type;
