@@ -9,6 +9,7 @@
 
 #include "TempLat/fft/external/parafaft/parafaftmemorylayout.h"
 #include "TempLat/fft/fftdecomposition.h"
+#include "TempLat/fft/ffttopology.h"
 #include "TempLat/parallel/mpi/comm/mpicommreference.h"
 
 namespace TempLat
@@ -41,14 +42,59 @@ namespace TempLat
       return std::max((device::Idx)1, nDimensions - 1);
     }
 
-    /** @brief Pencil decomposition for ParaFaFT, probed from a temporary `ParaFaFT_R2C` planner.
+    /** @brief The full MPI topology ParaFaFT will use, probed from a temporary `ParaFaFT_R2C`.
      *
-     *  ParaFaFT's own heuristic (which may pick slab or pencil depending on rank count and
-     *  lattice extents in the current/in-progress extension) is the source of truth. We build
-     *  a throwaway planner on the base comm and query `get_domain_decomposition` to lock in
-     *  the exact grid shape that ParaFaFT will use later on the real comm. Because ParaFaFT's
-     *  choice is a deterministic function of `(baseComm.size(), nGridPoints)`, the same probe
-     *  on every rank yields identical dims.
+     *  ParaFaFT's own heuristic is the source of truth, and we take not just its grid *shape* but
+     *  the communicator whose rank order defines it. That matters because ParaFaFT derives
+     *  `real_global_start_` / `complex_global_start_` from its own Cartesian coordinates, and
+     *  those become TempLat's local starts. Taking the shape alone (as this used to) left
+     *  TempLat free to build a differently-ordered communicator whose ghost neighbours did not
+     *  match those starts.
+     *
+     *  The returned communicator is a duplicate that we own; `MPICommReference` refcounts it and
+     *  frees it when the last reference dies. It must be a duplicate because ParaFaFT's
+     *  destructor frees its internal Cartesian communicator and `probe` is a temporary.
+     */
+    static FFTTopology<NDim> topology(MPICommReference baseComm, device::IdxArray<NDim> nGridPoints)
+    {
+      FFTTopology<NDim> result{};
+      int globalShape[NDim];
+      for (size_t i = 0; i < NDim; ++i)
+        globalShape[i] = static_cast<int>(nGridPoints[i]);
+
+      // Pin the probe to double: the decomposition depends only on (baseComm.size(),
+      // nGridPoints), not on the floating-point precision, and this static method is called
+      // before any T is known. Double is always available; float depends on
+      // PARAFAFT_FFTW3F_AVAILABLE.
+      parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend<double>> probe(globalShape, baseComm);
+
+      int probeDims[NDim];
+      probe.get_domain_decomposition(probeDims);
+
+      // ParaFaFT's grid spans NDim-1 dimensions; the last axis is never distributed, so it has
+      // no coordinate of its own and stays 0. Ask ParaFaFT for the grid rank rather than
+      // assuming the offset.
+      constexpr int gridNDims = parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend<double>>::get_grid_ndims();
+      int probeCoords[gridNDims];
+      probe.get_grid_coords(probeCoords);
+
+      int nSplit = 0;
+      for (size_t i = 0; i < NDim; ++i) {
+        result.dims[i] = probeDims[i];
+        result.coords[i] = (static_cast<int>(i) < gridNDims) ? probeCoords[i] : 0;
+        if (probeDims[i] > 1) ++nSplit;
+      }
+      result.nDimsToSplit = nSplit;
+      result.comm = MPICommReference(probe.dup_cartesian_comm());
+
+      result.checkInvariants(baseComm.size());
+      return result;
+    }
+
+    /** @brief Shape-only query, for callers that do not need the communicator.
+     *
+     *  Deliberately does not go through `topology()`: that duplicates a communicator, and this is
+     *  called on paths (such as verifying a hand-built group) that only ever look at the shape.
      */
     static FFTDecomposition<NDim> decomposition(MPICommReference baseComm, device::IdxArray<NDim> nGridPoints)
     {
@@ -57,16 +103,12 @@ namespace TempLat
       for (size_t i = 0; i < NDim; ++i)
         globalShape[i] = static_cast<int>(nGridPoints[i]);
 
-      // Pin the probe to double: get_domain_decomposition returns an int[] that depends
-      // only on (baseComm.size(), nGridPoints), not on the floating-point precision, and
-      // this static method is called from FFTMPIDomainSplit::makeMPIGroup before any T is
-      // known. Double is always available; float depends on PARAFAFT_FFTW3F_AVAILABLE.
       parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend<double>> probe(globalShape, baseComm);
 
       int probeDims[NDim];
       probe.get_domain_decomposition(probeDims);
 
-      device::Idx nSplit = 0;
+      int nSplit = 0;
       for (size_t i = 0; i < NDim; ++i) {
         result.dims[i] = probeDims[i];
         if (probeDims[i] > 1) ++nSplit;

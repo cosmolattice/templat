@@ -37,6 +37,12 @@ namespace TempLat
     FileLoaderHDF5() = default;
 
     void open(std::string fn) { mFile.open(fn); }
+
+#ifdef HAVE_MPI
+    /** @brief Point collective I/O at the communicator the lattice is decomposed over.
+     *  Must be called before open. See HDF5File::setComm. */
+    void setComm(MPI_Comm comm) { mFile.setComm(comm); }
+#endif
     void close() { mFile.close(); }
     void reset() { this->close(); }
 

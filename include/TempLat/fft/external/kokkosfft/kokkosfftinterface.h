@@ -9,6 +9,7 @@
 
 #include "TempLat/fft/external/kokkosfft/kokkosfftmemorylayout.h"
 #include "TempLat/fft/fftdecomposition.h"
+#include "TempLat/fft/ffttopology.h"
 #include "TempLat/parallel/mpi/comm/mpicommreference.h"
 
 namespace TempLat
@@ -25,16 +26,34 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     KokkosFFTInterface() = default;
 
-    virtual device::Idx getMaximumNumberOfDimensionsToDivide(device::Idx nDimensions)
-    {
-      return std::max((device::Idx)1, nDimensions - 1);
-    };
+    /** @brief KokkosFFT does not run under MPI, so it can divide nothing.
+     *
+     *  This used to return `nDimensions - 1`, contradicting its own `decomposition()` report of
+     *  zero split dimensions.
+     */
+    virtual device::Idx getMaximumNumberOfDimensionsToDivide(device::Idx /*nDimensions*/) { return 0; };
 
     /** @brief KokkosFFT does not run under MPI: the entire lattice is local. Report "no split".
      *  The selector only reaches this backend when `baseComm.size() == 1`. */
     static FFTDecomposition<NDim> decomposition(MPICommReference /*baseComm*/, device::IdxArray<NDim> /*nGridPoints*/)
     {
       return FFTDecomposition<NDim>{/*nDimsToSplit=*/0, {}};
+    }
+
+    /** @brief Trivial topology: one cell, this rank at the origin, on the base communicator.
+     *  The selector only reaches this backend at a single rank, so the grid is all ones. */
+    static FFTTopology<NDim> topology(MPICommReference baseComm, device::IdxArray<NDim> /*nGridPoints*/)
+    {
+      FFTTopology<NDim> result{};
+      result.comm = baseComm;
+      for (size_t i = 0; i < NDim; ++i) {
+        result.dims[i] = 1;
+        result.coords[i] = 0;
+      }
+      result.nDimsToSplit = 0;
+
+      result.checkInvariants(baseComm.size());
+      return result;
     }
 
     virtual IntrinsicScales getIntrinsicRescaleToGetUnnormalizedFFT(device::Idx nGridPoints)

@@ -46,6 +46,12 @@ namespace TempLat
 
     void create(std::string fn, FileMode flag = Overwrite) { mFile.create(fn, flag); }
 
+#ifdef HAVE_MPI
+    /** @brief Point collective I/O at the communicator the lattice is decomposed over.
+     *  Must be called before open/create. See HDF5File::setComm. */
+    void setComm(MPI_Comm comm) { mFile.setComm(comm); }
+#endif
+
     void close() { mFile.close(); }
     void reset() { this->close(); }
 

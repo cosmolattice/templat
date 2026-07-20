@@ -10,6 +10,7 @@
 #include "TempLat/fft/external/fftw/fftwguard.h"
 #include "TempLat/fft/external/fftw/fftwmemorylayout.h"
 #include "TempLat/fft/fftdecomposition.h"
+#include "TempLat/fft/ffttopology.h"
 #include "TempLat/parallel/mpi/comm/mpicommreference.h"
 
 #include <cstdint>
@@ -41,7 +42,12 @@ namespace TempLat
     virtual device::Idx getMaximumNumberOfDimensionsToDivide(device::Idx nDimensions) { return 1; };
 
     /** @brief FFTW (including fftw-mpi) uses a slab decomposition: split only the leading dimension.
-     *  `dims` is left as zeros so MPI_Dims_create can fill the single nonzero slot. */
+     *
+     *  The grid is pinned to [P, 1, ...] rather than left zeroed for `MPI_Dims_create` to fill.
+     *  FFTW slabs the leading dimension across the ranks of its communicator in rank order, so
+     *  that shape is not a choice — it is what FFTW will do. Reporting it explicitly keeps this
+     *  in agreement with `topology()` below, and lets the group cross-check compare exact dims
+     *  instead of merely counting how many dimensions are split. */
     static FFTDecomposition<NDim> decomposition([[maybe_unused]] MPICommReference baseComm,
                                                 [[maybe_unused]] device::IdxArray<NDim> nGridPoints)
     {
@@ -83,7 +89,40 @@ namespace TempLat
         }
       }
 #endif
-      return FFTDecomposition<NDim>{/*nDimsToSplit=*/1, {}};
+      FFTDecomposition<NDim> result{};
+      for (size_t i = 0; i < NDim; ++i)
+        result.dims[i] = 1;
+      result.dims[0] = baseComm.size();
+      result.nDimsToSplit = baseComm.size() > 1 ? 1 : 0;
+      return result;
+    }
+
+    /** @brief The MPI topology FFTW-MPI will use.
+     *
+     *  FFTW-MPI builds no Cartesian communicator of its own: it slabs the leading dimension
+     *  across the ranks of whatever communicator it is given, in that communicator's rank order.
+     *  So the base communicator *is* the authoritative topology, the grid is [P, 1, ...], and
+     *  this rank sits at [rank, 0, ...]. Returning it explicitly (rather than leaving `dims`
+     *  zeroed for `MPI_Dims_create`) is what lets the caller build a Cartesian group whose
+     *  coordinates provably match the slab FFTW will actually produce.
+     *
+     *  Runs the same INT_MAX sendrecv-overflow check as `decomposition`.
+     */
+    static FFTTopology<NDim> topology(MPICommReference baseComm, device::IdxArray<NDim> nGridPoints)
+    {
+      // Also runs the INT_MAX sendrecv-overflow guard.
+      const FFTDecomposition<NDim> shape = decomposition(baseComm, nGridPoints);
+
+      FFTTopology<NDim> result{};
+      result.comm = baseComm;
+      result.dims = shape.dims;
+      result.nDimsToSplit = shape.nDimsToSplit;
+      for (size_t i = 0; i < NDim; ++i)
+        result.coords[i] = 0;
+      result.coords[0] = baseComm.rank(); // slab index == rank on the slabbed leading axis
+
+      result.checkInvariants(baseComm.size());
+      return result;
     }
 
     virtual IntrinsicScales getIntrinsicRescaleToGetUnnormalizedFFT(device::Idx nGridPoints) { return {}; }
