@@ -9,6 +9,7 @@
 
 #include "TempLat/fft/external/fftw/fftwinterface.h"
 #include "TempLat/fft/fftdecomposition.h"
+#include "TempLat/fft/ffttopology.h"
 
 #ifndef NOFFT
 
@@ -75,6 +76,9 @@ namespace TempLat
    *
    * Unit test: ctest -R test-fftlibraryselector
    **/
+  /** @brief Which FFT backend a given runtime setup resolves to. */
+  enum class FFTBackendTag { Parafaft, KokkosFFT, FFTW };
+
   template <size_t NDim> class FFTLibrarySelector
   {
   public:
@@ -96,29 +100,63 @@ namespace TempLat
 
     void setVerbose() { verbose = true; }
 
-    /** @brief The decomposition the runtime-selected FFT backend will use for this setup.
+    /** @brief The full MPI topology the runtime-selected FFT backend will use for this setup.
      *
-     *  Used by `FFTMPIDomainSplit` to build the MPI Cartesian group so that the group and the
-     *  backend always agree. The priority chain here must stay in lockstep with `selectBackend`
-     *  below — both call the same set of backends in the same order under the same `#ifdef`s,
-     *  so the pre-topology query and the post-topology selection cannot pick different backends.
+     *  Used by `FFTMPIDomainSplit` to build the MPI Cartesian group directly on the backend's own
+     *  communicator, so the group's rank->coordinate mapping is the backend's by construction
+     *  rather than by coincidence. See `FFTTopology` for why shape agreement alone is not enough.
      */
-    static FFTDecomposition<NDim> decomposition(MPICommReference baseComm, const device::IdxArray<NDim> &nGridPoints)
+    static FFTTopology<NDim> topology(MPICommReference baseComm, const device::IdxArray<NDim> &nGridPoints)
     {
-      const device::Idx nProcesses = baseComm.size();
+      switch (selectBackendTag(baseComm.size())) {
 #ifdef HAVE_MPI
 #ifdef HAVE_PARAFAFT
-      if constexpr (NDim >= 2) {
-        if (nProcesses > 1) return ParafaftInterface<NDim>::decomposition(baseComm, nGridPoints);
-      }
+      case FFTBackendTag::Parafaft:
+        if constexpr (NDim >= 2)
+          return ParafaftInterface<NDim>::topology(baseComm, nGridPoints);
+        else
+          break;
 #endif
 #endif
 #ifdef HAVE_KOKKOSFFT
-      if (nProcesses == 1) {
-        if constexpr (NDim <= 3) return KokkosFFTInterface<NDim>::decomposition(baseComm, nGridPoints);
-      }
+      case FFTBackendTag::KokkosFFT:
+        if constexpr (NDim <= 3)
+          return KokkosFFTInterface<NDim>::topology(baseComm, nGridPoints);
+        else
+          break;
 #endif
-      (void)nProcesses;
+      default: break;
+      }
+      return FFTWInterface<NDim>::topology(baseComm, nGridPoints);
+    }
+
+    /** @brief Shape-only query, for callers that do not need the communicator.
+     *
+     *  Dispatches to the backends' own `decomposition()` rather than going through `topology()`:
+     *  the latter duplicates a communicator, which is pure overhead on a path that only reads the
+     *  grid shape (such as validating a hand-built group).
+     */
+    static FFTDecomposition<NDim> decomposition(MPICommReference baseComm, const device::IdxArray<NDim> &nGridPoints)
+    {
+      switch (selectBackendTag(baseComm.size())) {
+#ifdef HAVE_MPI
+#ifdef HAVE_PARAFAFT
+      case FFTBackendTag::Parafaft:
+        if constexpr (NDim >= 2)
+          return ParafaftInterface<NDim>::decomposition(baseComm, nGridPoints);
+        else
+          break;
+#endif
+#endif
+#ifdef HAVE_KOKKOSFFT
+      case FFTBackendTag::KokkosFFT:
+        if constexpr (NDim <= 3)
+          return KokkosFFTInterface<NDim>::decomposition(baseComm, nGridPoints);
+        else
+          break;
+#endif
+      default: break;
+      }
       return FFTWInterface<NDim>::decomposition(baseComm, nGridPoints);
     }
 
@@ -172,6 +210,29 @@ namespace TempLat
     }
 
   private:
+    /** @brief The single backend-selection priority chain.
+     *
+     *  Both `topology()` and `selectBackend()` dispatch on this, so the pre-topology query and
+     *  the runtime backend pick cannot disagree. This used to be two hand-duplicated `#ifdef`
+     *  chains that had to be kept in lockstep by comment.
+     */
+    static FFTBackendTag selectBackendTag([[maybe_unused]] device::Idx nProcesses)
+    {
+#ifdef HAVE_MPI
+#ifdef HAVE_PARAFAFT
+      if constexpr (NDim >= 2) {
+        if (nProcesses > 1) return FFTBackendTag::Parafaft;
+      }
+#endif
+#endif
+#ifdef HAVE_KOKKOSFFT
+      if (nProcesses == 1) {
+        if constexpr (NDim <= 3) return FFTBackendTag::KokkosFFT;
+      }
+#endif
+      return FFTBackendTag::FFTW;
+    }
+
     /** @brief Reject a user-supplied `MPICartesianGroup` whose shape the selected backend cannot use.
      *
      *  Backends fall into two classes:
@@ -236,25 +297,28 @@ namespace TempLat
       return s;
     }
 
-    /** @brief Shared backend-selection priority chain. Structure must stay in lockstep with the
-     *  `decomposition` static above so that the decomposition query and the runtime backend pick
-     *  never disagree. Any change to the order or predicates here must be mirrored there.
-     */
+    /** @brief Instantiate the backend named by `selectBackendTag`. */
     static std::pair<std::shared_ptr<FFTLibraryInterface<NDim>>, std::string> selectBackend(device::Idx nProcesses)
     {
+      switch (selectBackendTag(nProcesses)) {
 #ifdef HAVE_MPI
 #ifdef HAVE_PARAFAFT
-      if constexpr (NDim >= 2) {
-        if (nProcesses > 1) return {std::make_shared<ParafaftInterface<NDim>>(), "Parafaft"};
-      }
+      case FFTBackendTag::Parafaft:
+        if constexpr (NDim >= 2)
+          return {std::make_shared<ParafaftInterface<NDim>>(), "Parafaft"};
+        else
+          break;
 #endif
 #endif
 #ifdef HAVE_KOKKOSFFT
-      if (nProcesses == 1) {
-        if constexpr (NDim <= 3) return {std::make_shared<KokkosFFTInterface<NDim>>(), "KokkosFFT"};
-      }
+      case FFTBackendTag::KokkosFFT:
+        if constexpr (NDim <= 3)
+          return {std::make_shared<KokkosFFTInterface<NDim>>(), "KokkosFFT"};
+        else
+          break;
 #endif
-      (void)nProcesses;
+      default: break;
+      }
       return {std::make_shared<FFTWInterface<NDim>>(), "FFTW"};
     }
 

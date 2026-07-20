@@ -30,6 +30,21 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     FileIO() = default;
 
+#if defined(HAVE_HDF5) && defined(HAVE_MPI)
+    /** @brief Point HDF5 collective I/O at the communicator the lattice is decomposed over.
+     *
+     *  Defaults to MPI_COMM_WORLD. Pass `toolBox->getMPIGroup().getBaseComm()` (or whatever
+     *  communicator the lattice was decomposed over) when running on a sub-communicator —
+     *  otherwise the collective barriers inside HDF5File deadlock against ranks that never
+     *  participate, and per-rank dataset offsets index the wrong ranks. Call before open/create.
+     */
+    void setComm(MPI_Comm comm)
+    {
+      saver.setComm(comm);
+      loader.setComm(comm);
+    }
+#endif
+
     template <class R>
       requires HasStaticGetter<typename std::decay_t<R>>
     void save(R &&r)
