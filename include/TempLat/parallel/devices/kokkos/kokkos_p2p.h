@@ -222,12 +222,18 @@ namespace TempLat::device_kokkos::p2p
 
       void *devA = nullptr, *devB = nullptr;
       if (fnHandleByPci(busIdA, &devA) == 0 && fnHandleByPci(busIdB, &devB) == 0) {
-        // Get device B's PCI info for comparison with NVLink remote endpoints
-        // nvmlPciInfo_t layout: char busIdLegacy[16], uint domain, uint bus, uint device, ...
-        struct {
-          char legacy[16];
+        // Mirror the FULL nvmlPciInfo_t layout. NVML writes the whole struct, so
+        // a truncated mirror (only the fields we read) lets it overflow the
+        // stack. We compare only domain/bus/device but must size the struct
+        // fully: busIdLegacy[16], uint domain/bus/device, uint pciDeviceId,
+        // uint pciSubSystemId, busId[32].
+        struct NvmlPciInfo {
+          char busIdLegacy[16];
           unsigned int domain, bus, device;
-        } pciB{};
+          unsigned int pciDeviceId, pciSubSystemId;
+          char busId[32];
+        };
+        NvmlPciInfo pciB{};
         fnGetPciInfo(devB, &pciB);
 
         // Enumerate NVLink ports on device A (up to 18 on recent hardware)
@@ -235,10 +241,7 @@ namespace TempLat::device_kokkos::p2p
           unsigned int state = 0;                                   // nvmlEnableState_t
           if (fnNvLinkState(devA, link, &state) != 0 || state != 1) // NVML_FEATURE_ENABLED = 1
             continue;
-          struct {
-            char legacy[16];
-            unsigned int domain, bus, device;
-          } remotePci{};
+          NvmlPciInfo remotePci{};
           if (fnNvLinkRemotePci(devA, link, &remotePci) != 0) continue;
           if (remotePci.domain == pciB.domain && remotePci.bus == pciB.bus && remotePci.device == pciB.device)
             found = true;
