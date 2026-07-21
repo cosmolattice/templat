@@ -255,24 +255,31 @@ namespace TempLat::device_kokkos
     /**
      * @brief Pairwise 0-byte handshake with the (up to two) P2P neighbours of a dimension.
      *
-     * Replaces a shared-memory MPI_Barrier with a symmetric MPI_Sendrecv per P2P link. Deadlock-free by
-     * construction: Sendrecv posts its send and receive together, and both ends of a link run the mirror
-     * call (my upper link is the neighbour's lower link). On a two-rank dimension the upper and lower
-     * neighbour are the same rank; the two Sendrecvs to it match FIFO by MPI non-overtaking. Relies on
-     * the P2P classification being symmetric (canAccessPeer is symmetric in practice), which is also what
-     * the original barrier-based scheme required to make progress.
+     * Posts a non-blocking recv+send to each P2P neighbour, then a single Waitall -- deadlock-free for a
+     * periodic dimension of ANY size. The earlier two ordered blocking MPI_Sendrecv (upper first, then
+     * lower, on every rank) only avoided deadlock for size <= 2: on a ring of >= 3 same-node P2P ranks
+     * every rank blocked in its upper Sendrecv waiting for the upper neighbour to reach its lower Sendrecv,
+     * which never happened -> cyclic wait. Posting all recvs/sends before waiting removes that ordering
+     * dependence. Token semantics are unchanged (mutual arrival on each link = my readers know my buffers
+     * are packed / done being read). Relies on the P2P classification being symmetric (canAccessPeer is
+     * symmetric in practice), which is also what the original barrier-based scheme required.
      */
     void p2pHandshake(size_t dimension, bool withUpper, bool withLower, int tag)
     {
-      char sbuf = 0, rbuf = 0;
+      std::array<MPI_Request, 4> reqs;
+      std::array<char, 2> sbuf{}, rbuf{}; // distinct buffers so the concurrent Irecvs never alias
+      int n = 0;
       if (withUpper) {
         int up = mNeighborRanks[dimension * 2 + 0];
-        MPI_Sendrecv(&sbuf, 1, MPI_BYTE, up, tag, &rbuf, 1, MPI_BYTE, up, tag, mCartComm, MPI_STATUS_IGNORE);
+        MPI_Irecv(&rbuf[0], 1, MPI_BYTE, up, tag, mCartComm, &reqs[n++]);
+        MPI_Isend(&sbuf[0], 1, MPI_BYTE, up, tag, mCartComm, &reqs[n++]);
       }
       if (withLower) {
         int lo = mNeighborRanks[dimension * 2 + 1];
-        MPI_Sendrecv(&sbuf, 1, MPI_BYTE, lo, tag, &rbuf, 1, MPI_BYTE, lo, tag, mCartComm, MPI_STATUS_IGNORE);
+        MPI_Irecv(&rbuf[1], 1, MPI_BYTE, lo, tag, mCartComm, &reqs[n++]);
+        MPI_Isend(&sbuf[1], 1, MPI_BYTE, lo, tag, mCartComm, &reqs[n++]);
       }
+      MPI_Waitall(n, reqs.data(), MPI_STATUSES_IGNORE);
     }
 
     /**
