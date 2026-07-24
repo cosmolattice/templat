@@ -16,6 +16,7 @@
 #include "TempLat/lattice/algebra/helpers/getkir.h"
 #include "TempLat/lattice/algebra/helpers/gettoolbox.h"
 #include "TempLat/parallel/device.h"
+#include "TempLat/util/rangeiteration/tagliteral.h"
 
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"

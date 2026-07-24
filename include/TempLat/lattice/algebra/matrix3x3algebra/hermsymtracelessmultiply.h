@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Jorge Baeza-Ballesteros,  Year: 2026
 
 #include "TempLat/lattice/algebra/matrix3x3algebra/symtracelessbinaryoperator.h"
+#include "TempLat/lattice/algebra/matrix3x3algebra/matrixbinaryoperator.h"
 #include "TempLat/lattice/algebra/matrix3x3algebra/helpers/hermget.h"
 #include "TempLat/lattice/algebra/operators/power.h"
 #include "TempLat/lattice/algebra/operators/multiply.h"

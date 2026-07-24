@@ -55,6 +55,36 @@ Which should output
 Hello, TempLat!
 ```
 
+### The umbrella header
+
+TempLat is header-only and spread over several hundred headers. Rather than tracking down
+which header a given class lives in, you can pull in the entire library at once:
+
+```c++
+#include <TempLat.h>
+
+int main(int argc, char *argv[])
+{
+  using namespace TempLat;
+  SessionGuard guard(argc, argv);
+
+  auto toolBox = MemoryToolBox<3>::makeShared(128, 1);
+  Field<double, 3> phi("phi", toolBox);
+  phi = 2 + RandomGaussianFieldConfig<double, 3>("seed", toolBox);
+
+  sayMPI << "<phi> = " << average(phi) << "\n";
+
+  return 0;
+};
+```
+
+`<TempLat.h>` adapts itself to how TempLat was configured — the MPI, HDF5, ParaFaFT and
+KokkosFFT parts switch themselves off when you did not build against those libraries — and it
+picks the FFT and device backends for you.
+
+It is a convenience, not a replacement: including everything costs compile time, so translation
+units that only touch a small corner of the library are still better off including the individual
+headers directly.
 
 ### Choosing the device
 

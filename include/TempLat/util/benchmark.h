@@ -10,10 +10,12 @@
 #include <cstddef>
 #include <functional>
 #include <limits>
+#include <map>
 #include <sstream>
 #include <iomanip>
 #include <list>
 #include <fstream>
+#include <string>
 
 #include "TempLat/util/log/saycomplete.h"
 #include "TempLat/util/timer.h"
@@ -21,6 +23,8 @@
 
 #ifdef HAVE_MPI
 #include <mpi.h>
+
+#include "TempLat/parallel/mpi/comm/mpicommreference.h"
 #endif
 
 namespace TempLat
