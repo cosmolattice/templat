@@ -1,5 +1,7 @@
 # TempLat
-*This repo is under active development; expect breaking changes.*
+
+![TempLat Logo](https://raw.githubusercontent.com/cosmolattice/templat/refs/heads/main/docs/logo/logo_red_nobg.svg)
+
 ## Using TempLat in your project
 
 *Minimal requirements:* 
