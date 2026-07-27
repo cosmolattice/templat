@@ -1,8 +1,8 @@
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Franz R. Sattler,  Year: 2026
+// File info: Main contributor(s): Franz R. Sattler, Year: 2026
 
 /* Pure-gauge SU(2) Yang-Mills Hamiltonian evolution in 3+1 dimensions (temporal gauge).
  * Same physics and same deterministic initial condition as bench-hila-templat's bench_su2.cpp,

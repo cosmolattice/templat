@@ -1,3 +1,7 @@
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
+   Released under the MIT license, see LICENSE.md. */
+
 /* Diagnostic benchmark for Kokkos backend threading performance.
  *
  * Purpose: isolate the root causes of the OpenMP vs Threads performance gap

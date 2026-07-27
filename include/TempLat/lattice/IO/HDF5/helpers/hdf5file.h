@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_IO_HDF5_HELPERS_HDF5FILE_H
 #define TEMPLAT_LATTICE_IO_HDF5_HELPERS_HDF5FILE_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2020
+// File info: Main contributor(s): Adrien Florio, Year: 2020
 
 #ifdef HAVE_HDF5
 
