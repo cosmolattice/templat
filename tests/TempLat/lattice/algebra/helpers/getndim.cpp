@@ -17,7 +17,10 @@ namespace TempLat
 
   void GetNDimTester::Test(TDDAssertion &tdd)
   {
+    // 1D MemoryToolBox is rejected at compile time in MPI builds (see memorytoolbox.h static_assert).
+#ifndef HAVE_MPI
     tdd.verify(GetNDim::get<Field<double, 1>>() == 1);
+#endif
     tdd.verify(GetNDim::get<Field<double, 2>>() == 2);
     tdd.verify(GetNDim::get<Field<double, 3>>() == 3);
     tdd.verify(GetNDim::get<Field<double, 4>>() == 4);
