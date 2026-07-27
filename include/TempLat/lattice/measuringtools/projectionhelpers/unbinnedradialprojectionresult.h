@@ -75,6 +75,7 @@ namespace TempLat
 
     auto integrate(bool dummy)
     {
+      ensureBinWidths(); // setBinWidths() need not have run; fall back to unit widths rather than index OOB.
       auto total = 0.;
       for (size_t i = 0; i < this->size(); ++i) {
         total += std::get<1>((*this)[i]).average / std::get<0>((*this)[i])  * binWidths[i];
@@ -203,6 +204,14 @@ namespace TempLat
     size_t mNBins;
     RadialProjectionSingleQuantity<T> mValues;
     std::vector<T> binWidths; // Width of the bins
+
+    /** @brief binWidths is sized by finalize() and given real values by setBinWidths(), but an instance
+     *  whose entries were filled in directly has run neither. Restore the same unit widths finalize()
+     *  initializes, so a reader can never index out of bounds. */
+    void ensureBinWidths()
+    {
+      if (binWidths.size() != this->size()) binWidths.assign(this->size(), 1.);
+    }
 
     using DeviceView = device::memory::NDView<floatType, 1>;
     using HostMirror = typename DeviceView::host_mirror_type;

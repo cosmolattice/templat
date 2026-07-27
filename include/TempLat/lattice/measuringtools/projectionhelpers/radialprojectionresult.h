@@ -64,8 +64,8 @@ namespace TempLat
     template <typename U>
     RadialProjectionResult(const RadialProjectionResult<U> &other)
         : std::vector<RadialProjectionSingleBinAndValue<T>>(), finalizedOnce(other.finalizedOnce), mNBins(other.mNBins),
-          mValues(other.mNBins), mBinBounds(other.mNBins), mUseBinCentralValues(other.mUseBinCentralValues),
-          mIsInFourier(other.mIsInFourier)
+          mDeltakBins(static_cast<T>(other.mDeltakBins)), mValues(other.mNBins), mBinBounds(other.mNBins),
+          mUseBinCentralValues(other.mUseBinCentralValues), mIsInFourier(other.mIsInFourier)
     {
       this->reserve(other.size());
       for (const auto &bv : other)
