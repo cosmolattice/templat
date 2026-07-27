@@ -2,8 +2,8 @@
 
 [![TempLat Logo](https://raw.githubusercontent.com/cosmolattice/templat/refs/heads/main/docs/logo/logo_red_nobg.svg)](https://cosmolattice.github.io/templat/index.html)
 
-![Static Badge](https://img.shields.io/badge/website-grey?style=plastic&link=https%3A%2F%2Fcosmolattice.github.io%2Ftemplat%2Findex.html)
-![Static Badge](https://img.shields.io/badge/docs-blue?style=plastic&link=https%3A%2F%2Fcosmolattice.github.io%2Ftemplat%2Fvocabulary.html)
+[![Static Badge](https://img.shields.io/badge/website-grey?link=https%3A%2F%2Fcosmolattice.github.io%2Ftemplat%2Findex.html)](https://cosmolattice.github.io/templat/index.html)
+[![Static Badge](https://img.shields.io/badge/docs-blue?link=https%3A%2F%2Fcosmolattice.github.io%2Ftemplat%2Fvocabulary.html)](https://cosmolattice.github.io/templat/vocabulary.html)
 
 
 ## Using TempLat in your project
