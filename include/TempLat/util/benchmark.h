@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Franz R. Sattler, Year: 2025
 
 #include <cstddef>
+#include <cstdlib>
 #include <functional>
 #include <limits>
 #include <map>
@@ -16,6 +17,8 @@
 #include <list>
 #include <fstream>
 #include <string>
+
+#include <sys/wait.h> // WEXITSTATUS
 
 #include "TempLat/util/log/saycomplete.h"
 #include "TempLat/util/timer.h"
@@ -307,8 +310,13 @@ namespace TempLat
         outputs.push_back(ss.str());
       }
 
-      const auto terminal_width(WEXITSTATUS(std::system("exit `tput cols`")));
-      const size_t nextTo = (terminal_width - 8) / (tagWidth + 8); // 8 for the spaces in between
+      // WEXITSTATUS is a macro that takes the address of its argument on some platforms (macOS), so it
+      // needs an lvalue -- the return value of std::system() cannot be passed to it directly.
+      int tputStatus = std::system("exit `tput cols`");
+      const int terminal_width = (tputStatus == -1) ? 80 : WEXITSTATUS(tputStatus);
+      // 8 for the spaces in between. Clamp to at least one column: terminal_width is 0 when `tput`
+      // is unavailable or stdout is not a terminal, and the division below is unsigned.
+      const size_t nextTo = terminal_width > (int)(tagWidth + 16) ? (terminal_width - 8) / (tagWidth + 8) : 1;
 
       // Now glue the outputs together
       std::string output;

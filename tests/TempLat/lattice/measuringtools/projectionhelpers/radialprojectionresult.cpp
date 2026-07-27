@@ -19,7 +19,8 @@ namespace TempLat
 
   template <typename T> inline void RadialProjectionResultTester<T>::Test(TDDAssertion &tdd)
   {
-    RadialProjectionResult<T> one(10), two(12), three(10);
+    /* (nBins, deltakBins) — the bin spacing only enters integrate(), which this test does not exercise. */
+    RadialProjectionResult<T> one(10, 1), two(12, 1), three(10, 1);
 
     // tdd.verify(Throws<RadialProjectionResultSizeException>([&]() { one += two; }));
 

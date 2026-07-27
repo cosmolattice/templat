@@ -48,7 +48,7 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     RadialProjectionResult(size_t nBins, T deltakBins, bool pUseBinCentralValues = false, bool pIsInFourier = false)
         : std::vector<RadialProjectionSingleBinAndValue<T>>(), finalizedOnce(false), mNBins(nBins), mDeltakBins(deltakBins), mValues(mNBins),
-          mBinBounds(mNBins), mUseBinCentralValues(pUseBinCentralValues), mIsInFourier(pIsInFourier)
+          mBinBounds(mNBins), centralBinBounds(mNBins), mUseBinCentralValues(pUseBinCentralValues), mIsInFourier(pIsInFourier)
     {
       mMultiplicitiesDevice = DeviceView("RadialProjectionResult::mMultiplicitiesDevice", mNBins);
       mMultiplicities = device::memory::createMirrorView(mMultiplicitiesDevice);
@@ -217,7 +217,9 @@ namespace TempLat
     size_t mNBins;
     T mDeltakBins;
     RadialProjectionSingleQuantity<T> mValues, mBinBounds;
-    std::vector<T> centralBinBounds; // Naive central values of the bin. Does not need to be set.
+    // Naive central values of the bin. Sized to mNBins at construction and zero-filled, so finalize() can
+    // always index it; RadialProjector overwrites it with the real values via setCentralBinBounds().
+    std::vector<T> centralBinBounds;
 
     using DeviceView = device::memory::NDView<floatType, 1>;
     using HostMirror = typename DeviceView::host_mirror_type;

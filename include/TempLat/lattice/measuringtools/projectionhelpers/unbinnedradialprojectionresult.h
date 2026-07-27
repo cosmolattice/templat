@@ -124,6 +124,9 @@ namespace TempLat
       const size_t n = (*this).size();
       if (n < 2) return; // need at least two bins to form a finite bin width
 
+      // finalize() sizes binWidths, but the entries may also have been filled in directly (and a rebinning
+      // changes the count), so size it here rather than relying on the caller.
+      binWidths.assign(n, 1.);
 
       // First bin: forward half-difference, minus the 0.5 offset of the lowest binned mode.
       binWidths[0] = (std::get<0>((*this)[1]) - std::get<0>((*this)[0])) / 2 - 0.5;
