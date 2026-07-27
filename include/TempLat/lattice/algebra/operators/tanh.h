@@ -52,7 +52,10 @@ namespace TempLat
     };
   } // namespace Operators
 
-  /** @brief Exposing our newly define exp operation to the world. */
+  /** @brief Exposing our newly define exp operation to the world.
+   *
+   * @vocab-summary Hyperbolic tangent, element-wise.
+   **/
   template <typename T>
     requires(!std::is_arithmetic_v<T> && !IsComplexType<T>)
   auto tanh(T a)

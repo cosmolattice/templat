@@ -28,6 +28,11 @@ namespace TempLat
    * sigma1, sigma2, sigma3 are the Pauli matrices.
    *
    * Unit test: ctest -R test-su2field
+   *
+   * @vocab-summary A single $SU(2)$ link $U_i$ for fixed $i$, held as four reals $c_0\dots c_3$ with $U =
+   * c_0\mathbb{1} + i\,c_a\sigma_a$ and $\sum_a c_a^2 = 1$. unitarize() restores the constraint after
+   * accumulated rounding.
+   * @vocab-signature SU2Field<T, NDim> U("U", toolBox);
    **/
   template <typename T, size_t _NDim = 0> class SU2Field
   {

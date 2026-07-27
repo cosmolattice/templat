@@ -18,6 +18,11 @@ namespace TempLat
    *
    *
    * Unit test: ctest -R test-vectorfieldcollection
+   *
+   * @vocab-summary $N$ vector fields under one name; the two containers nest, as for a collection of gauge
+   *   fields.
+   * @vocab-signature VectorFieldCollection<FieldType, N> Ws("Ws", toolBox);
+   * @vocab-tags Collection
    **/
   template <class Arg, int N, int SHIFTIND = 0, bool flatAssign = false> class VectorFieldCollection
   {

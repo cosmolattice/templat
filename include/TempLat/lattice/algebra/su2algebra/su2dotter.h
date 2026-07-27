@@ -55,6 +55,10 @@ namespace TempLat
     virtual std::string operatorString() const override { return "·"; }
   };
 
+  /**
+   * @vocab-summary Lie-algebra inner product $\langle A,B\rangle = \sum_{a=1}^{3} A_a B_a$, evaluated in one
+   * fused pass rather than by building three component expressions.
+   **/
   template <class R, class T>
     requires(HasSU2Get<R> && HasSU2Get<T>)
   auto su2dotter(const R &r, const T &t)

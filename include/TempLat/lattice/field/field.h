@@ -27,6 +27,10 @@ namespace TempLat
    *  Implements a get method, and is hence suitable for all algebra.
    *
    * Unit test: ctest -R test-field
+   *
+   * @vocab-summary A real scalar field on the lattice, and the type that owns the memory. Assigning to it
+   * evaluates an expression across every site; passing it into one makes it a leaf.
+   * @vocab-signature Field<T, NDim> phi("phi", toolBox);
    **/
   template <typename T, size_t _NDim = 0> class Field : private FieldNDimCheck<_NDim>, public ConfigView<T, _NDim>
   {

@@ -10,6 +10,10 @@ namespace TempLat
    * Specialised to 3D.
    *
    * Unit test: make test-magneticfield
+   *
+   * @vocab-summary Site-centred magnetic field: the average over the four plaquettes around a site in each
+   * direction. Specialised to three dimensions.
+   * @vocab-signature magneticField4(Bs)   magneticField4(Bs, i)
    **/
   template <typename R> auto magneticField4(R Bs, Tag<1> t)
   {

@@ -23,6 +23,9 @@ namespace TempLat
    *  expressions involving the fourier coordinates.
    *
    * Unit test: ctest -R test-wavenumber
+   *
+   * @vocab-summary The Fourier coordinate of the current site, as an expression. Exposes the individual
+   * components and `norm()` / `norm2()`. Throws if evaluated in configuration space.
    **/
   template <size_t NDim> class WaveNumber /*: public Vector*/
   {

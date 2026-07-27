@@ -74,6 +74,11 @@ namespace TempLat
     T mT;
   };
 
+  /**
+   * @vocab-summary Builds a complex expression from a real and an imaginary expression. Lightweight: it stores
+   * nothing and owns no memory.
+   * @vocab-signature Complexify(re, im)
+   **/
   template <typename R, typename T> ComplexFieldWrapper<R, T> Complexify(const R &r, const T &t) { return {r, t}; }
 } // namespace TempLat
 

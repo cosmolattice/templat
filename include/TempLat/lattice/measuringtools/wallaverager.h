@@ -157,6 +157,9 @@ namespace TempLat
     size_t nGhosts;
   };
 
+  /**
+   * @vocab-summary Averages over the first $d-1$ coordinates, leaving a profile along the last one.
+   **/
   template <typename T>
     requires HasEvalMethod<T>
   auto wallAverager(T instance, SpaceStateType spaceType = SpaceStateType::Configuration)

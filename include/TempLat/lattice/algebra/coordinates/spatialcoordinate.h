@@ -17,6 +17,9 @@ namespace TempLat
   /** @brief A class which implements spatial coordinates.
    *
    * Unit test: ctest -R test-spatialcoordinate
+   *
+   * @vocab-summary The position of the current site, as an expression. Throws if evaluated in Fourier space.
+   * @vocab-tags Field
    **/
   template <size_t NDim> class SpatialCoordinate
   {

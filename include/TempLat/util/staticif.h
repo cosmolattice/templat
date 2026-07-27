@@ -10,6 +10,10 @@
 namespace TempLat
 {
 
+/**
+ * @vocab-summary Compile-time branch inside an expression: only the taken side is instantiated.
+ * @vocab-signature IfElse(condition, ifExpr, elseExpr)
+ **/
 #define IfElse(condition, ifExpr, elseExpr)                                                                            \
   [&]() {                                                                                                              \
     if constexpr (condition) {                                                                                         \
@@ -18,6 +22,10 @@ namespace TempLat
       return elseExpr;                                                                                                 \
     }                                                                                                                  \
   }()
+/**
+ * @vocab-summary Compile-time branch whose untaken side is ZeroType, so it prunes out of the tree entirely.
+ * @vocab-signature If(condition, ifExpr)
+ **/
 #define If(condition, ifExpr)                                                                                          \
   [&]() {                                                                                                              \
     if constexpr (condition) {                                                                                         \

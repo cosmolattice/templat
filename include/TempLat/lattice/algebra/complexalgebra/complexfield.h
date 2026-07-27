@@ -22,6 +22,9 @@ namespace TempLat
   /** @brief A class which implements complex-valued fields.
    *
    * Unit test: ctest -R test-complexfield
+   *
+   * @vocab-summary A complex scalar field, stored as two real components.
+   * @vocab-signature ComplexField<T, NDim> psi("psi", toolBox);
    **/
   template <typename T, size_t _NDim = 0> class ComplexField
   {
@@ -144,6 +147,11 @@ namespace TempLat
     LayoutStruct<NDim> mLayout;
   };
 
+  /**
+   * @vocab-summary Bundles two existing real Fields into one complex field, sharing their memory rather than
+   * copying it.
+   * @vocab-signature CField(re, im)
+   **/
   template <typename T, size_t NDim> auto CField(Field<T, NDim> f1, Field<T, NDim> f2)
   {
     return ComplexField<T, NDim>(f1, f2);

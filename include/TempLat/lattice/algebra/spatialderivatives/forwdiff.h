@@ -64,6 +64,10 @@ namespace TempLat
     const FloatType dx;
   };
 
+  /**
+   * @vocab-summary Forward finite difference $\big(f(x+\hat e_\mu) - f(x)\big)/dx$ along direction `mu`.
+   * @vocab-signature forwDiff(expr, mu)
+   **/
   template <class R, int N>
     requires(HasEvalMethod<R> && GetNDim::get<std::decay_t<R>>() > 0)
   auto forwDiff(R pR, Tag<N> t)

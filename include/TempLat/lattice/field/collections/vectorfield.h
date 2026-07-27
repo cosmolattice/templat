@@ -17,6 +17,11 @@ namespace TempLat
    *
    *
    * Unit test: ctest -R test-vectorfield3d
+   *
+   * @vocab-summary A vector-valued field — one component per spatial dimension, indexed from 1. The natural
+   * type for a gauge link $U_\mu$.
+   * @vocab-signature VectorField<FieldType> Us("Us", toolBox);
+   * @vocab-tags Collection
    **/
   template <class Arg, bool flatAssign = false>
   using VectorField = FieldCollection<Arg, GetNDim::get<Arg>(), flatAssign, 1>;

@@ -44,6 +44,11 @@ namespace TempLat
     std::string toString() const { return "U1(" + GetString::get(mR) + ")"; }
   };
 
+  /**
+   * @vocab-summary Exponential map for $U(1)$: turns a real phase $\theta$ into the unit-modulus complex number
+   *   $e^{i\theta}$.
+   * @vocab-tags ComplexField
+   **/
   template <typename R> auto complexPhase(R &&r) { return U1Exponential<R>(std::forward<R>(r)); }
 } // namespace TempLat
 

@@ -49,6 +49,10 @@ namespace TempLat
     };
   } // namespace Operators
 
+  /**
+   * @vocab-summary Square root that clamps a negative argument to zero, for quantities that are positive up to
+   *   rounding.
+   **/
   template <typename R>
     requires ConditionalUnaryGetter<R>
   auto safeSqrt(const R &r)
@@ -56,6 +60,9 @@ namespace TempLat
     return Operators::SafeSqrt<R>(r);
   }
 
+  /**
+   * @vocab-summary Square root, built as $x^{1/2}$ so the expression stays symbolically differentiable.
+   **/
   template <typename T>
     requires(ConditionalBinaryGetter<T, HalfType> && !std::is_arithmetic_v<T>)
   auto sqrt(T a)

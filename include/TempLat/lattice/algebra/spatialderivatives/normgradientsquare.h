@@ -69,6 +69,10 @@ namespace TempLat
     FloatType dx2;
   };
 
+  /**
+   * @vocab-summary Squared norm of the forward gradient, $(\nabla\phi)^2$ — the gradient energy term, as one
+   * fused expression.
+   **/
   template <size_t NDim_ = 0, typename R>
     requires(HasEvalMethod<R> && GetNDim::get<std::decay_t<R>>() > 0)
   auto Grad2(R pR)

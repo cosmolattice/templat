@@ -6,6 +6,11 @@
 
 namespace TempLat
 {
+  /**
+   * @vocab-summary Site-centred electric field: the average of the two links straddling a site in each
+   * direction. Returns a vector expression when called without an index.
+   * @vocab-signature electricField2(Es)   electricField2(Es, i)
+   **/
   template <typename R> auto electricField2(R Es, Tag<1> t) { return 0.5 * (Es(1_c) + shift(Es(1_c), -1_c)); }
 
   template <typename R> auto electricField2(R Es, Tag<2> t) { return 0.5 * (Es(2_c) + shift(Es(2_c), -2_c)); }

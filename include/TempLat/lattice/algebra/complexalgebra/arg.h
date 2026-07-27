@@ -32,6 +32,9 @@ namespace TempLat
     return arg2(t.imag(), t.real());
   }
 
+  /**
+   * @vocab-summary Phase of a complex field, in $(-\pi, \pi]$.
+   **/
   template <class T>
     requires HasComplexFieldGet<T>
   auto arg(T &&t)

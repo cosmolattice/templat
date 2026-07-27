@@ -142,6 +142,9 @@ namespace TempLat
     device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
   };
 
+  /**
+   * @vocab-summary Lattice average of an SU(2)-valued expression, aware of cached link operations.
+   **/
   template <typename T>
     requires HasSU2Get<T>
   auto su2average(T instance, SpaceStateType spaceType = IsComplexType<typename SU2GetGetReturnType<T>::type>

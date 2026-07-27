@@ -66,6 +66,10 @@ namespace TempLat
     std::string toString() const { return GetString::get(mR) + "^\u2020"; }
   };
 
+  /**
+   * @vocab-summary Hermitian conjugate. For SU(2) it negates the three vector components; the operator factory
+   * also simplifies as it builds, collapsing $(A^\dagger)^\dagger$ to $A$ and commuting past a shift.
+   **/
   template <class R>
     requires HasSU2Get<R>
   auto dagger(const R &r)
@@ -112,6 +116,9 @@ namespace TempLat
   template <class R, int... N> auto dagger(const SU2Shifter<R, N...> &s) { return shift<N...>(dagger(s.getOperand())); }
   template <class R, int N> auto dagger(const SU2ShifterByOne<R, N> &s) { return shift<N>(dagger(s.getOperand())); }
 
+  /**
+   * @vocab-summary Short spelling of dagger.
+   **/
   template <class R>
     requires HasSU2Get<R>
   auto dag(const R &r)

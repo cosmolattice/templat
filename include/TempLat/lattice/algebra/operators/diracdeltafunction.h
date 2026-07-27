@@ -49,7 +49,12 @@ namespace TempLat
     };
   } // namespace Operators
 
-  /** @brief Exposing our newly define multiplication operation to the world. */
+  /** @brief Exposing our newly define multiplication operation to the world.
+   *
+   * @vocab-summary Discrete Dirac delta: the largest representable value where the operand is exactly zero, and
+   * zero elsewhere. Exists so that the derivative of heaviside has a name; it is not a distribution you can
+   *   integrate.
+   **/
   template <typename T> Operators::DiracDeltaFunction<T> DiracDelta(const T &a)
   {
     return Operators::DiracDeltaFunction<T>(a);

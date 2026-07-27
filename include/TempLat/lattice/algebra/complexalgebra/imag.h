@@ -16,6 +16,8 @@ namespace TempLat
   /** @brief A class which returns imaginary part of a fields or complex number.
    *
    * Unit test: ctest -R test-imag
+   *
+   * @vocab-summary Imaginary part of a complex field or complex number.
    **/
   template <class T>
     requires HasComplexFieldGet<T>

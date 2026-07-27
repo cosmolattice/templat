@@ -50,7 +50,10 @@ namespace TempLat
     };
   } // namespace Operators
 
-  /** @brief Exposing our newly define exp operation to the world. */
+  /** @brief Exposing our newly define exp operation to the world.
+   *
+   * @vocab-summary Hyperbolic cosine, element-wise.
+   **/
   template <typename T>
     requires ConditionalUnaryGetter<T>
   auto cosh(T a)

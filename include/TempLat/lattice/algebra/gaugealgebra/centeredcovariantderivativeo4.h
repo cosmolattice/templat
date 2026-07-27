@@ -21,6 +21,9 @@ namespace TempLat
    *
    *
    * Unit test: ctest -R test-centeredcovariantderivativeo4
+   *
+   * @vocab-summary Centred gauge-covariant derivative on a five-point stencil, accurate to $O(dx^4)$.
+   * @vocab-signature CenteredCovariantDerivativeO4<dim>(Us..., scalar)
    **/
 
   template <size_t dim, class... Args> auto CenteredCovariantDerivativeO4(Args... args)
@@ -46,6 +49,9 @@ namespace TempLat
                               (1.0 / 12.0) * UMinusMinus(i) * shift(shift(scalar, -i), -i));
     return Cov;
   }
+  /**
+   * @vocab-summary The ungauged $O(dx^4)$ centred derivative.
+   **/
   template <size_t dim, class T> auto CenteredDerivativeO4(T t) { return CenteredCovariantDerivativeO4<dim>(t); }
 } // namespace TempLat
 

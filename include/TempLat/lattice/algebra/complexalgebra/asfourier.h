@@ -53,6 +53,11 @@ namespace TempLat
     std::string toString() const { return "asFourier(" + GetString::get(mR) + ")"; }
   };
 
+  /**
+   * @vocab-summary Views a complex field as living in Fourier space, so that assignments and reductions on it
+   * are taken over momentum modes.
+   * @vocab-tags ComplexField, Fourier
+   **/
   template <typename R> ComplexFieldAsFourier<R> asFourier(R &&r)
   {
     return ComplexFieldAsFourier<R>(std::forward<R>(r));

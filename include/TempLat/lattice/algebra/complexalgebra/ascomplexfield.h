@@ -116,6 +116,10 @@ namespace TempLat
   concept HasComplexEval =
       HasEvalMethod<T> && !HasComplexFieldGet<T> && !IsComplexType<T> && GetGetReturnType<std::decay_t<T>>::isComplex;
 
+  /**
+   * @vocab-summary Reinterprets an expression whose eval() already returns a complex value as a complex field,
+   * so the complex algebra applies to it.
+   **/
   template <typename R>
     requires HasComplexEval<std::decay_t<R>>
   auto asComplexField(R &&r)

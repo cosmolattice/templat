@@ -82,6 +82,9 @@ namespace TempLat
     static constexpr size_t mVectorSize = std::decay_t<R>::getVectorSize();
   };
 
+  /**
+   * @vocab-summary Dot product of two vector expressions, $\sum_i a_i b_i$.
+   **/
   template <typename R, typename T> VectorDotter<R, T> dot(R r, T t) { return VectorDotter<R, T>(r, t); }
 
   template <typename R>
@@ -91,6 +94,9 @@ namespace TempLat
     return VectorDotter<R, R>(r, r);
   }
 
+  /**
+   * @vocab-summary Euclidean norm of a vector expression, `sqrt(norm2(v))`.
+   **/
   template <typename R> auto norm(R r) { return sqrt(norm2(r)); }
 } // namespace TempLat
 

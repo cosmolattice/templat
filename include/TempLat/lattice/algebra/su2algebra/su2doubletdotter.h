@@ -74,6 +74,9 @@ namespace TempLat
     }
   };
 
+  /**
+   * @vocab-summary Scalar product of two SU(2) doublets.
+   **/
   template <class R, class T>
     requires(HasSU2DoubletGet<R> && HasSU2DoubletGet<T>)
   auto scalar_prod(const R &r, const T &t)

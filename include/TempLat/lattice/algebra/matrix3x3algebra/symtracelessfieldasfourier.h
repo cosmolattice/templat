@@ -47,6 +47,10 @@ namespace TempLat
     R mR;
   };
 
+  /**
+   * @vocab-summary Views a symmetric-traceless field in Fourier space.
+   * @vocab-tags SymTraceless, Fourier
+   **/
   template <typename R> SymTracelessFieldAsFourier<R> symTracelessFieldAsFourier(R &&r)
   {
     return SymTracelessFieldAsFourier<R>(std::forward<R>(r));

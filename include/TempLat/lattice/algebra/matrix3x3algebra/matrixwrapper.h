@@ -17,10 +17,10 @@
 
 namespace TempLat
 {
-  /** @brief A class which wraps two objects as a Matrix3x3  field.
+  /** @brief A class which wraps nine expressions as a general 3x3 matrix, given row by row.
    *
    *
-   * Unit test: ctest -R test-complexwrapper
+   * Unit test: ctest -R test-matrixwrapper
    **/
   template <typename R11, typename R12, typename R13, typename R21, typename R22, typename R23, typename R31,
             typename R32, typename R33>
@@ -145,6 +145,13 @@ namespace TempLat
     R33 mR33;
   };
 
+  /**
+   * @vocab-summary Builds a general $3\times3$ matrix expression, given row by row. Entries set to ZeroType are
+   * pruned from the tree at compile time.
+   * @vocab-signature ConstructMatrix3x3(m11, m12, m13,
+   *                      m21, m22, m23,
+   *                      m31, m32, m33)
+   **/
   template <typename R11, typename R12, typename R13, typename R21, typename R22, typename R23, typename R31,
             typename R32, typename R33>
   MatrixWrapper<R11, R12, R13, R21, R22, R23, R31, R32, R33>

@@ -87,6 +87,13 @@ namespace TempLat
     std::string toString() const { return GetString::get(mR) + "_(->" + std::to_string(N) + ")"; }
   };
 
+  /**
+   * @vocab-summary Reads an expression at a site offset by a constant lattice vector: `shift(phi, 1_c)` is
+   * $\phi(x+\hat e_1)$. Every finite-difference operator is built from it, and it is what tells TempLat which
+   * ghost cells to exchange.
+   * @vocab-signature shift(expr, mu)   shift<i,j,k>(expr)
+   * @vocab-example auto p = (Us(mu) * shift(Us(nu), mu)) * dagger(shift(Us(mu), nu)) * dagger(Us(nu));
+   **/
   template <int... shifts, class R>
     requires((sizeof...(shifts) > 1) && tuple_size<R>::value == 1)
   auto shift(const R &pR)

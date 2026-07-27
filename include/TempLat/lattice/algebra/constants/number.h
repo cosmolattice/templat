@@ -33,6 +33,9 @@ namespace TempLat
    *   4. ZeroType: no-op
    *
    * Unit test: ctest -R test-number
+   *
+   * @vocab-summary A runtime-mutable scalar that takes part in expressions: change its value and every
+   * expression holding it sees the new one, without rebuilding the tree.
    **/
   template <typename T> struct Number {
     T value;

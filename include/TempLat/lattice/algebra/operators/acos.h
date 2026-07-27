@@ -54,7 +54,10 @@ namespace TempLat
     };
   } // namespace Operators
 
-  /** @brief Exposing our newly defined acos operation to the world. */
+  /** @brief Exposing our newly defined acos operation to the world.
+   *
+   * @vocab-summary Arc cosine, element-wise.
+   **/
   template <typename T>
     requires ConditionalUnaryGetter<T>
   auto acos(T a)

@@ -42,6 +42,8 @@ namespace TempLat
    * @brief A macro to simplify the usage of the for_in_range function.
    * Note that this for-loop is INCLUSIVE of the start AND end
    *
+   * @vocab-summary Runs `expr` once per index in a compile-time range, for side effects rather than a value.
+   * @vocab-signature ForLoop(i, beg, end, expr)
    */
 #define ForLoop(i, start, end, expr) for_in_range<start, end + 1>([&](auto i) { expr; })
 

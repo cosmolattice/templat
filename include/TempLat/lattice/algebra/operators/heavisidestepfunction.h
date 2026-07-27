@@ -47,6 +47,10 @@ namespace TempLat
     virtual std::string operatorString() const override { return "Heaviside"; }
   };
 
+  /**
+   * @vocab-summary Heaviside step function, with the convention $H(0)=1$. Its symbolic derivative is
+   *   DiracDelta.
+   **/
   template <typename R>
     requires ConditionalUnaryGetter<R>
   auto heaviside(const R &r)

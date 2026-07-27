@@ -61,7 +61,10 @@ namespace TempLat
     };
   } // namespace Operators
 
-  /** @brief Exposing our newly defined absolute value operation to the world. */
+  /** @brief Exposing our newly defined absolute value operation to the world.
+   *
+   * @vocab-summary Absolute value, element-wise.
+   **/
   template <typename T>
     requires ConditionalUnaryGetter<T>
   auto abs(const T &a)

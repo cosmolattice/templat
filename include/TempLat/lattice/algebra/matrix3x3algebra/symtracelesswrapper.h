@@ -17,10 +17,10 @@
 
 namespace TempLat
 {
-  /** @brief A class which wraps two objects as a symmetric traceless .
+  /** @brief A class which wraps six expressions as a symmetric 3x3 matrix whose trace is subtracted on evaluation.
    *
    *
-   * Unit test: ctest -R test-symtracelesswrapperwrapper
+   * Unit test: ctest -R test-symtracelesswrapper
    **/
   template <class R0, class R1, class R2, class R3, class R4, class R5>
   class SymTracelessWrapper : public SymTracelessOperator
@@ -118,6 +118,12 @@ namespace TempLat
     R5 mR5;
   };
 
+  /**
+   * @vocab-summary Builds a symmetric $3\times3$ expression whose trace is subtracted on evaluation, so the
+   * result is traceless by construction.
+   * @vocab-signature ConstructSymTraceless(t11, t12, t13, t22, t23, t33)
+   * @vocab-tags SymTraceless
+   **/
   template <typename R0, typename R1, typename R2, typename R3, typename R4, typename R5>
   SymTracelessWrapper<R0, R1, R2, R3, R4, R5> ConstructSymTraceless(const R0 &r0, const R1 &r1, const R2 &r2,
                                                                     const R3 &r3, const R4 &r4, const R5 &r5)

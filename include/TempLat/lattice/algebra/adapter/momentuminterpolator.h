@@ -12,6 +12,10 @@
 
 namespace TempLat
 {
+  /**
+   * @vocab-summary Evaluates a tabulated function of $|k|$ at every Fourier site, cubic-spline interpolated and
+   * clamped outside the table. The usual way to impose a prescribed initial power spectrum.
+   **/
   template <typename T, size_t NDim> class MomentumInterpolator
   {
   public:

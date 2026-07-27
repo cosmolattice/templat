@@ -151,6 +151,9 @@ namespace TempLat
     device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
   };
 
+  /**
+   * @vocab-summary Lattice average of a complex expression, returning a complex result.
+   **/
   template <typename T>
     requires HasComplexFieldGet<T>
   auto complexfieldaverage(T instance,

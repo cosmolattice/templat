@@ -64,6 +64,10 @@ namespace TempLat
     const FloatType dx;
   };
 
+  /**
+   * @vocab-summary Backward finite difference $\big(f(x) - f(x-\hat e_\mu)\big)/dx$ along direction `mu`.
+   * @vocab-signature backDiff(expr, mu)
+   **/
   template <class R, int N>
     requires(HasEvalMethod<R> && GetNDim::get<std::decay_t<R>>() > 0)
   auto backDiff(R pR, Tag<N> t)

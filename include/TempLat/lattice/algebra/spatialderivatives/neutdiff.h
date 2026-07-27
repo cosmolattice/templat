@@ -66,6 +66,11 @@ namespace TempLat
     const FloatType dx;
   };
 
+  /**
+   * @vocab-summary Centred finite difference $\big(f(x+\hat e_\mu) - f(x-\hat e_\mu)\big)/2dx$, accurate to
+   *   $O(dx^2)$.
+   * @vocab-signature neutDiff(expr, mu)
+   **/
   template <class R, int N>
     requires(HasEvalMethod<R> && GetNDim::get<std::decay_t<R>>() > 0)
   auto neutDiff(R pR, Tag<N> t)

@@ -48,6 +48,9 @@ namespace TempLat
     };
   } // namespace Operators
 
+  /**
+   * @vocab-summary Element-wise difference; the unary form negates. Defined for every algebra.
+   **/
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
   Operators::Subtraction<R, T> operator-(const R &r, const T &t)

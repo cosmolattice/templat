@@ -27,6 +27,12 @@ namespace TempLat
    * time-evolution example.
    *
    * Unit test: ctest -R test-u1field
+   *
+   * @vocab-summary A single $U(1)$ link $A_i$ for fixed $i$. An alias of ComplexField, because a $U(1)$ group
+   * element is a unit-modulus complex number: the group product is complex multiplication and the inverse is
+   *   conj().
+   * @vocab-signature U1Field<T, NDim> u("u", toolBox);
+   * @vocab-tags ComplexField
    **/
   template <typename T, size_t NDim> using U1Field = ComplexField<T, NDim>;
 } // namespace TempLat

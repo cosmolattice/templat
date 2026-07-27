@@ -18,6 +18,8 @@ namespace TempLat
    *
    *
    * Unit test: ctest -R test-real
+   *
+   * @vocab-summary Real part of a complex field or complex number.
    **/
   template <class T>
     requires HasComplexFieldGet<T>

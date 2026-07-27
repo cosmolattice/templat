@@ -60,6 +60,10 @@ namespace TempLat
     };
   } // namespace Operators
 
+  /**
+   * @vocab-summary Two-argument arc tangent $\mathrm{atan2}(y, x)$, giving a phase in $(-\pi, \pi]$.
+   * @vocab-signature arg2(y, x)
+   **/
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
   auto arg2(R r, T t)

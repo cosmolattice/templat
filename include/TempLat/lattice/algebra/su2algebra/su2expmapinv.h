@@ -89,6 +89,10 @@ namespace TempLat
     static constexpr size_t numberToSkipAsTuple = 1;
   };
 
+  /**
+   * @vocab-summary Inverse of the SU(2) exponential map — the logarithm, taking a group element back to the
+   *   algebra.
+   **/
   template <class R>
     requires HasSU2Get<R>
   auto expinv(const R &r)

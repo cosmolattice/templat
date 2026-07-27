@@ -67,6 +67,9 @@ namespace TempLat
    *        Generalized to arbitrary NDim.
    *
    * Unit test: ctest -R test-momentummultiplicity
+   *
+   * @vocab-summary How many modes share the $|k|$ of the current Fourier site — the weight a correctly
+   * normalised spectrum needs.
    */
   template <typename T, size_t NDim> class MomentumMultiplicity
   {

@@ -19,10 +19,10 @@
 
 namespace TempLat
 {
-  /** @brief A class which wraps five objects as an hermitian 3x3 matrix  .
+  /** @brief A class which wraps six expressions, the upper triangle, as a hermitian 3x3 matrix.
    *
    *
-   * Unit test: ctest -R test-complexwrapper
+   * Unit test: ctest -R test-hermwrapper
    **/
   /*TODO: Jorge: Maybe it would be great to check the diagonal elements are real. For now, I assumme this is checked by
    * the user */
@@ -132,6 +132,12 @@ namespace TempLat
     R33 mR33;
   };
 
+  /**
+   * @vocab-summary Builds a hermitian $3\times3$ matrix expression from its upper triangle; the lower triangle
+   * is the conjugate.
+   * @vocab-signature ConstructHerm(h11, h12, h13, h22, h23, h33)
+   * @vocab-tags Herm3x3
+   **/
   template <typename R11, typename R12, typename R13, typename R22, typename R23, typename R33>
   HermWrapper<R11, R12, R13, R22, R23, R33> ConstructHerm(const R11 &r11, const R12 &r12, const R13 &r13,
                                                           const R22 &r22, const R23 &r23, const R33 &r33)

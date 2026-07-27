@@ -21,6 +21,9 @@ namespace TempLat
 {
   /** @brief A class which implements su2doublets.
    *
+   * @vocab-summary An $SU(2)$ (Higgs) doublet: two complex components, stored as four reals.
+   * @vocab-signature SU2Doublet<T, NDim> phi("phi", toolBox);
+   * @vocab-tags SU2Doublet
    *
    * Unit test: ctest -R test-su2doublet
    **/

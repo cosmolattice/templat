@@ -50,6 +50,10 @@ namespace TempLat
     };
   } // namespace Operators
 
+  /**
+   * @vocab-summary Element-wise sum. Every algebra defines its own, so the operands may be numbers, scalar or
+   * complex fields, SU(2) elements, doublets, 3x3 matrices or collections.
+   **/
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
   auto operator+(const R &r, const T &t)

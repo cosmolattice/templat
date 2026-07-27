@@ -137,6 +137,11 @@ namespace TempLat
   }
 
   // 0-dim expressions (Number<T>, pow<2>(Number<T>), etc): evaluate at index 0
+  /**
+   * @vocab-summary Average of an expression over the whole lattice and across all MPI ranks. Defaults to
+   * configuration or Fourier space according to the operand.
+   * @vocab-signature average(expr)   average(expr, space)
+   **/
   template <typename T>
     requires(!std::is_arithmetic_v<T> && !std::is_same_v<std::decay_t<T>, ZeroType> &&
              GetNDim::get<std::decay_t<T>>() == 0)

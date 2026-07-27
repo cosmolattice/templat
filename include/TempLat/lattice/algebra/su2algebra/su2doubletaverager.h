@@ -143,6 +143,10 @@ namespace TempLat
     device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
   };
 
+  /**
+   * @vocab-summary Lattice average of an SU(2) doublet expression.
+   * @vocab-tags SU2Doublet
+   **/
   template <typename T>
     requires HasSU2DoubletGet<T>
   auto su2doubletaverage(T instance,

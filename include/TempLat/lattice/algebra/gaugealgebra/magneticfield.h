@@ -15,6 +15,9 @@ namespace TempLat
 {
   /** @brief A function to return the magnetic field from the gauge potential. Specialised to 3D.
    * TODO: ND?
+   *
+   * @vocab-summary Magnetic field from the gauge potential, $B_i = \tfrac12\epsilon_{ijk}F_{jk}$. Specialised
+   * to three dimensions.
    **/
   template <typename R> auto magneticField(R &&As, Tag<1> t) { return fieldStrength(As, 2_c, 3_c); }
   template <typename R> auto magneticField(R &&As, Tag<2> t) { return fieldStrength(As, 3_c, 1_c); }
@@ -24,6 +27,8 @@ namespace TempLat
   /** @brief A function to return the magnetic field from the gauge potential using centered finite derivatives.
    * Specialised to 3D.
    * TODO: ND?
+   *
+   * @vocab-summary Magnetic field from centred differences of the gauge potential.
    **/
   template <typename R> auto magneticFieldCtr(R &&As, Tag<1> t) { return fieldStrengthCtr(As, 2_c, 3_c); }
   template <typename R> auto magneticFieldCtr(R &&As, Tag<2> t) { return fieldStrengthCtr(As, 3_c, 1_c); }

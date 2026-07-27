@@ -18,6 +18,10 @@ namespace TempLat
    *
    *
    * Unit test: ctest -R test-centeredcovariantderivative
+   *
+   * @vocab-summary Centred gauge-covariant derivative, accurate to $O(dx^2)$. Takes the gauge vectors followed
+   * by the scalar.
+   * @vocab-signature CenteredCovariantDerivative<dim>(Us..., scalar)
    **/
   template <size_t dim, class... Args> auto CenteredCovariantDerivative(Args... args)
   {
@@ -37,6 +41,9 @@ namespace TempLat
     return Cov;
   }
 
+  /**
+   * @vocab-summary The ungauged centred derivative — CenteredCovariantDerivative with no links.
+   **/
   template <size_t dim, class T> auto CenteredDerivative(T t) { return CenteredCovariantDerivative<dim>(t); }
 } // namespace TempLat
 

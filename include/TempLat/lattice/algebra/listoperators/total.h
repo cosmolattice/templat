@@ -26,6 +26,10 @@ namespace TempLat
    *
    *  @param tup the tuple to sum over
    *  @param func the function to apply to each component before summing
+   *
+   * @vocab-summary Sums every component of a tuple-like expression, optionally applying a function to each
+   * first. Reduces over the components, not over the lattice.
+   * @vocab-signature total(tup)   total(tup, f)
    **/
   template <class Tuple, typename Function> constexpr auto total(Tuple &&tup, Function &&func)
   {

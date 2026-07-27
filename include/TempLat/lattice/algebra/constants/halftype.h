@@ -15,6 +15,8 @@ namespace TempLat
   /** @brief A class which implement 1/2 as a type. Useful for squareroots.
    *
    * Unit test: ctest -R test-halftype
+   *
+   * @vocab-summary Compile-time one half, so that sqrt can be written as an exact power.
    **/
   struct HalfType {
     static std::string toString() { return "(HalfType)1/2"; }

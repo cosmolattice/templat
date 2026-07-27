@@ -63,6 +63,9 @@ namespace TempLat
   private:
   };
 
+  /**
+   * @vocab-summary Commutator $[A,B] = AB - BA$ of two SU(2)-valued expressions.
+   **/
   template <typename R, typename T>
     requires(HasSU2Get<R> && HasSU2Get<T>)
   auto commutator(const R &r, const T &t)

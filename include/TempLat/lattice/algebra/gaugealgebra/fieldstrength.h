@@ -19,6 +19,10 @@ namespace TempLat
    * @param A The gauge field
    * @param mu The first index of the field strength tensor.
    * @param nu The second index of the field strength tensor.
+   *
+   * @vocab-summary Abelian field strength $F_{\mu\nu} = \partial_\mu A_\nu - \partial_\nu A_\mu$ from forward
+   * differences of the gauge potential.
+   * @vocab-signature fieldStrength(As, mu, nu)
    **/
   template <typename R, int Mu, int Nu> auto fieldStrength(R A, Tag<Mu> mu, Tag<Nu> nu)
   {
@@ -31,6 +35,9 @@ namespace TempLat
    * @param A The gauge field
    * @param mu The first index of the field strength tensor.
    * @param nu The second index of the field strength tensor.
+   *
+   * @vocab-summary Field strength built from centred rather than forward differences.
+   * @vocab-signature fieldStrengthCtr(As, mu, nu)
    **/
   template <typename R, int Mu, int Nu> auto fieldStrengthCtr(R A, Tag<Mu> mu, Tag<Nu> nu)
   {

@@ -53,7 +53,11 @@ namespace TempLat
     };
   } // namespace Operators
 
-  /** @brief Exposing our newly define exp operation to the world. */
+  /** @brief Exposing our newly define exp operation to the world.
+   *
+   * @vocab-summary Exponential $e^x$, element-wise.
+   * @vocab-primary
+   **/
   template <typename T>
     requires(ConditionalUnaryGetter<T> && !HasSU2Get<T>)
   auto exp(T a)

@@ -64,6 +64,11 @@ namespace TempLat
     const FloatType dx;
   };
 
+  /**
+   * @vocab-summary Forward two-point *sum* $\big(f(x) + f(x+\hat e_\mu)\big)/dx$ — the averaging counterpart of
+   * forwDiff, used where a gauge-covariant discretisation needs the sum rather than the difference.
+   * @vocab-signature forwDij<dir>(expr)
+   **/
   template <class R, int N>
     requires(HasEvalMethod<R> && GetNDim::get<std::decay_t<R>>() > 0)
   auto forwDij(R pR, Tag<N> t)

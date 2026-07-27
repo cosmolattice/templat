@@ -108,6 +108,9 @@ namespace TempLat
     const FloatType dx;
   };
 
+  /**
+   * @vocab-summary Forward gradient, as a vector expression with one forwDiff component per dimension.
+   **/
   template <size_t NDim_ = 0, typename R> auto LatForwardGrad(R pR)
   {
     static_assert(NDim_ == 0 || NDim_ == GetNDim::get<R>(),

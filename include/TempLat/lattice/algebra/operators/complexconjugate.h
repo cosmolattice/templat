@@ -53,6 +53,8 @@ namespace TempLat
   } // namespace Operators
 
   /** @brief Exposing our newly define multiplication operation to the world.
+   *
+   * @vocab-summary Complex conjugate, element-wise.
    *  Excluded for complex field types (HasComplexFieldGet) which have their own conj overload. */
   template <typename T>
     requires(ConditionalUnaryGetter<T> && !HasComplexFieldGet<T> && !HasSymTracelessGet<T>)

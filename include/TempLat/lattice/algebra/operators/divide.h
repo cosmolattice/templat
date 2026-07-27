@@ -91,7 +91,10 @@ namespace TempLat
     };
   } // namespace Operators
 
-  /** @brief Exposing our newly define multiplication operation to the world. */
+  /** @brief Exposing our newly define multiplication operation to the world.
+   *
+   * @vocab-summary Element-wise division.
+   **/
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
   auto operator/(const R &r, const T &t)
@@ -99,6 +102,11 @@ namespace TempLat
     return Operators::Division<R, T>(r, t);
   }
 
+  /**
+   * @vocab-summary Division that yields exactly zero where the numerator does, instead of evaluating 0/0.
+   * Written for normalising spectra against a cutoff.
+   * @vocab-signature safeDivide(numerator, denominator)
+   **/
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
   auto safeDivide(const R &r, const T &t)

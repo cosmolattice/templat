@@ -71,6 +71,9 @@ namespace TempLat
     std::string toString() const { return "exp(" + GetString::get(mR) + ")"; }
   };
 
+  /**
+   * @vocab-summary Exponential map from the su(2) algebra to the SU(2) group.
+   **/
   template <class R>
     requires HasSU2Get<R>
   auto exp(const R &r)

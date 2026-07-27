@@ -58,6 +58,11 @@ namespace TempLat
     virtual std::string operatorString() const override { return "*"; }
   };
 
+  /**
+   * @vocab-summary Trace of the product of two $3\times3$ matrix expressions, $\mathrm{tr}(AB)$, evaluated
+   * without ever forming the product.
+   * @vocab-signature multiplyTrace(a, b)
+   **/
   template <typename R, typename T>
     requires(HasHermGet<R> && HasSymTracelessGet<T> && !HasSymGet<R>)
   auto multiplyTrace(const R &r, const T &t)

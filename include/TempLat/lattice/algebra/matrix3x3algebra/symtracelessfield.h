@@ -21,7 +21,12 @@ namespace TempLat
 {
   /** @brief A class which implements symmetric-traceless matrix field used for GWs.
    *
-   * Unit test: ctest -R test-complexfield
+   * Unit test: ctest -R test-symtracelessfield
+   *
+   * @vocab-summary A real symmetric traceless $3\times3$ matrix field, stored as its five independent
+   * components. The type used for gravitational waves.
+   * @vocab-signature SymTracelessField<T, NDim> hij("hij", toolBox);
+   * @vocab-tags SymTraceless
    **/
   template <typename T, size_t _NDim = 0> class SymTracelessField
   {

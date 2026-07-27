@@ -18,6 +18,10 @@ namespace TempLat
    *
    *
    * Unit test: ctest -R test-plaquetteback
+   *
+   * @vocab-summary The plaquette traversed backwards in $\nu$, needed alongside plaq when assembling equations
+   * of motion.
+   * @vocab-signature plaqBack(Us, mu, nu)
    **/
 
   template <int Mu, int Nu, typename R> auto plaqBack(const R &Us, Tag<Mu> mu, Tag<Nu> nu)

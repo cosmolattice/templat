@@ -29,6 +29,10 @@ namespace TempLat
     /* Put all member variables and private methods here. These may change arbitrarily. */
   };
 
+  /**
+   * @vocab-summary Symbolic derivative of an expression with respect to each field in a collection, returned as
+   * a tuple. Provided for completeness; nothing in TempLat uses it.
+   **/
   template <typename T, typename R> auto derivatives(T &&expr, R &others)
   {
     constexpr size_t size = tuple_size<R>::value;

@@ -88,6 +88,9 @@ namespace TempLat
     LayoutStruct<NDim> mLayout;
   };
 
+  /**
+   * @vocab-summary Largest value an expression takes anywhere on the lattice, reduced across all ranks.
+   **/
   template <typename T>
     requires(!IsTempLatGettable<0, T>)
   auto max(T instance, SpaceStateType spaceType = GetGetReturnType<T>::isComplex ? SpaceStateType::Fourier

@@ -90,6 +90,12 @@ namespace TempLat
     };
   } // namespace Operators
 
+  /**
+   * @vocab-summary Raises an expression to a power. $x^N$ with a compile-time exponent unrolls into repeated
+   * multiplication; the two-argument form is general. $N=0$ folds to OneType and $N=1$ to the operand itself,
+   * at compile time.
+   * @vocab-signature pow<N>(x)   pow(x, y)
+   **/
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
   auto pow(const R &r, const T &t)

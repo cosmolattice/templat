@@ -16,6 +16,9 @@ namespace TempLat
   /** @brief A class which computes the norm of a list.
    *
    * Unit test: ctest -R test-norm
+   *
+   * @vocab-summary Squared norm: the sum of the squares of the components. Defined for collections, complex
+   * fields and doublets.
    **/
   template <typename R>
     requires(IsTempLatGettable<0, R> || IsSTDGettable<0, R>)

@@ -73,6 +73,12 @@ namespace TempLat
     const FloatType dx2;
   };
 
+  /**
+   * @vocab-summary Lattice Laplacian: the standard $2d+1$-point stencil, using the operand's own $dx$. Applied
+   * component-wise to a collection.
+   * @vocab-signature LatLapl(expr)
+   * @vocab-primary
+   **/
   template <size_t NDim_ = 0, typename R>
     requires(HasEvalMethod<R> && GetNDim::get<std::decay_t<R>>() > 0)
   auto LatLapl(R pR)

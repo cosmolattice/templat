@@ -66,6 +66,11 @@ namespace TempLat
     const FloatType dx;
   };
 
+  /**
+   * @vocab-summary Centred two-point sum $\big(f(x+\hat e_\mu) + f(x-\hat e_\mu)\big)/2dx$, the averaging
+   * counterpart of neutDiff.
+   * @vocab-signature neutDij<dir>(expr)
+   **/
   template <class R, int N>
     requires(HasEvalMethod<R> && GetNDim::get<std::decay_t<R>>() > 0)
   auto neutDij(R pR, Tag<N> t)

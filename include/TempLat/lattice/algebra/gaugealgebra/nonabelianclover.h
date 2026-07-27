@@ -16,6 +16,10 @@ namespace TempLat
    * @param Us The gauge links.
    * @param mu The first direction of the clover. Should be a spatial direction.
    * @param nu The second direction of the clover. Should be a spatial direction.
+   *
+   * @vocab-summary Clover discretisation of the non-abelian field strength: the average of the four plaquettes
+   * touching a site in the $(\mu,\nu)$ plane, which restores the symmetry a single plaquette breaks.
+   * @vocab-signature nonabelianclover(Us, mu, nu)
    **/
   template <int Mu, int Nu, typename R>
     requires(Mu != 0 && Nu != 0 && Mu != Nu)
@@ -42,6 +46,10 @@ namespace TempLat
     return 0.25 * (plaq1 + plaq2 + plaq3 + plaq4);
   }
 
+  /**
+   * @vocab-summary Non-abelian magnetic field component $B_i$ from the clover field strength.
+   * @vocab-signature B4NA(Us, i)
+   **/
   template <typename R> auto B4NA(const R &Us, Tag<1>) { return nonabelianclover(Us, Tag<2>(), Tag<3>()); }
   template <typename R> auto B4NA(const R &Us, Tag<2>) { return nonabelianclover(Us, Tag<3>(), Tag<1>()); }
   template <typename R> auto B4NA(const R &Us, Tag<3>) { return nonabelianclover(Us, Tag<1>(), Tag<2>()); }

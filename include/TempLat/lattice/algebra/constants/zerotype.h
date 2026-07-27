@@ -22,6 +22,9 @@ namespace TempLat
   /** @brief A class which represents zero. Attempt to simplify derivative expressions.
    *
    * Unit test: ctest -R test-zerotype
+   *
+   * @vocab-summary Compile-time zero. Multiplying by it collapses a whole expression tree to nothing, and
+   * adding it is free — this is how TempLat prunes terms before generating any code.
    **/
   struct ZeroType {
     static std::string toString() { return "(ZeroType)0"; }

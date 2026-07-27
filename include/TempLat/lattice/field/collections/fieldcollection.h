@@ -22,6 +22,10 @@ namespace TempLat
    *
    *
    * Unit test: ctest -R test-fieldcollection
+   *
+   * @vocab-summary $N$ fields of any one type under a single tag-indexed name.
+   * @vocab-signature FieldCollection<FieldType, N> coll("coll", toolBox);
+   * @vocab-tags Collection
    **/
   template <class Arg, int N, bool flatAssign = false, int SHIFTIND = 0> class FieldCollection
   {

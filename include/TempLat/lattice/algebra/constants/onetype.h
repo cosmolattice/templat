@@ -15,6 +15,8 @@ namespace TempLat
   /** @brief A class which represents one. Attempt to simplify derivative expressions.
    *
    * Unit test: ctest -R test-zerotype
+   *
+   * @vocab-summary Compile-time one. Multiplying by it returns the operand unchanged.
    **/
   struct OneType {
     static std::string toString() { return "(OneType)1"; }

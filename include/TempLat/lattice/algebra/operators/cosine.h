@@ -52,7 +52,10 @@ namespace TempLat
     };
   } // namespace Operators
 
-  /** @brief Exposing our newly define exp operation to the world. */
+  /** @brief Exposing our newly define exp operation to the world.
+   *
+   * @vocab-summary Cosine, element-wise.
+   **/
   template <typename T>
     requires ConditionalUnaryGetter<T>
   auto cos(T a)

@@ -81,7 +81,11 @@ namespace TempLat
     };
   } // namespace Operators
 
-  /** @brief Exposing our newly define multiplication operation to the world. */
+  /** @brief Exposing our newly define multiplication operation to the world.
+   *
+   * @vocab-summary Product of two expressions. The meaning follows the operands: numbers and fields multiply
+   * point-wise, SU(2) elements compose as quaternions, matrices contract, collections multiply component-wise.
+   **/
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
   auto operator*(const R &r, const T &t)

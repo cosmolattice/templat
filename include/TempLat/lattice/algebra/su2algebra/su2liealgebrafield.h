@@ -16,6 +16,10 @@ namespace TempLat
    *(but internally, also expanded as a function of sigma).
    *
    * Unit test: ctest -R test-su2liealgebrafield
+   *
+   * @vocab-summary An $\mathfrak{su}(2)$ field: the same storage as the group type but with $c_0$ pinned to
+   * zero, and component access normalised to $\sigma_a/2$.
+   * @vocab-signature SU2LieAlgebraField<T, NDim> E("E", toolBox);
    **/
   template <typename T, size_t _NDim = 0> class SU2LieAlgebraField
   {

@@ -18,6 +18,11 @@ namespace TempLat
    *
    *
    * Unit test: ctest -R test-backwardcovariantderivative
+   *
+   * @vocab-summary Backward gauge-covariant derivative of a scalar: the backward difference with the scalar
+   * parallel-transported by the daggered link. Takes any number of gauge vectors followed by the scalar, so a
+   * field charged under several groups is written in one call.
+   * @vocab-signature BackwardCovariantDerivative<dim>(Us..., scalar)
    **/
   template <size_t dim, class... Args> auto BackwardCovariantDerivative(Args... args)
   {

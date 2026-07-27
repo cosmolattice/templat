@@ -306,6 +306,9 @@ namespace TempLat
     }
   };
 
+  /**
+   * @vocab-summary Bins an expression by radius, giving a radial profile of an $N$-dimensional lattice.
+   **/
   template <size_t NDim, typename T>
   RadialProjector<T> projectRadially(T instance, SpaceStateType spaceType,
                                      device::memory::host_ptr<MemoryToolBox<NDim>> pToolBox,
@@ -319,6 +322,10 @@ namespace TempLat
     return projectRadially(instance, SpaceStateType::Configuration, GetToolBox::get(instance), useBinCentralValues);
   }
 
+  /**
+   * @vocab-summary Bins an expression by $|k|$, the usual way to take a power spectrum.
+   * @vocab-tags Field, Fourier
+   **/
   template <typename T> RadialProjector<T> projectRadiallyFourier(T instance, bool useBinCentralValues = false)
   {
     return projectRadially(instance, SpaceStateType::Fourier, GetToolBox::get(instance), useBinCentralValues);
