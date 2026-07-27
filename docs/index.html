@@ -40,211 +40,12 @@
       throwOnError: false
     });"></script>
 
+  <link rel="stylesheet" href="assets/site.css">
+
   <style>
-    :root {
-      --bg: #000;
-      --bg-alt: #08080a;
-      --fg: #e9e9ec;
-      --mut: #8f8f98;
-      --dim: #65656e;
-      --line: rgba(255, 255, 255, .09);
-      --line-str: rgba(255, 255, 255, .16);
-      --accent: #cc6666;
-      --accent-hi: #e59a9a;
-      --accent-dim: rgba(204, 102, 102, .16);
-      --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
-      --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-      --col: 1080px;
-      --ease: cubic-bezier(.16, 1, .3, 1);
-    }
-
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box
-    }
-
-    html {
-      scroll-behavior: smooth;
-      -webkit-text-size-adjust: 100%
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--fg);
-      font-family: var(--sans);
-      font-size: 17px;
-      line-height: 1.65;
-      -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
-      overflow-x: hidden;
-    }
-
-    img {
-      max-width: 100%;
-      display: block
-    }
-
-    a {
-      color: var(--accent);
-      text-decoration: none;
-      transition: color .18s ease
-    }
-
-    a:hover {
-      color: var(--accent-hi)
-    }
-
-    :focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 3px;
-      border-radius: 3px
-    }
-
-    .wrap {
-      width: 100%;
-      max-width: var(--col);
-      margin: 0 auto;
-      padding: 0 28px
-    }
-
-    /* ── section scaffolding ─────────────────────────────── */
-    section {
-      position: relative;
-      padding: 110px 0;
-      scroll-margin-top: 64px
-    }
-
-    section.band {
-      background: var(--bg-alt);
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line)
-    }
-
-    .eyebrow {
-      font-family: var(--mono);
-      font-size: 12px;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin: 0 0 14px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .eyebrow::after {
-      content: "";
-      flex: 1;
-      height: 1px;
-      background: linear-gradient(90deg, var(--accent-dim), transparent);
-      max-width: 220px
-    }
-
-    h2 {
-      font-size: clamp(28px, 4.2vw, 40px);
-      line-height: 1.15;
-      letter-spacing: -.02em;
-      margin: 0 0 16px;
-      font-weight: 600
-    }
-
-    h3 {
-      font-size: 20px;
-      letter-spacing: -.01em;
-      margin: 0 0 8px;
-      font-weight: 600
-    }
-
-    .lede {
-      color: var(--mut);
-      max-width: 62ch;
-      margin: 0 0 52px;
-      font-size: 18px
-    }
-
-    /* ── nav ─────────────────────────────────────────────── */
-    .nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 50;
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      padding: 12px 28px;
-      background: rgba(0, 0, 0, .72);
-      border-bottom: 1px solid transparent;
-      -webkit-backdrop-filter: blur(14px);
-      backdrop-filter: blur(14px);
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(-100%);
-      transition: opacity .35s var(--ease), transform .35s var(--ease), border-color .35s ease;
-    }
-
-    .nav.on {
-      opacity: 1;
-      pointer-events: auto;
-      transform: none;
-      border-bottom-color: var(--line)
-    }
-
-    .nav .mark {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--fg);
-      font-weight: 600;
-      letter-spacing: -.01em
-    }
-
-    .nav .mark svg {
-      width: 26px;
-      height: auto
-    }
-
-    .nav nav {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-wrap: wrap
-    }
-
-    .nav nav a {
-      color: var(--mut);
-      font-size: 14.5px;
-      padding: 6px 12px;
-      border-radius: 7px;
-      transition: color .18s ease, background .18s ease;
-    }
-
-    .nav nav a:hover {
-      color: var(--fg);
-      background: rgba(255, 255, 255, .06)
-    }
-
-    .nav nav a.gh {
-      color: var(--accent)
-    }
-
-    @media(max-width:640px) {
-      .nav {
-        padding: 10px 16px
-      }
-
-      .nav nav a {
-        padding: 6px 8px;
-        font-size: 13.5px
-      }
-
-      .nav nav a.hide-s {
-        display: none
-      }
-    }
+    /* Page-specific components only — everything shared with the other pages
+       (tokens, nav, cards, code blocks, tables, tags, footer, KaTeX) lives in
+       assets/site.css. */
 
     /* ── hero ────────────────────────────────────────────── */
     .hero {
@@ -305,24 +106,6 @@
     .hero .sub em {
       color: var(--accent);
       font-style: normal
-    }
-
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      margin: 0 0 36px
-    }
-
-    .chip {
-      font-family: var(--mono);
-      font-size: 12px;
-      letter-spacing: .04em;
-      color: var(--mut);
-      border: 1px solid var(--line-str);
-      border-radius: 999px;
-      padding: 5px 12px;
     }
 
     .btns {
@@ -429,10 +212,6 @@
 
     /* phones: tighten the hero so the buttons clear the fold */
     @media(max-width:520px) {
-      .wrap {
-        padding: 0 20px
-      }
-
       .hero {
         padding: 76px 20px 72px
       }
@@ -449,14 +228,6 @@
       .hero .sub {
         font-size: 15.5px;
         margin-bottom: 26px
-      }
-
-      .chips {
-        margin-bottom: 28px
-      }
-
-      section {
-        padding: 78px 0
       }
     }
 
@@ -500,135 +271,6 @@
       transform-box: fill-box;
       transform-origin: center
     }
-
-    /* ── reveal ──────────────────────────────────────────── */
-    .js .reveal {
-      opacity: 0;
-      transform: translateY(26px)
-    }
-
-    .js .reveal.in {
-      opacity: 1;
-      transform: none;
-      transition: opacity .75s var(--ease) var(--d, 0s), transform .75s var(--ease) var(--d, 0s);
-    }
-
-    /* ── features ────────────────────────────────────────── */
-    .feat-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 18px
-    }
-
-    @media(max-width:660px) {
-      .feat-grid {
-        grid-template-columns: 1fr
-      }
-    }
-
-    .card {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 26px 24px 28px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, .028), rgba(255, 255, 255, .008));
-      transition: border-color .28s ease, background .28s ease, transform .28s var(--ease);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card:hover {
-      border-color: rgba(204, 102, 102, .4);
-      transform: translateY(-3px);
-      background: linear-gradient(180deg, rgba(204, 102, 102, .07), rgba(255, 255, 255, .01))
-    }
-
-    .card .ico {
-      width: 34px;
-      height: 34px;
-      color: var(--accent);
-      margin-bottom: 18px
-    }
-
-    .card .ico svg {
-      width: 100%;
-      height: 100%
-    }
-
-    .card p {
-      margin: 0;
-      color: var(--mut);
-      font-size: 15.5px;
-      line-height: 1.6
-    }
-
-    /* compact code block for inside a card — the full .code component with
-       its header and copy button is far too heavy for a 1/3-width column.
-       Scrolls on its own if a line is too long, so it can never widen the
-       card or the grid.                                                  */
-    .card .snip {
-      margin: 14px 0 0;
-      padding: 11px 13px;
-      background: #050506;
-      border: 1px solid var(--line);
-      border-radius: 9px;
-      font-family: var(--mono);
-      font-size: 12.5px;
-      line-height: 1.6;
-      color: var(--fg);
-      white-space: pre;
-      overflow-x: auto;
-      overflow-y: hidden;
-    }
-
-    .card .snip::-webkit-scrollbar {
-      height: 6px
-    }
-
-    .card .snip::-webkit-scrollbar-thumb {
-      background: var(--line-str);
-      border-radius: 3px
-    }
-
-    .card:hover .snip {
-      border-color: rgba(204, 102, 102, .28)
-    }
-
-    /* .card p is margin:0, so prose following a snippet needs its own gap */
-    .card .snip+p {
-      margin-top: 14px
-    }
-
-    /* inline code in prose: never break a flag or identifier across lines */
-    .card code,
-    .step p code,
-    .lede code,
-    td code,
-    .more code,
-    figure.eq figcaption code {
-      font-family: var(--mono);
-      font-size: .87em;
-      color: var(--fg);
-      background: rgba(255, 255, 255, .06);
-      padding: 1px 5px;
-      border-radius: 4px;
-      white-space: nowrap;
-    }
-
-    .step p code,
-    .lede code,
-    td code,
-    .more code,
-    figure.eq figcaption code {
-      background: none;
-      padding: 0;
-      color: var(--fg)
-    }
-
-    code.w {
-      white-space: normal
-    }
-
-    /* opt back in for long expressions */
 
     /* ── usage steps ─────────────────────────────────────── */
     .step {
@@ -677,154 +319,6 @@
       }
     }
 
-    /* ── code blocks ─────────────────────────────────────── */
-    .code {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      overflow: hidden;
-      background: #050506;
-      margin: 0 0 16px;
-    }
-
-    .code-head {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 10px 8px 15px;
-      border-bottom: 1px solid var(--line);
-      background: rgba(255, 255, 255, .022);
-    }
-
-    .code-head .name {
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--dim);
-      letter-spacing: .03em
-    }
-
-    .copy {
-      display: none;
-      margin-left: auto;
-      align-items: center;
-      gap: 6px;
-      font-family: var(--sans);
-      font-size: 12px;
-      color: var(--mut);
-      cursor: pointer;
-      background: transparent;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 4px 10px;
-      transition: color .18s ease, border-color .18s ease, background .18s ease;
-    }
-
-    .js .copy {
-      display: inline-flex
-    }
-
-    .copy:hover {
-      color: var(--fg);
-      border-color: var(--line-str);
-      background: rgba(255, 255, 255, .05)
-    }
-
-    .copy.done {
-      color: var(--accent);
-      border-color: var(--accent-dim)
-    }
-
-    .code pre {
-      margin: 0;
-      padding: 16px 18px;
-      overflow-x: auto;
-      font-family: var(--mono);
-      font-size: 13.5px;
-      line-height: 1.7;
-      color: #d6d6db;
-    }
-
-    .code pre::-webkit-scrollbar {
-      height: 8px
-    }
-
-    .code pre::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, .14);
-      border-radius: 4px
-    }
-
-    .c {
-      color: #5f5f68;
-      font-style: italic
-    }
-
-    .out {
-      color: #7d7d86
-    }
-
-    /* terminal output — dim, but not a comment */
-    .k {
-      color: var(--accent)
-    }
-
-    .s {
-      color: #9db8a4
-    }
-
-    .o {
-      color: #8f8f98
-    }
-
-    /* ── flag table ──────────────────────────────────────── */
-    .tbl-wrap {
-      overflow-x: auto;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      margin: 0 0 16px
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      font-size: 14.5px;
-      min-width: 460px
-    }
-
-    th,
-    td {
-      text-align: left;
-      padding: 11px 16px;
-      border-bottom: 1px solid var(--line)
-    }
-
-    th {
-      font-size: 12px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--dim);
-      font-weight: 500;
-      background: rgba(255, 255, 255, .022)
-    }
-
-    tr:last-child td {
-      border-bottom: none
-    }
-
-    td:first-child {
-      font-family: var(--mono);
-      color: var(--accent);
-      white-space: nowrap;
-      font-size: 13px
-    }
-
-    td:last-child {
-      color: var(--mut)
-    }
-
-    .more {
-      font-size: 15px;
-      color: var(--mut)
-    }
-
     /* ── paper / citation ────────────────────────────────── */
     .paper {
       border: 1px solid var(--line);
@@ -860,43 +354,6 @@
       gap: 10px
     }
 
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 13.5px;
-      padding: 6px 13px;
-      border-radius: 7px;
-      border: 1px solid var(--line-str);
-      color: var(--mut);
-      transition: color .18s ease, border-color .18s ease, background .18s ease;
-    }
-
-    a.tag:hover {
-      color: var(--fg);
-      border-color: var(--accent);
-      background: var(--accent-dim)
-    }
-
-    .todo {
-      display: inline-block;
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: .1em;
-      color: var(--accent);
-      border: 1px dashed rgba(204, 102, 102, .5);
-      border-radius: 5px;
-      padding: 2px 8px;
-      vertical-align: middle;
-    }
-
-    .note {
-      color: var(--dim);
-      font-size: 14.5px;
-      margin: 20px 0 0;
-      max-width: 70ch
-    }
-
     /* ── people ──────────────────────────────────────────── */
     .ppl {
       display: grid;
@@ -915,6 +372,11 @@
       .ppl {
         grid-template-columns: 1fr
       }
+    }
+
+    /* group label introducing a second people grid */
+    .ppl+.eyebrow {
+      margin-top: 56px
     }
 
     .person {
@@ -995,59 +457,8 @@
       margin: 6px 0 0
     }
 
-    /* ── footer ──────────────────────────────────────────── */
-    footer {
-      border-top: 1px solid var(--line);
-      padding: 48px 0 56px;
-      background: var(--bg)
-    }
-
-    .foot {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 26px;
-      align-items: center;
-      justify-content: space-between
-    }
-
-    .foot svg {
-      width: 96px;
-      height: auto;
-      opacity: .55
-    }
-
-    .foot .links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 22px
-    }
-
-    .foot .links a {
-      color: var(--mut);
-      font-size: 14.5px
-    }
-
-    .foot .links a:hover {
-      color: var(--accent)
-    }
-
-    .foot .lic {
-      width: 100%;
-      color: var(--dim);
-      font-size: 13.5px;
-      margin: 0
-    }
-
     /* ── reduced motion ──────────────────────────────────── */
     @media(prefers-reduced-motion:reduce) {
-      html {
-        scroll-behavior: auto
-      }
-
-      .js .reveal {
-        opacity: 1;
-        transform: none
-      }
 
       .js .logo .lg-lines,
       .js .logo .lg-row {
@@ -1062,59 +473,6 @@
       .scroll-cue span {
         animation: none
       }
-
-      * {
-        transition-duration: .01ms !important
-      }
-    }
-
-    /* ── math (KaTeX) ────────────────────────────────────────────────────
-       KaTeX ships its own metrics; we only tune colour, size and the
-       block-equation frame so formulas sit in the dark theme rather than
-       on top of it. Display equations scroll on their own when they are
-       wider than the column — the page body never scrolls sideways.     */
-    .katex {
-      color: var(--fg);
-      font-size: 1.06em;
-    }
-
-    .katex-display {
-      margin: 1.6rem 0;
-      padding: 1.15rem 1.25rem;
-      background: var(--bg-alt);
-      border: 1px solid var(--line);
-      border-left: 2px solid var(--accent);
-      border-radius: 6px;
-      overflow-x: auto;
-      overflow-y: hidden;
-    }
-
-    .katex-display>.katex {
-      font-size: 1.12em;
-    }
-
-    /* A numbered/labelled equation: <figure class="eq"> … <figcaption> */
-    figure.eq {
-      margin: 1.6rem 0;
-    }
-
-    figure.eq .katex-display {
-      margin: 0;
-    }
-
-    figure.eq figcaption {
-      margin-top: .55rem;
-      color: var(--mut);
-      font-size: .88rem;
-      line-height: 1.5;
-    }
-
-    /* Before KaTeX runs (or if the CDN is blocked) the raw LaTeX is still
-       readable — just make it look deliberate instead of broken.        */
-    .katex-error {
-      color: var(--accent-hi);
-      font-family: var(--mono);
-      font-size: .9em;
     }
   </style>
 </head>
@@ -1178,6 +536,7 @@
     <nav aria-label="Sections">
       <a href="#features">Features</a>
       <a href="#usage">How to use</a>
+      <a href="vocabulary.html">Vocabulary</a>
       <a href="#paper" class="hide-s">Citation</a>
       <a href="#people" class="hide-s">People</a>
       <a href="https://github.com/cosmolattice/templat" class="gh" target="_blank" rel="noopener">GitHub&nbsp;↗</a>
@@ -1337,7 +696,7 @@
               </svg></div>
             <h3>Expressions, not loops</h3>
             <p>The energy density $\mathcal{e} = \tfrac12\pi^2 + \tfrac12(\nabla\phi)^2 + \tfrac12m^2\phi^2$ of a
-              Klein-Gordon field in TempLat looks just like the formula:</p>
+              Klein-Gordon field, using TempLat's <a href="vocabulary.html">vocabulary</a>:</p>
             <pre class="snip">auto expression = 0.5 * <span class="k">pow</span>&lt;2&gt;(pi)
                  + 0.5 * <span class="k">Grad2</span>(phi)
                  + 0.5 * m2 * <span class="k">pow</span>&lt;2&gt;(phi);</pre>
@@ -1680,6 +1039,35 @@ Hello, TempLat!  &lt;phi&gt; = 1.99973</pre>
            ═══════════════════════════════════════════════════════ -->
 
         </div>
+
+        <p class="eyebrow reveal">Contributors</p>
+
+        <div class="ppl">
+
+          <div class="person reveal">
+            <div class="ph">
+              <picture>
+                <source srcset="assets/people/jorge.webp" type="image/webp">
+                <img src="assets/people/jorge.jpg" width="480" height="480" loading="lazy"
+                  alt="Jorge Baeza-Ballesteros">
+              </picture>
+            </div>
+            <p class="nm">Jorge Baeza-Ballesteros</p>
+            <p class="af">DESY, Zeuthen, Germany</p>
+          </div>
+
+          <div class="person reveal">
+            <div class="ph">
+              <picture>
+                <source srcset="assets/people/wessel.webp" type="image/webp">
+                <img src="assets/people/wessel.jpg" width="480" height="480" loading="lazy" alt="Wessel Valkenburg">
+              </picture>
+            </div>
+            <p class="nm">Wessel Valkenburg</p>
+            <p class="af">Enjoying la vida loca out of academia</p>
+          </div>
+
+        </div>
       </div>
     </section>
 
@@ -1748,116 +1136,7 @@ Hello, TempLat!  &lt;phi&gt; = 1.99973</pre>
     </div>
   </footer>
 
-  <script>
-    (function () {
-      'use strict';
-      var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-      /* ── scroll reveal ─────────────────────────────────────────────────
-         Content must never end up permanently invisible, so this is built
-         defensively: IntersectionObserver when available, a scroll-position
-         fallback when it is not, and a timer that force-reveals everything
-         if neither has fired. Worst case the animation is skipped — the
-         page is still readable.                                          */
-      var items = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
-
-      function showAll() { items.forEach(function (el) { el.classList.add('in'); }); }
-
-      if (reduced) {
-        showAll();
-      } else {
-        /* stagger siblings inside a grid so cards cascade rather than snap in together */
-        var seen = new Map();
-        items.forEach(function (el) {
-          var p = el.parentNode, n = seen.get(p) || 0;
-          seen.set(p, n + 1);
-          el.style.setProperty('--d', (n % 6) * 0.065 + 's');
-        });
-
-        if ('IntersectionObserver' in window) {
-          /* the observer delivers an initial callback for every target, visible
-             or not — so this flag tells us it is alive, independently of whether
-             anything has actually scrolled into view yet */
-          var alive = false;
-          var io = new IntersectionObserver(function (entries) {
-            alive = true;
-            entries.forEach(function (e) {
-              if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
-            });
-          }, { rootMargin: '0px 0px -12% 0px', threshold: 0.08 });
-          items.forEach(function (el) { io.observe(el); });
-
-          /* failsafe: observer never delivered — show everything rather than nothing */
-          setTimeout(function () { if (!alive) showAll(); }, 2500);
-        } else {
-          /* no observer: reveal on scroll position instead */
-          var check = function () {
-            var h = window.innerHeight;
-            items = items.filter(function (el) {
-              if (el.getBoundingClientRect().top < h * 0.88) { el.classList.add('in'); return false; }
-              return true;
-            });
-          };
-          window.addEventListener('scroll', check, { passive: true });
-          window.addEventListener('resize', check);
-          check();
-        }
-      }
-
-      /* ── hero logo draw-on ─────────────────────────────── */
-      var logo = document.getElementById('heroLogo');
-      if (logo) requestAnimationFrame(function () { logo.classList.add('play'); });
-
-      /* ── sticky nav + hero parallax ────────────────────── */
-      var nav = document.getElementById('nav');
-      var grid = document.getElementById('heroGrid');
-      var ticking = false;
-
-      function onScroll() {
-        var y = window.pageYOffset || document.documentElement.scrollTop;
-        nav.classList.toggle('on', y > window.innerHeight * 0.72);
-        if (grid && !reduced) grid.style.setProperty('--par', (y * 0.16) + 'px');
-        ticking = false;
-      }
-      window.addEventListener('scroll', function () {
-        if (!ticking) { ticking = true; requestAnimationFrame(onScroll); }
-      }, { passive: true });
-      onScroll();
-
-      /* ── copy buttons ──────────────────────────────────── */
-      document.querySelectorAll('.copy').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var pre = btn.closest('.code').querySelector('pre');
-          var text = pre.innerText;
-
-          function ok() {
-            var was = btn.textContent;
-            btn.textContent = 'Copied';
-            btn.classList.add('done');
-            setTimeout(function () { btn.textContent = was; btn.classList.remove('done'); }, 1600);
-          }
-
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(ok, legacy);
-          } else {
-            legacy();
-          }
-
-          /* file:// and older browsers have no async clipboard */
-          function legacy() {
-            var ta = document.createElement('textarea');
-            ta.value = text;
-            ta.setAttribute('readonly', '');
-            ta.style.cssText = 'position:absolute;left:-9999px;top:0';
-            document.body.appendChild(ta);
-            ta.select();
-            try { document.execCommand('copy'); ok(); } catch (e) { /* nothing else to try */ }
-            document.body.removeChild(ta);
-          }
-        });
-      });
-    })();
-  </script>
+  <script src="assets/site.js"></script>
 
 </body>
 
