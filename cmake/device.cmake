@@ -162,8 +162,16 @@ else()
     set(NOTHREADING OFF)
   else()
     set(OPENMP OFF)
-    set(PTHREADS ON)
-    set(NOTHREADING OFF)
+    # Fall back to C++ threads if a threading library is available, and to the
+    # serial backend otherwise.
+    find_package(Threads QUIET)
+    if(Threads_FOUND)
+      set(PTHREADS ON)
+      set(NOTHREADING OFF)
+    else()
+      set(PTHREADS OFF)
+      set(NOTHREADING ON)
+    endif()
   endif()
 endif()
 
