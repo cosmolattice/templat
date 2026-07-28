@@ -1,8 +1,8 @@
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Franz R. Sattler, Year: 2025
 
 #include "TempLat/parallel/devices/kokkos/kokkos.h"
 #include "TempLat/util/tdd/tdd.h"
@@ -19,6 +19,16 @@ namespace TempLat
   struct KokkosTest {
     template <typename TDDA> static void Test(TDDA &tdd);
   };
+
+  // Wraps a callable so an operator's operand can be built on the host and evaluated
+  // per-index on device. The operator constructors are host-only, so the operator object
+  // must be constructed off-device and captured by value; the per-index sweep then comes
+  // from eval(idx) rather than from baking transf(i) into the operand at construction time.
+  template <typename F> struct EvalAdapter {
+    F f;
+    template <typename... IDX> DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const { return f(idx...); }
+  };
+  template <typename F> EvalAdapter(F) -> EvalAdapter<F>;
 
   template <typename NT> struct ctype {
     using value = NT;
@@ -41,11 +51,10 @@ namespace TempLat
     NT magic_number = 1. + (rand() % 5);
     if constexpr (std::is_same_v<NT, complex<CT>>) magic_number = complex<CT>(1. + (rand() % 5), 1. + (rand() % 5));
 
+    auto op = OP(EvalAdapter{transf}, magic_number); // host construction; operator ctor is host-only
     Kokkos::parallel_for(
-        Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>((size_t)0, big_number), DEVICE_LAMBDA(size_t i) {
-          auto op = OP(transf(i), magic_number);
-          a(i) = op.eval(0);
-        });
+        Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>((size_t)0, big_number),
+        DEVICE_LAMBDA(size_t i) { a(i) = op.eval(i); }); // op captured by value, eval on device
 
     auto host_view = Kokkos::create_mirror_view(a);
     Kokkos::deep_copy(host_view, a);
@@ -79,11 +88,10 @@ namespace TempLat
     NT magic_number = 0.; // 1. + (rand() % 5);
     if constexpr (std::is_same_v<NT, complex<CT>>) magic_number = complex<CT>(1. + (rand() % 5), 1. + (rand() % 5));
 
+    auto op = Operators::Addition(OP(EvalAdapter{transf}), magic_number); // host construction
     Kokkos::parallel_for(
-        Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, big_number), DEVICE_LAMBDA(int i) {
-          auto op = Operators::Addition(OP(transf(i)), magic_number);
-          a(i) = op.eval(0);
-        });
+        Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, big_number),
+        DEVICE_LAMBDA(int i) { a(i) = op.eval(i); }); // op captured by value, eval on device
 
     auto host_view = Kokkos::create_mirror_view(a);
     Kokkos::deep_copy(host_view, a);

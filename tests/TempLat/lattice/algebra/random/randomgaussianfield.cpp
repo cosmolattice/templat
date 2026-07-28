@@ -1,9 +1,9 @@
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 #include "TempLat/lattice/algebra/random/randomgaussianfield.h"
 #include "TempLat/util/tdd/tdd.h"
 #include "TempLat/lattice/field/field.h"
@@ -66,6 +66,17 @@ namespace TempLat
             AlmostEqual(a_host(i), b_host(i)) && std::isfinite(abs(a_host(i))) && std::isfinite(abs(b_host(i)));
       tdd.verify(rewinding);
     }
+
+    // test that copies retain the same state
+    auto myFieldCopy = myField;
+    std::cout << "myField state: " << myField.saveState() << "\n";
+    tdd.verify(myField.saveState() == myFieldCopy.saveState());
+    b.inFourierSpace() = myField;
+    std::cout << "myField state: " << myField.saveState() << "\n";
+    tdd.verify(myField.saveState() == myFieldCopy.saveState());
+    b.inFourierSpace() = myField;
+    std::cout << "myField state: " << myField.saveState() << "\n";
+    tdd.verify(myField.saveState() == myFieldCopy.saveState());
 
     {
       // Test saveState/loadState round-trip

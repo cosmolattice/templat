@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_COMPLEXFIELDALGEBRA_COMPLEXWRAPPER_H
 #define COSMOINTERFACE_COMPLEXFIELDALGEBRA_COMPLEXWRAPPER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #include "real.h"
 #include "imag.h"
@@ -74,6 +74,11 @@ namespace TempLat
     T mT;
   };
 
+  /**
+   * @vocab-summary Builds a complex expression from a real and an imaginary expression. Lightweight: it stores
+   * nothing and owns no memory.
+   * @vocab-signature Complexify(re, im)
+   **/
   template <typename R, typename T> ComplexFieldWrapper<R, T> Complexify(const R &r, const T &t) { return {r, t}; }
 } // namespace TempLat
 

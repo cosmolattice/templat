@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_MEMORY_GHOSTBUSTER_H
 #define TEMPLAT_LATTICE_MEMORY_GHOSTBUSTER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2026
+// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2026
 
 #include "TempLat/util/exception.h"
 #include "TempLat/util/timer.h"
@@ -92,26 +92,8 @@ namespace TempLat
     template <template <typename S, size_t _NDim, typename... MArgs> class M, typename T, typename... Args>
     void operator()(M<T, NDim, Args...> &obj)
     {
-      Timer timer;
       bustTheGhosts(obj);
     }
-
-    /** @brief overload for passing objects which have a data() and a size() method, like std::vector<T> */
-    template <template <typename S, typename... MArgs> class M, typename T, typename... Args>
-    void operator()(M<T, Args...> &obj)
-    {
-      operator()((T *)obj.data(), obj.size());
-    }
-
-#ifdef __INTEL_COMPILER
-    // for some reasons, icc does not understand the default nested template for zero arguments.
-
-    /** @brief overload for passing objects which have a data() and a size() method, like std::vector<T> */
-    template <template <typename S, size_t _NDim> class M, typename T> void operator()(M<T, NDim> &obj)
-    {
-      operator()((T *)obj.data(), obj.size());
-    }
-#endif
 
   public:
     /* Put all member variables and private methods here. These may change arbitrarily. */

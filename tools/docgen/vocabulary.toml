@@ -1,0 +1,245 @@
+                     # ═══════════════════════════════════════════════════════
+                     #  Editorial configuration for the vocabulary page.
+                     #
+                     #  Rule of thumb for where a fact belongs:
+                     #    in-source @vocab-* tags  describe *the thing*
+                     #    this file                describes *the page*
+                     #
+                     #  So summaries, signatures and per-operation tag fixes go
+                     #  into the header next to the code they describe; section
+                     #  membership, ordering, headings and the concept -> tag
+                     #  dictionary live here.
+                     # ═══════════════════════════════════════════════════════
+
+[scan]
+roots = ["include/TempLat"]
+# Only the trees that hold user-facing lattice vocabulary are scanned for
+# declarations. util/ is deliberately absent: it is index/tuple/logging
+# plumbing (explode, reverse_tuple, to_int, ...) and contributes nothing but
+# the handful of expression macros, which come in through [macros].files
+# regardless of these globs.
+exclude_globs = [
+  "**/helpers/**",
+  "**/*_impl*",
+  "TempLat/parallel/**",
+  "TempLat/fft/**",
+  "TempLat/session/**",
+  "TempLat/parameters/**",
+  "TempLat/util/**",
+  "TempLat/lattice/IO/**",
+  "TempLat/lattice/memory/**",
+  "TempLat/lattice/ghostcells/**",
+]
+
+[github]
+blob_base = "https://github.com/cosmolattice/templat/blob/main/"
+
+# ── Filter tags ────────────────────────────────────────────────────────────
+# Display order is the order of this list. `label` is what the chip says,
+# `hint` becomes its title attribute.
+[[tags]]
+name = "Field"
+hint = "Real scalar fields and generic scalar-valued expressions"
+
+[[tags]]
+name = "ComplexField"
+hint = "Complex fields, and U1Field which is an alias of them"
+
+[[tags]]
+name = "SU2Field"
+hint = "SU(2) group elements and su(2) Lie-algebra elements"
+
+[[tags]]
+name = "SU2Doublet"
+hint = "SU(2) (Higgs) doublets"
+
+[[tags]]
+name = "Matrix3x3"
+hint = "General 3x3 matrix expressions"
+
+[[tags]]
+name = "Sym3x3"
+hint = "Symmetric 3x3 matrix expressions"
+
+[[tags]]
+name = "Herm3x3"
+hint = "Hermitian 3x3 matrix expressions"
+
+[[tags]]
+name = "SymTraceless"
+hint = "Symmetric traceless 3x3 fields and expressions"
+
+[[tags]]
+name = "Collection"
+hint = "VectorField, FieldCollection and other tuple-like operands"
+
+[[tags]]
+name = "Number"
+hint = "Plain arithmetic values and the compile-time constants ZeroType / OneType / HalfType"
+
+[[tags]]
+name = "Fourier"
+hint = "Momentum space: operands or results that live in Fourier space"
+
+# ── Concept -> tag dictionary ──────────────────────────────────────────────
+# This is an ALLOWLIST. Anything uppercase-and-templated appearing in a
+# rendered `requires` clause that is in neither this table nor
+# `concepts_ignore` is a hard error, so that a newly introduced concept forces
+# an explicit decision instead of silently producing an untagged entry.
+[concepts]
+HasEvalMethod            = ["Field"]
+ConditionalUnaryGetter   = ["Field"]
+ConditionalBinaryGetter  = ["Field"]
+
+ConditionalListUnaryGetter  = ["Collection"]
+ConditionalListBinaryGetter = ["Collection"]
+IsSTDGettable               = ["Collection"]
+IsTempLatGettable           = ["Collection"]
+HasVectorGetMethod          = ["Collection"]
+HasStaticGetter             = ["Collection"]
+
+HasComplexFieldGet = ["ComplexField"]
+HasComplexEval     = ["ComplexField"]
+
+HasSU2Get        = ["SU2Field"]
+IsSU2Dagger      = ["SU2Field"]
+HasSU2DoubletGet = ["SU2Doublet"]
+
+HasMatrixGet       = ["Matrix3x3"]
+HasSymGet          = ["Sym3x3"]
+HasHermGet         = ["Herm3x3"]
+HasSymTracelessGet = ["SymTraceless"]
+
+IsScalarType  = ["Number"]
+IsArithmetic  = ["Number"]
+IsComplexType = ["Number"]
+
+# Recognised, deliberately tagless: plumbing that says nothing about which
+# field type an operation accepts.
+[concepts_ignore]
+names = [
+  "Tag", "IsVariadicIndex", "DoEval", "GetNDim", "GetDeriv", "GetDx",
+  "GetGetReturnType", "GetFloatType", "GetComponent", "IsSame", "IsTag",
+  "HasToolBox", "HasGetMethod", "HasDMethod", "HasOperatorString",
+  "SpaceStateType", "CANONICALTYPE", "MemoryToolBox", "LatticeParameters",
+  "Field", "ZeroType", "OneType", "HalfType",
+]
+
+# ── Fallback tags for factories with no constraint at all ──────────────────
+# Longest matching prefix wins.
+[dir_tags]
+"TempLat/lattice/algebra/operators"          = ["Field"]
+"TempLat/lattice/algebra/listoperators"      = ["Collection"]
+"TempLat/lattice/algebra/complexalgebra"     = ["ComplexField"]
+"TempLat/lattice/algebra/su2algebra"         = ["SU2Field"]
+"TempLat/lattice/algebra/matrix3x3algebra"   = ["Matrix3x3"]
+"TempLat/lattice/algebra/gaugealgebra"       = ["SU2Field", "ComplexField"]
+"TempLat/lattice/algebra/axionalgebra"       = ["Collection"]
+"TempLat/lattice/algebra/spatialderivatives" = ["Field"]
+"TempLat/lattice/algebra/coordinates"        = ["Fourier"]
+"TempLat/lattice/algebra/constants"          = ["Number"]
+"TempLat/lattice/algebra/random"             = ["Field"]
+"TempLat/lattice/algebra/adapter"            = ["Fourier"]
+"TempLat/lattice/algebra/conditional"        = ["Field"]
+"TempLat/lattice/measuringtools"             = ["Field"]
+"TempLat/lattice/field"                      = ["Field"]
+"TempLat/util/rangeiteration"                = ["Collection"]
+"TempLat/util"                               = ["Field"]
+
+# ── Never render these ─────────────────────────────────────────────────────
+# Internal plumbing that happens to sit at namespace scope. Anything listed
+# here is counted in --report so the exclusions stay visible.
+[exclude]
+names = [
+  "binary_fold", "fold_multiply", "fold_multiply_unit",
+  "getComponent", "getVectorComponent", "getAverager",
+  "has_repeats", "permutation_sign", "getTypeIBinCounts", "sh1",
+  "make_list", "make_vector_tag", "make_array_tag", "MakeException",
+  "tuple_add_to_nth", "tuple_tail", "tuple_cat_t",
+  "operator<<", "operator>>", "operator==", "operator!=",
+]
+
+# ── Macros ─────────────────────────────────────────────────────────────────
+# Allowlisted by file: a repo-wide `#define` sweep is dominated by Kokkos,
+# MPI and keccak plumbing.
+[macros]
+files = [
+  "TempLat/util/rangeiteration/make_list_tag.h",
+  "TempLat/util/rangeiteration/for_in_range.h",
+  "TempLat/util/rangeiteration/sum_in_range.h",
+  "TempLat/util/staticif.h",
+  "TempLat/lattice/algebra/su2algebra/su2wrapper.h",
+  "TempLat/lattice/algebra/su2algebra/su2doubletwrapper.h",
+]
+# `Function` (util/function.h) is deliberately absent: its own doc block says
+# "Don't use it in TempLat", so it is not vocabulary to advertise.
+names = [
+  "MakeVector", "MakeArray", "ForLoop", "Total",
+  "IfElse", "If", "MakeSU2", "MakeSU2Doublet",
+]
+
+# ── Page sections ──────────────────────────────────────────────────────────
+# Classes and aliases are rendered ONLY if named here — the scan sees several
+# hundred expression-node classes that are implementation, not vocabulary.
+# A name listed here that the scanner no longer finds is a hard error.
+
+[sections.types]
+title = "Field types"
+names = [
+  "Field",
+  "ComplexField",
+  "U1Field",
+  "SU2Field",
+  "SU2LieAlgebraField",
+  "SU2Doublet",
+  "SymTracelessField",
+]
+
+[sections.collections]
+title = "Containers"
+names = [
+  "VectorField",
+  "FieldCollection",
+  "VectorFieldCollection",
+]
+
+[sections.factories]
+title = "Constructors"
+names = [
+  "CField",
+  "Complexify",
+  "SU2Wrap",
+  "SU2DoubletWrap",
+  "ConstructMatrix3x3",
+  "ConstructSym",
+  "ConstructHerm",
+  "ConstructSymTraceless",
+  "MakeVector",
+  "MakeArray",
+  "MakeSU2",
+  "MakeSU2Doublet",
+]
+
+# Expression atoms: types you write inside an expression rather than call.
+# Rendered in the operations grid alongside the functions.
+[sections.atoms]
+names = [
+  "ZeroType",
+  "OneType",
+  "HalfType",
+  "Number",
+  "WaveNumber",
+  "SpatialCoordinate",
+  "MomentumMultiplicity",
+  "MomentumInterpolator",
+  "RandomGaussianField",
+  "RandomGaussianFieldConfig",
+  "RandomRayleighField",
+  "RandomUniformUnitaryField",
+]
+
+# ── Force-unmerge ──────────────────────────────────────────────────────────
+# Names that should NOT collapse into a single card despite sharing a name.
+# Empty today; the merge-by-name policy has no known false positives.
+[split]
+names = []

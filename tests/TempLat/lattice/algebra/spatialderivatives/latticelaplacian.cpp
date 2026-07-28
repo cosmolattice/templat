@@ -1,8 +1,8 @@
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2026
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2026
 
 #include "TempLat/lattice/algebra/spatialderivatives/latticelaplacian.h"
 #include "TempLat/util/tdd/tdd.h"
@@ -20,7 +20,7 @@ namespace TempLat
 
   template <size_t NDim> inline void LatticeLaplacianTester<NDim>::Test(TDDAssertion &tdd)
   {
-    const device::Idx nGrid = 8, nGhost = 1;
+    const device::Idx nGrid = 12, nGhost = 1;
 
     auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
     SpatialCoordinate<NDim> coord(toolBox);
@@ -269,7 +269,8 @@ namespace TempLat
 
     const double c = 1.0;
 
-    Field<double, NDim> f("f_const", toolBox, LatticeParameters<double>(), spec);
+    Field<double, NDim> f("f_const", toolBox, LatticeParameters<double>());
+    f.setBCSpec(spec);
     f = c;
     f.updateGhosts();
 

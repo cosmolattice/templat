@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_SU2ALGEBRA_SU2DOUBLET_H
 #define COSMOINTERFACE_SU2ALGEBRA_SU2DOUBLET_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/algebra/helpers/getdx.h"
@@ -21,6 +21,9 @@ namespace TempLat
 {
   /** @brief A class which implements su2doublets.
    *
+   * @vocab-summary An $SU(2)$ (Higgs) doublet: two complex components, stored as four reals.
+   * @vocab-signature SU2Doublet<T, NDim> phi("phi", toolBox);
+   * @vocab-tags SU2Doublet
    *
    * Unit test: ctest -R test-su2doublet
    **/
@@ -119,10 +122,9 @@ namespace TempLat
 
     inline void updateGhosts()
     {
-      fs[0].updateGhosts();
-      fs[1].updateGhosts();
-      fs[2].updateGhosts();
-      fs[3].updateGhosts();
+      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
+                                        fs[2].getMemoryManager().get(), fs[3].getMemoryManager().get()};
+      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
     }
 
     using Getter = SU2DoubletGetter;

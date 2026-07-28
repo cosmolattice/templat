@@ -10,9 +10,9 @@ message(
 FetchContent_Declare(
   KokkosFFT
   DOWNLOAD_EXTRACT_TIMESTAMP FALSE
-  URL https://github.com/kokkos/kokkos-fft/archive/refs/tags/v1.0.0.zip
+  URL https://github.com/kokkos/kokkos-fft/archive/refs/tags/v1.1.0.zip
   URL_HASH
-    SHA256=80e9c1abdf71df2342ae713c845ba2aeabf1c1a0c2e116795534a8e67734c177
+    SHA256=01000aca33231ea18006a822a321bd737545b2156ad2caffa3b380b3e13f1c30
   ${SYSTEM_MARKER})
 FetchContent_MakeAvailable(KokkosFFT)
 

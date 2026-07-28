@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2GROUPWRAPPER_H
 #define TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2GROUPWRAPPER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
@@ -18,6 +18,9 @@
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
 {
@@ -80,6 +83,24 @@ namespace TempLat
       PostGet::apply(mC);
     }
 
+    // Space/ghost confirmation forwarded to the 3 stored component expressions (see SU2Field operator=).
+    void doWeNeedGhosts() const
+    {
+      GhostsHunter::apply(mA);
+      GhostsHunter::apply(mB);
+      GhostsHunter::apply(mC);
+    }
+    device::Idx confirmGhostsUpToDate() const
+    {
+      return ConfirmGhosts::apply(mA) + ConfirmGhosts::apply(mB) + ConfirmGhosts::apply(mC);
+    }
+    template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mA, newLayout, spaceType);
+      ConfirmSpace::apply(mB, newLayout, spaceType);
+      ConfirmSpace::apply(mC, newLayout, spaceType);
+    }
+
     std::string toString() const
     {
       return "SU2Group(" + GetString::get(mA) + "," + GetString::get(mB) + "," + GetString::get(mC) + ")";
@@ -92,11 +113,20 @@ namespace TempLat
     C mC;
   };
 
+  /**
+   * @vocab-summary Builds a genuine group element from three components, recovering $c_0$ from the unitarity
+   * constraint $c_0^2+c_1^2+c_2^2+c_3^2=1$ so that $\det U = 1$ holds by construction.
+   * @vocab-signature SU2GroupWrap(c1, c2, c3)
+   **/
   template <class A, class B, class C> auto SU2GroupWrap(A &&pA, B &&pB, C &&pC)
   {
     return SU2GroupWrapper<A, B, C>(pA, pB, pC);
   }
 
+  /**
+   * @vocab-summary Projects an SU(2)-valued expression onto the group by rebuilding it from its three vector
+   *   components.
+   **/
   template <class R> auto toSU2(R r) { return SU2GroupWrap(r.SU2Get(1_c), r.SU2Get(2_c), r.SU2Get(3_c)); }
 } // namespace TempLat
 

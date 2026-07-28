@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_IO_FILEIO_H
 #define TEMPLAT_LATTICE_IO_FILEIO_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2019
+// File info: Main contributor(s): Adrien Florio, Year: 2019
 
 #include "TempLat/util/exception.h"
 #include "TempLat/util/rangeiteration/for_in_range.h"
@@ -29,6 +29,21 @@ namespace TempLat
   public:
     // Put public methods here. These should change very little over time.
     FileIO() = default;
+
+#if defined(HAVE_HDF5) && defined(HAVE_MPI)
+    /** @brief Point HDF5 collective I/O at the communicator the lattice is decomposed over.
+     *
+     *  Defaults to MPI_COMM_WORLD. Pass `toolBox->getMPIGroup().getBaseComm()` (or whatever
+     *  communicator the lattice was decomposed over) when running on a sub-communicator —
+     *  otherwise the collective barriers inside HDF5File deadlock against ranks that never
+     *  participate, and per-rank dataset offsets index the wrong ranks. Call before open/create.
+     */
+    void setComm(MPI_Comm comm)
+    {
+      saver.setComm(comm);
+      loader.setComm(comm);
+    }
+#endif
 
     template <class R>
       requires HasStaticGetter<typename std::decay_t<R>>
@@ -82,14 +97,14 @@ namespace TempLat
 #endif
     }
 
-    template<typename R>
-    auto setSaverLimits(R down, R up, R step)
+    template <typename R> auto setSaverLimits(R down, R up, R step)
     {
 #ifdef HAVE_HDF5
       saver.setLimits(down, up, step, NDim);
 #else
-      throw(FileIOException("You tried to set a subvolume for the HDF5 snapshots, but the HDF5 library is not available. Make sure "
-                            "you have it installed and that you compiled CosmoLattice with it."));
+      throw(FileIOException(
+          "You tried to set a subvolume for the HDF5 snapshots, but the HDF5 library is not available. Make sure "
+          "you have it installed and that you compiled CosmoLattice with it."));
 #endif
     }
 

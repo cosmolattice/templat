@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_PARALLEL_MPI_COMM_MPICOMMREFERENCE_H
 #define TEMPLAT_PARALLEL_MPI_COMM_MPICOMMREFERENCE_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 
 #include <map>
 
@@ -45,9 +45,20 @@ namespace TempLat
     /** @brief Copy assignment: must implement this for the bookkeeping. */
     MPICommReference &operator=(const MPICommReference &other)
     {
+      if (this == &other) return *this;
+#ifdef HAVE_MPI
+      // Release the comm we currently hold before overwriting it (mirror the destructor), otherwise its
+      // bookkeeping count leaks and a subgroup comm is never freed.
+      ptrdiff_t referenceCount = BookKeeper(mComm, false, true);
+      if (mComm != MPI_COMM_WORLD && mComm != MPI_COMM_NULL && referenceCount < 1) {
+        MPI_Comm_free(&mComm);
+      }
+#endif
       mComm = other.mComm;
       mSize = other.mSize;
       mRank = other.mRank;
+      // Keep the base reducer pointed at the new comm; otherwise Allreduce runs on the stale communicator.
+      MPIAllReduce::operator=(other);
       BookKeeper(mComm, true, false);
       return *this;
     }

@@ -42,7 +42,8 @@ namespace TempLat
     // For the cells adjacent to the boundary (k=1 and k=nGrid-2), the stencil reaches f[0]
     // and f[nGrid-1] respectively — both ZERO under Dirichlet (and they ARE zero in the
     // interior data too). So the BC produces the same answer as the interior stencil here.
-    Field<double, NDim> f("f_bump", toolBox, LatticeParameters<double>(), spec);
+    Field<double, NDim> f("f_bump", toolBox, LatticeParameters<double>());
+    f.setBCSpec(spec);
     SpatialCoordinate<NDim> x(toolBox);
     f = x(1_c) * (static_cast<double>(nGrid - 1) - x(1_c));
     f.updateGhosts();

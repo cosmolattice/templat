@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_SU2ALGEBRA_SU2DOUBLETWRAPPER_H
 #define COSMOINTERFACE_SU2ALGEBRA_SU2DOUBLETWRAPPER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #include "TempLat/util/rangeiteration/tagliteral.h"
 #include "TempLat/lattice/algebra/su2algebra/su2doubletoperator.h"
@@ -69,6 +69,12 @@ namespace TempLat
     device::tuple<A, B, C, D> mData; // to make sure the data is on the device if needed.
   };
 
+  /**
+   * @vocab-summary Builds a doublet expression from four component expressions, or from a lambda of the
+   * component tag.
+   * @vocab-signature SU2DoubletWrap(a, b, c, d)   SU2DoubletWrap(f)
+   * @vocab-tags SU2Doublet
+   **/
   template <class A, class B, class C, class D> auto SU2DoubletWrap(A &&pA, B &&pB, C &&pC, D &&pD)
   {
     return SU2DoubletWrapper<A, B, C, D>(pA, pB, pC, pD);
@@ -76,6 +82,11 @@ namespace TempLat
 
   template <typename F> auto SU2DoubletWrap(F &&f) { return SU2DoubletWrap(f(0_c), f(1_c), f(2_c), f(3_c)); }
 
+/**
+ * @vocab-summary Builds a doublet expression whose component `a` is the given expression.
+ * @vocab-signature MakeSU2Doublet(a, expr)
+ * @vocab-tags SU2Doublet
+ **/
 #define MakeSU2Doublet(a, expr) SU2DoubletWrap([&](auto a) { return expr; })
 } // namespace TempLat
 

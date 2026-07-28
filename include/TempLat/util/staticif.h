@@ -1,15 +1,19 @@
 #ifndef TEMPLAT_UTIL_STATICIF_H
 #define TEMPLAT_UTIL_STATICIF_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2019
+// File info: Main contributor(s): Adrien Florio, Year: 2019
 
 namespace TempLat
 {
 
+/**
+ * @vocab-summary Compile-time branch inside an expression: only the taken side is instantiated.
+ * @vocab-signature IfElse(condition, ifExpr, elseExpr)
+ **/
 #define IfElse(condition, ifExpr, elseExpr)                                                                            \
   [&]() {                                                                                                              \
     if constexpr (condition) {                                                                                         \
@@ -18,6 +22,10 @@ namespace TempLat
       return elseExpr;                                                                                                 \
     }                                                                                                                  \
   }()
+/**
+ * @vocab-summary Compile-time branch whose untaken side is ZeroType, so it prunes out of the tree entirely.
+ * @vocab-signature If(condition, ifExpr)
+ **/
 #define If(condition, ifExpr)                                                                                          \
   [&]() {                                                                                                              \
     if constexpr (condition) {                                                                                         \

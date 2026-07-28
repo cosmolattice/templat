@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_UTIL_HASH_LIBKECCAK_TWOENDIANS_H
 #define TEMPLAT_UTIL_HASH_LIBKECCAK_TWOENDIANS_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 /* \file This file includes the libkeccak.h header twice, in different namespaces.
  Once with little_endian, once with big_endian.
  */

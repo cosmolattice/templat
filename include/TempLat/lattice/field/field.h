@@ -1,8 +1,8 @@
 #ifndef TEMPLAT_LATTICE_FIELD_FIELD_H
 #define TEMPLAT_LATTICE_FIELD_FIELD_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
 // File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
@@ -27,6 +27,10 @@ namespace TempLat
    *  Implements a get method, and is hence suitable for all algebra.
    *
    * Unit test: ctest -R test-field
+   *
+   * @vocab-summary A real scalar field on the lattice, and the type that owns the memory. Assigning to it
+   * evaluates an expression across every site; passing it into one makes it a leaf.
+   * @vocab-signature Field<T, NDim> phi("phi", toolBox);
    **/
   template <typename T, size_t _NDim = 0> class Field : private FieldNDimCheck<_NDim>, public ConfigView<T, _NDim>
   {

@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TempLat — lattice field theory in modern C++</title>
+  <meta name="description"
+    content="TempLat is a header-only C++20 template library for lattice field theory: write the physics as expressions, run it on CPUs, NVIDIA and AMD GPUs, and across MPI ranks.">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="logo/logo_red_nobg.svg" type="image/svg+xml">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="TempLat">
+  <meta property="og:description"
+    content="A header-only C++20 template library for lattice field theory. One expression, every device.">
+  <meta property="og:image" content="https://cosmolattice.github.io/templat/assets/og-card.png">
+  <meta property="og:url" content="https://cosmolattice.github.io/templat/">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <script>document.documentElement.className += ' js';</script>
+
+  <!-- KaTeX — math rendering. Delimiters: $…$ and \(…\) inline, $$…$$ and \[…\] display.
+       Loaded from jsDelivr with SRI; if the CDN is unreachable the LaTeX source stays
+       readable as plain text rather than the page breaking. <pre>/<code> are never scanned. -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+    integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"
+    integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg"
+    crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+    integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$',  right: '$$',  display: true  },
+        { left: '\\[', right: '\\]', display: true  },
+        { left: '$',   right: '$',   display: false },
+        { left: '\\(', right: '\\)', display: false }
+      ],
+      throwOnError: false
+    });"></script>
+
+  <link rel="stylesheet" href="assets/site.css">
+
+  <style>
+    /* Page-specific components only — everything shared with the other pages
+       (tokens, nav, cards, code blocks, tables, tags, footer, KaTeX) lives in
+       assets/site.css. */
+
+    /* ── hero ────────────────────────────────────────────── */
+    .hero {
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 96px 28px 120px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-grid {
+      position: absolute;
+      inset: -20% -10%;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        repeating-linear-gradient(0deg, var(--accent) 0 1px, transparent 1px 100px),
+        repeating-linear-gradient(90deg, var(--accent) 0 1px, transparent 1px 100px);
+      opacity: .075;
+      transform: translate3d(0, var(--par, 0px), 0);
+      -webkit-mask-image: radial-gradient(ellipse 76% 64% at 50% 42%, #000 12%, transparent 76%);
+      mask-image: radial-gradient(ellipse 76% 64% at 50% 42%, #000 12%, transparent 76%);
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 820px
+    }
+
+    .hero .logo {
+      width: min(520px, 84vw);
+      height: auto;
+      margin: 0 auto 28px
+    }
+
+    .hero .tagline {
+      font-size: clamp(19px, 2.6vw, 25px);
+      line-height: 1.45;
+      color: var(--fg);
+      letter-spacing: -.015em;
+      margin: 0 auto 14px;
+      max-width: 22ch;
+      font-weight: 500;
+    }
+
+    .hero .sub {
+      color: var(--mut);
+      font-size: 17px;
+      max-width: 56ch;
+      margin: 0 auto 34px
+    }
+
+    .hero .sub em {
+      color: var(--accent);
+      font-style: normal
+    }
+
+    .btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 12px 22px;
+      border-radius: 9px;
+      font-size: 15px;
+      font-weight: 500;
+      border: 1px solid var(--line-str);
+      color: var(--fg);
+      transition: background .2s ease, border-color .2s ease, transform .2s var(--ease), color .2s ease;
+    }
+
+    .btn:hover {
+      color: var(--fg);
+      background: rgba(255, 255, 255, .06);
+      border-color: rgba(255, 255, 255, .28);
+      transform: translateY(-2px)
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #140708;
+      font-weight: 600
+    }
+
+    .btn.primary:hover {
+      background: var(--accent-hi);
+      border-color: var(--accent-hi);
+      color: #140708
+    }
+
+    .btn svg {
+      width: 17px;
+      height: 17px;
+      flex: none
+    }
+
+    .scroll-cue {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      text-indent: .22em;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 9px;
+    }
+
+    /* on a short viewport the hero content outgrows the fold, which pushes the
+   cue out of sight or on top of the buttons — drop it rather than clip it */
+    @media(max-height:900px) {
+      .scroll-cue {
+        display: none
+      }
+    }
+
+    .scroll-cue span {
+      display: block;
+      width: 1px;
+      height: 34px;
+      background: linear-gradient(180deg, var(--line-str), transparent);
+      animation: cue 2.4s var(--ease) infinite
+    }
+
+    @keyframes cue {
+      0% {
+        transform: scaleY(.3);
+        transform-origin: top
+      }
+
+      50% {
+        transform: scaleY(1);
+        transform-origin: top
+      }
+
+      51% {
+        transform: scaleY(1);
+        transform-origin: bottom
+      }
+
+      100% {
+        transform: scaleY(.3);
+        transform-origin: bottom
+      }
+    }
+
+    /* phones: tighten the hero so the buttons clear the fold */
+    @media(max-width:520px) {
+      .hero {
+        padding: 76px 20px 72px
+      }
+
+      .hero .logo {
+        width: min(400px, 82vw);
+        margin-bottom: 20px
+      }
+
+      .hero .tagline {
+        font-size: 21px
+      }
+
+      .hero .sub {
+        font-size: 15.5px;
+        margin-bottom: 26px
+      }
+    }
+
+    /* ── logo draw-on ────────────────────────────────────── */
+    .js .logo .lg-lines {
+      opacity: 0
+    }
+
+    .js .logo .lg-row {
+      opacity: 0
+    }
+
+    .logo.play .lg-lines {
+      animation: fadeIn .9s ease forwards
+    }
+
+    .logo.play .lg-row {
+      animation: pop .5s var(--ease) forwards;
+      animation-delay: calc(.35s + var(--r) * .055s)
+    }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1
+      }
+    }
+
+    @keyframes pop {
+      from {
+        opacity: 0;
+        transform: translateY(-7px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .logo .lg-row {
+      transform-box: fill-box;
+      transform-origin: center
+    }
+
+    /* ── usage steps ─────────────────────────────────────── */
+    .step {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      gap: 22px;
+      margin-bottom: 56px
+    }
+
+    .step:last-of-type {
+      margin-bottom: 0
+    }
+
+    .step .n {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--accent);
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--accent-dim);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(204, 102, 102, .07);
+    }
+
+    .step .body {
+      min-width: 0
+    }
+
+    .step p {
+      color: var(--mut);
+      margin: 0 0 18px;
+      max-width: 64ch
+    }
+
+    @media(max-width:660px) {
+      .step {
+        grid-template-columns: 1fr;
+        gap: 14px
+      }
+
+      .step .n {
+        margin-bottom: -4px
+      }
+    }
+
+    /* ── paper / citation ────────────────────────────────── */
+    .paper {
+      border: 1px solid var(--line);
+      border-left: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 26px 28px;
+      margin: 0 0 20px;
+      background: linear-gradient(90deg, rgba(204, 102, 102, .05), transparent 60%);
+    }
+
+    .paper .title {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -.01em;
+      margin: 0 0 6px
+    }
+
+    .paper .authors {
+      color: var(--mut);
+      margin: 0 0 4px;
+      font-size: 15.5px
+    }
+
+    .paper .venue {
+      color: var(--dim);
+      margin: 0 0 18px;
+      font-size: 14.5px
+    }
+
+    .paper .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px
+    }
+
+    /* ── people ──────────────────────────────────────────── */
+    .ppl {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 28px 20px
+    }
+
+    @media(max-width:880px) {
+      .ppl {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 34px 20px
+      }
+    }
+
+    @media(max-width:420px) {
+      .ppl {
+        grid-template-columns: 1fr
+      }
+    }
+
+    /* group label introducing a second people grid */
+    .ppl+.eyebrow {
+      margin-top: 56px
+    }
+
+    .person {
+      text-align: center
+    }
+
+    .person .ph {
+      position: relative;
+      width: 148px;
+      max-width: 70%;
+      aspect-ratio: 1;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 1px solid var(--line-str);
+      transition: border-color .3s ease, transform .3s var(--ease);
+    }
+
+    .person .ph img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.82) contrast(1.02);
+      transition: filter .35s ease, transform .5s var(--ease)
+    }
+
+    .person .ph::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 45%, transparent 46%, rgba(0, 0, 0, .72) 100%);
+      transition: opacity .35s ease;
+    }
+
+    .person:hover .ph {
+      border-color: var(--accent);
+      transform: translateY(-3px)
+    }
+
+    .person:hover .ph img {
+      filter: saturate(1) contrast(1.02);
+      transform: scale(1.04)
+    }
+
+    .person:hover .ph::after {
+      opacity: .55
+    }
+
+    .person .nm {
+      font-weight: 600;
+      font-size: 16px;
+      letter-spacing: -.01em;
+      margin: 0 0 3px
+    }
+
+    .person .nm a {
+      color: var(--fg)
+    }
+
+    .person .nm a:hover {
+      color: var(--accent)
+    }
+
+    .person .af {
+      color: var(--mut);
+      font-size: 14px;
+      margin: 0;
+      line-height: 1.45
+    }
+
+    .person .rl {
+      color: var(--accent);
+      font-size: 12px;
+      font-family: var(--mono);
+      letter-spacing: .05em;
+      margin: 6px 0 0
+    }
+
+    /* ── reduced motion ──────────────────────────────────── */
+    @media(prefers-reduced-motion:reduce) {
+
+      .js .logo .lg-lines,
+      .js .logo .lg-row {
+        opacity: 1;
+        animation: none
+      }
+
+      .hero-grid {
+        transform: none
+      }
+
+      .scroll-cue span {
+        animation: none
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ══ sticky nav ══════════════════════════════════════ -->
+  <header class="nav" id="nav">
+    <a class="mark" href="#top" aria-label="TempLat, back to top">
+      <svg viewBox="-20 -20 560 360" aria-hidden="true" focusable="false">
+        <g fill="currentColor">
+          <rect x="110" y="100" width="80" height="20" />
+          <rect x="300" y="100" width="10" height="20" />
+          <rect x="140" y="120" width="10" height="20" />
+          <rect x="300" y="120" width="10" height="20" />
+          <rect x="140" y="140" width="10" height="20" />
+          <rect x="300" y="140" width="10" height="20" />
+          <rect x="410" y="140" width="10" height="20" />
+          <rect x="140" y="160" width="10" height="20" />
+          <rect x="160" y="160" width="30" height="20" />
+          <rect x="200" y="160" width="50" height="20" />
+          <rect x="260" y="160" width="30" height="20" />
+          <rect x="300" y="160" width="10" height="20" />
+          <rect x="360" y="160" width="30" height="20" />
+          <rect x="400" y="160" width="30" height="20" />
+          <rect x="140" y="180" width="10" height="20" />
+          <rect x="160" y="180" width="30" height="20" />
+          <rect x="200" y="180" width="10" height="20" />
+          <rect x="220" y="180" width="10" height="20" />
+          <rect x="240" y="180" width="10" height="20" />
+          <rect x="260" y="180" width="10" height="20" />
+          <rect x="280" y="180" width="10" height="20" />
+          <rect x="300" y="180" width="10" height="20" />
+          <rect x="380" y="180" width="10" height="20" />
+          <rect x="410" y="180" width="10" height="20" />
+          <rect x="140" y="200" width="10" height="20" />
+          <rect x="160" y="200" width="10" height="20" />
+          <rect x="200" y="200" width="10" height="20" />
+          <rect x="220" y="200" width="10" height="20" />
+          <rect x="240" y="200" width="10" height="20" />
+          <rect x="260" y="200" width="10" height="20" />
+          <rect x="280" y="200" width="10" height="20" />
+          <rect x="300" y="200" width="10" height="20" />
+          <rect x="360" y="200" width="30" height="20" />
+          <rect x="410" y="200" width="10" height="20" />
+          <rect x="140" y="220" width="10" height="20" />
+          <rect x="160" y="220" width="30" height="20" />
+          <rect x="200" y="220" width="10" height="20" />
+          <rect x="220" y="220" width="10" height="20" />
+          <rect x="240" y="220" width="10" height="20" />
+          <rect x="260" y="220" width="30" height="20" />
+          <rect x="300" y="220" width="50" height="20" />
+          <rect x="360" y="220" width="30" height="20" />
+          <rect x="410" y="220" width="20" height="20" />
+          <rect x="260" y="240" width="10" height="20" />
+          <rect x="260" y="260" width="10" height="20" />
+        </g>
+      </svg>
+      <span>TempLat</span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#usage">How to use</a>
+      <a href="vocabulary.html">Vocabulary</a>
+      <a href="#paper" class="hide-s">Citation</a>
+      <a href="#people" class="hide-s">People</a>
+      <a href="https://github.com/cosmolattice/templat" class="gh" target="_blank" rel="noopener">GitHub&nbsp;↗</a>
+    </nav>
+  </header>
+
+  <main id="top">
+
+    <!-- ══ hero ════════════════════════════════════════════ -->
+    <section class="hero">
+      <div class="hero-grid" id="heroGrid" aria-hidden="true"></div>
+
+      <div class="hero-inner">
+        <svg class="logo" id="heroLogo" viewBox="-20 -20 560 360" role="img" aria-label="TempLat">
+          <g class="lg-lines" stroke="#cc6666" stroke-width="2" fill="none">
+            <line x1="20" y1="60" x2="40" y2="60" stroke-dasharray="4 2.8" />
+            <line x1="40" y1="60" x2="460" y2="60" />
+            <line x1="460" y1="60" x2="500" y2="60" stroke-dasharray="4 2.8" />
+            <line x1="0" y1="140" x2="40" y2="140" stroke-dasharray="4 2.8" />
+            <line x1="40" y1="140" x2="140" y2="140" />
+            <line x1="160" y1="140" x2="300" y2="140" />
+            <line x1="320" y1="140" x2="400" y2="140" />
+            <line x1="420" y1="140" x2="480" y2="140" />
+            <line x1="480" y1="140" x2="520" y2="140" stroke-dasharray="4 2.8" />
+            <line x1="20" y1="220" x2="40" y2="220" stroke-dasharray="4 2.8" />
+            <line x1="40" y1="220" x2="140" y2="220" />
+            <line x1="440" y1="220" x2="480" y2="220" />
+            <line x1="480" y1="220" x2="500" y2="220" stroke-dasharray="4 2.8" />
+            <line x1="50" y1="40" x2="50" y2="240" />
+            <line x1="150" y1="0" x2="150" y2="40" stroke-dasharray="9 4.5" />
+            <line x1="150" y1="40" x2="150" y2="80" />
+            <line x1="150" y1="240" x2="150" y2="280" stroke-dasharray="9 4.5" />
+            <line x1="250" y1="0" x2="250" y2="40" stroke-dasharray="9 4.5" />
+            <line x1="250" y1="40" x2="250" y2="160" />
+            <line x1="250" y1="240" x2="250" y2="320" stroke-dasharray="9 4.5" />
+            <line x1="350" y1="40" x2="350" y2="200" />
+            <line x1="350" y1="240" x2="350" y2="320" stroke-dasharray="9 4.5" />
+            <line x1="450" y1="40" x2="450" y2="240" />
+            <line x1="450" y1="240" x2="450" y2="280" stroke-dasharray="9 4.5" />
+          </g>
+          <g fill="#cc6666">
+            <g class="lg-row" style="--r:0">
+              <rect x="110" y="100" width="80" height="20" />
+              <rect x="300" y="100" width="10" height="20" />
+            </g>
+            <g class="lg-row" style="--r:1">
+              <rect x="140" y="120" width="10" height="20" />
+              <rect x="300" y="120" width="10" height="20" />
+            </g>
+            <g class="lg-row" style="--r:2">
+              <rect x="140" y="140" width="10" height="20" />
+              <rect x="300" y="140" width="10" height="20" />
+              <rect x="410" y="140" width="10" height="20" />
+            </g>
+            <g class="lg-row" style="--r:3">
+              <rect x="140" y="160" width="10" height="20" />
+              <rect x="160" y="160" width="30" height="20" />
+              <rect x="200" y="160" width="50" height="20" />
+              <rect x="260" y="160" width="30" height="20" />
+              <rect x="300" y="160" width="10" height="20" />
+              <rect x="360" y="160" width="30" height="20" />
+              <rect x="400" y="160" width="30" height="20" />
+            </g>
+            <g class="lg-row" style="--r:4">
+              <rect x="140" y="180" width="10" height="20" />
+              <rect x="160" y="180" width="30" height="20" />
+              <rect x="200" y="180" width="10" height="20" />
+              <rect x="220" y="180" width="10" height="20" />
+              <rect x="240" y="180" width="10" height="20" />
+              <rect x="260" y="180" width="10" height="20" />
+              <rect x="280" y="180" width="10" height="20" />
+              <rect x="300" y="180" width="10" height="20" />
+              <rect x="380" y="180" width="10" height="20" />
+              <rect x="410" y="180" width="10" height="20" />
+            </g>
+            <g class="lg-row" style="--r:5">
+              <rect x="140" y="200" width="10" height="20" />
+              <rect x="160" y="200" width="10" height="20" />
+              <rect x="200" y="200" width="10" height="20" />
+              <rect x="220" y="200" width="10" height="20" />
+              <rect x="240" y="200" width="10" height="20" />
+              <rect x="260" y="200" width="10" height="20" />
+              <rect x="280" y="200" width="10" height="20" />
+              <rect x="300" y="200" width="10" height="20" />
+              <rect x="360" y="200" width="30" height="20" />
+              <rect x="410" y="200" width="10" height="20" />
+            </g>
+            <g class="lg-row" style="--r:6">
+              <rect x="140" y="220" width="10" height="20" />
+              <rect x="160" y="220" width="30" height="20" />
+              <rect x="200" y="220" width="10" height="20" />
+              <rect x="220" y="220" width="10" height="20" />
+              <rect x="240" y="220" width="10" height="20" />
+              <rect x="260" y="220" width="30" height="20" />
+              <rect x="300" y="220" width="50" height="20" />
+              <rect x="360" y="220" width="30" height="20" />
+              <rect x="410" y="220" width="20" height="20" />
+            </g>
+            <g class="lg-row" style="--r:7">
+              <rect x="260" y="240" width="10" height="20" />
+            </g>
+            <g class="lg-row" style="--r:8">
+              <rect x="260" y="260" width="10" height="20" />
+            </g>
+          </g>
+        </svg>
+
+        <p class="tagline">Lattice field theory in modern C++.</p>
+        <p class="sub">A header-only C++20 <b>Temp</b>late <b>Lat</b>tice framework. Write the physics as mathematical
+          <em>expressions</em> — TempLat compiles it into fused kernels and runs it on CPU threads, NVIDIA and AMD GPUs,
+          and across thousands of MPI ranks.
+          Same source, any machine.
+        </p>
+
+        <div class="chips">
+          <span class="chip">C++20</span>
+          <span class="chip">header-only</span>
+          <span class="chip">Kokkos</span>
+          <span class="chip">MPI</span>
+          <span class="chip">CUDA / HIP</span>
+          <span class="chip">HDF5</span>
+        </div>
+
+        <div class="btns">
+          <a class="btn primary" href="#usage">Get started</a>
+          <a class="btn" href="https://github.com/cosmolattice/templat" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+            </svg>
+            View on GitHub
+          </a>
+        </div>
+      </div>
+
+      <div class="scroll-cue" aria-hidden="true">Scroll<span></span></div>
+    </section>
+
+    <!-- ══ features ════════════════════════════════════════ -->
+    <section id="features">
+      <div class="wrap">
+        <p class="eyebrow reveal">Features</p>
+        <h2 class="reveal">Built for the physics, not the plumbing.</h2>
+        <p class="lede reveal">TempLat is the computational core behind
+          <a href="https://cosmolattice.net" target="_blank" rel="noopener">CosmoLattice</a>.
+          It handles all the background tasks, memory, devices, halos and FFTs, while your code stays close to the
+          equations.
+        </p>
+
+        <div class="feat-grid">
+
+          <div class="card reveal">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path
+                  d="M8 3H6a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2 2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h2M16 3h2a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2 2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-2M9 12h.01M12 12h.01M15 12h.01" />
+              </svg></div>
+            <h3>Expressions, not loops</h3>
+            <p>The energy density $\mathcal{e} = \tfrac12\pi^2 + \tfrac12(\nabla\phi)^2 + \tfrac12m^2\phi^2$ of a
+              Klein-Gordon field, using TempLat's <a href="vocabulary.html">vocabulary</a>:</p>
+            <pre class="snip">auto expression = 0.5 * <span class="k">pow</span>&lt;2&gt;(pi)
+                 + 0.5 * <span class="k">Grad2</span>(phi)
+                 + 0.5 * m2 * <span class="k">pow</span>&lt;2&gt;(phi);</pre>
+            <p>TempLat builds the actual loop over the lattice for you. Expression templates fuse the whole right-hand
+              side into one kernel — no temporaries, no hand-written indices, and deep optimization at compile time.</p>
+          </div>
+
+          <div class="card reveal">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="6" y="6" width="12" height="12" rx="1.5" />
+                <path d="M10 2v4M14 2v4M10 18v4M14 18v4M2 10h4M2 14h4M18 10h4M18 14h4" />
+              </svg></div>
+            <h3>One source, any device</h3>
+            <p>TempLat builds on <a href="https://kokkos.org/" target="_blank" rel="noopener">Kokkos</a> for
+              shared-memory parallelism performance portability. TempLat supports CUDA, HIP, OpenMP, C++
+              threads or serial
+              execution. TempLat automatically detects what your machine provides; override auto-detection easily via
+              <a href="https://github.com/cosmolattice/templat#choosing-the-device">CMake flags</a>.
+            </p>
+          </div>
+
+          <div class="card reveal">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2.5" y="2.5" width="7" height="7" rx="1" />
+                <rect x="14.5" y="2.5" width="7" height="7" rx="1" />
+                <rect x="2.5" y="14.5" width="7" height="7" rx="1" />
+                <rect x="14.5" y="14.5" width="7" height="7" rx="1" />
+                <path d="M9.5 6h5M9.5 18h5M6 9.5v5M18 9.5v5" />
+              </svg></div>
+            <h3>Scales from your laptop to exascale clusters</h3>
+            <p>Automatic domain decomposition across any number of MPI nodes, with ghost cells exchanged
+              automatically when an expression needs it — GPU/NVLink-aware where the interconnect allows it.</p>
+          </div>
+
+          <div class="card reveal">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 12c2.5 0 2.5-7 5-7s2.5 14 5 14 2.5-7 5-7 2.5 3.5 5 3.5" />
+              </svg></div>
+            <h3>Distributed FFTs</h3>
+            <p>Parallel transforms through <a href="https://github.com/cosmolattice/ParaFaFT" target="_blank"
+                rel="noopener">ParaFaFT</a>, with support for CPU and multi-GPU.
+              FFTW3 and <a href="https://github.com/kokkos/kokkos-fft" target="_blank" rel="noopener">KokkosFFT</a> on a
+              single node. Automatically dispatches FFTs when expressions operate in Fourier space.</p>
+          </div>
+
+          <div class="card reveal">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 5h14v14H5z" />
+                <path d="M12 5v14M5 12h14" />
+                <circle cx="5" cy="5" r="1.6" fill="currentColor" stroke="none" />
+                <circle cx="19" cy="5" r="1.6" fill="currentColor" stroke="none" />
+                <circle cx="5" cy="19" r="1.6" fill="currentColor" stroke="none" />
+                <circle cx="19" cy="19" r="1.6" fill="currentColor" stroke="none" />
+              </svg></div>
+            <h3>Gauge fields included</h3>
+            <p>SU(2) and U(1) link algebras, complex and matrix algebras, plaquettes, covariant and spatial
+              derivatives, coordinate and momentum-space views — all as first-class expression types.</p>
+          </div>
+
+          <div class="card reveal">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 20h18M6 20v-6M11 20V8M16 20v-9M21 20V4" />
+              </svg></div>
+            <h3>Output and measurements</h3>
+            <p>Parallel HDF5 snapshots, measurement tools, projectors, spectra, a parameter-file reader
+              and a rank-aware logger. The scaffolding around a simulation, already written.</p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ how to use ══════════════════════════════════════ -->
+    <section id="usage" class="band">
+      <div class="wrap">
+        <p class="eyebrow reveal">How to use</p>
+        <h2 class="reveal">Three steps to a running lattice simulation.</h2>
+        <p class="lede reveal">TempLat is header-only. You need CMake ≥ 3.16 and a C++20 compiler — <code>clang</code>,
+          <code>g++</code> or equivalent. There is nothing to install: CMake fetches and configures it inside your own
+          build.
+        </p>
+
+        <div class="step reveal">
+          <div class="n">01</div>
+          <div class="body">
+            <h3>Add it to your CMake project</h3>
+            <p><code>FetchContent</code> downloads TempLat and builds it as part of your project. Link your executable
+              against <code>TempLat::TempLat</code> and every include path, definition and dependency comes with it.</p>
+            <div class="code">
+              <div class="code-head"><span class="name">CMakeLists.txt</span><button class="copy"
+                  type="button">Copy</button></div>
+              <pre><span class="k">cmake_minimum_required</span>(VERSION 3.16)
+
+<span class="k">project</span>(my_project LANGUAGES CXX)
+
+<span class="k">include</span>(FetchContent)
+<span class="k">set</span>(FETCHCONTENT_QUIET ON)
+<span class="k">FetchContent_Declare</span>(TempLat
+  GIT_REPOSITORY <span class="s">https://github.com/cosmolattice/templat.git</span>
+  GIT_TAG main)
+<span class="k">FetchContent_MakeAvailable</span>(TempLat)
+
+<span class="c"># Add your executable and link it against TempLat</span>
+<span class="k">add_executable</span>(my_executable main.cpp)
+<span class="k">target_link_libraries</span>(my_executable PRIVATE TempLat::TempLat)</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="step reveal">
+          <div class="n">02</div>
+          <div class="body">
+            <h3>Write your first program</h3>
+            <p><code>SessionGuard</code> brings up MPI and the device backend and tears them down again when it goes out
+              of scope. <code>MemoryToolBox</code> owns the lattice geometry — here a 128³ grid with one layer of ghost
+              cells — and every <code>Field</code> built from it shares that decomposition. The assignment is a single
+              fused kernel: a scalar plus a Gaussian random configuration, evaluated once per site. <code>average</code>
+              reduces over the whole lattice, across all ranks, and <code>sayMPI</code> prints once from rank 0 with a
+              timestamp and source location.</p>
+            <div class="code">
+              <div class="code-head"><span class="name">main.cpp</span><button class="copy" type="button">Copy</button>
+              </div>
+              <pre>
+<span class="k">#include</span> <span class="s">"TempLat.h"</span>
+
+<span class="k">int</span> main(<span class="k">int</span> argc, <span class="k">char</span> *argv[])
+{
+  <span class="k">using namespace</span> TempLat;
+  SessionGuard guard(argc, argv);
+
+  <span class="k">auto</span> toolBox = MemoryToolBox&lt;3&gt;::makeShared(128, 1);
+  Field&lt;<span class="k">double</span>, 3&gt; phi(<span class="s">"phi"</span>, toolBox);
+
+  phi = 2 + RandomGaussianFieldConfig&lt;<span class="k">double</span>, 3&gt;(<span class="s">"seed"</span>, toolBox);
+
+  <span class="k">const</span> <span class="k">double</span> result = average(phi);
+  sayMPI <span class="o">&lt;&lt;</span> <span class="s">"Hello, TempLat!  &lt;phi&gt; = "</span> <span class="o">&lt;&lt;</span> result <span class="o">&lt;&lt;</span> <span class="s">"\n"</span>;
+
+  <span class="k">return</span> 0;
+};</pre>
+            </div>
+            <div class="code">
+              <div class="code-head"><span class="name">build &amp; run</span><button class="copy"
+                  type="button">Copy</button></div>
+              <pre>mkdir build &amp;&amp; cd build
+cmake ..
+make -j
+./my_executable</pre>
+            </div>
+            <div class="code">
+              <div class="code-head"><span class="name">output</span><button class="copy" type="button">Copy</button>
+              </div>
+              <pre><span class="out">(0.000s)</span>
+Using FFTW backend for FFTs.
+
+<span class="out">(0.000s) MPI Rank 0 - memorytoolbox.h:209 --&gt;</span>
+Using the following domain decomposition:(1 1 1 ).
+
+<span class="out">(0.086s) MPI Rank 0 - main.cpp:15 --&gt;</span>
+Hello, TempLat!  &lt;phi&gt; = 1.99973</pre>
+            </div>
+            <p class="more">The mean comes back at 1.99973 rather than exactly 2 because the Gaussian noise averages to
+              zero only up to the sampling error of a finite lattice.</p>
+          </div>
+        </div>
+
+        <div class="step reveal">
+          <div class="n">03</div>
+          <div class="body">
+            <h3>Pick your backend</h3>
+            <p>The hardware and software you build for is chosen when you configure <em>your</em> project — for example
+              <code>cmake -DMPI=ON -DHDF5=ON ..</code> — so there is nothing to configure inside TempLat itself. Leave
+              the device flags off and it auto-detects: GPU first (CUDA, then HIP), then OpenMP, then C++ threads, then
+              serial.
+            </p>
+            <div class="tbl-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Flag</th>
+                    <th>What it enables</th>
+                    <th>Default</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>MPI</td>
+                    <td>Distributed runs across ranks</td>
+                    <td>OFF</td>
+                  </tr>
+                  <tr>
+                    <td>CUDA</td>
+                    <td>NVIDIA GPUs (needs the CUDA toolkit or NVHPC SDK)</td>
+                    <td>OFF</td>
+                  </tr>
+                  <tr>
+                    <td>HIP</td>
+                    <td>AMD GPUs — also set <code>CXX=hipcc</code></td>
+                    <td>OFF</td>
+                  </tr>
+                  <tr>
+                    <td>OPENMP</td>
+                    <td>OpenMP CPU parallelisation</td>
+                    <td>OFF</td>
+                  </tr>
+                  <tr>
+                    <td>PARAFAFT</td>
+                    <td>ParaFaFT parallel FFTs</td>
+                    <td>$MPI</td>
+                  </tr>
+                  <tr>
+                    <td>HDF5</td>
+                    <td>Parallel HDF5 output</td>
+                    <td>OFF</td>
+                  </tr>
+                  <tr>
+                    <td>TEMPLAT_TEST</td>
+                    <td>Build TempLat's own test suite for <code>ctest</code></td>
+                    <td>OFF</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="more">Offline compilation for a cluster architecture, the runtime
+              environment variables and the full flag table are explained in the
+              <a href="https://github.com/cosmolattice/templat#readme" target="_blank" rel="noopener">README&nbsp;↗</a>.
+              Testing is documented in
+              <a href="https://github.com/cosmolattice/templat/blob/main/TEST.md" target="_blank"
+                rel="noopener">TEST.md&nbsp;↗</a>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ paper & citation ════════════════════════════════ -->
+    <section id="paper">
+      <div class="wrap">
+        <p class="eyebrow reveal">Paper &amp; citation</p>
+        <h2 class="reveal">If TempLat helped your work, please cite it.</h2>
+        <p class="lede reveal">TempLat is developed by researchers. Citations are what make that sustainable.</p>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+         FILL IN — replace the four TODO strings below with the real
+         title, author list and journal reference, then point the two
+         hrefs at the arXiv abstract and the journal DOI. Delete the
+         <span class="todo"> badges once done.
+         ═══════════════════════════════════════════════════════════ -->
+        <div class="paper reveal">
+          <p class="title">TODO — paper title <span class="todo">fill in</span></p>
+          <p class="authors">TODO — author list</p>
+          <p class="venue">TODO — journal, volume, page (year) · arXiv:TODO</p>
+          <div class="links">
+            <a class="tag" href="https://arxiv.org/abs/TODO" target="_blank" rel="noopener">arXiv&nbsp;↗</a>
+            <a class="tag" href="https://doi.org/TODO" target="_blank" rel="noopener">Journal&nbsp;↗</a>
+            <a class="tag" href="https://inspirehep.net/search?q=TODO" target="_blank" rel="noopener">INSPIRE&nbsp;↗</a>
+          </div>
+        </div>
+
+        <!-- FILL IN — replace this BibTeX entry with the real one -->
+        <div class="code reveal">
+          <div class="code-head"><span class="name">BibTeX</span><button class="copy" type="button">Copy</button></div>
+          <pre>@article{TempLat,
+    author        = "TODO",
+    title         = "{TODO}",
+    eprint        = "TODO",
+    archivePrefix = "arXiv",
+    primaryClass  = "hep-ph",
+    doi           = "TODO",
+    journal       = "TODO",
+    volume        = "TODO",
+    pages         = "TODO",
+    year          = "TODO"
+}</pre>
+        </div>
+
+        <!-- Optional — delete this paragraph if you would rather not ask for it -->
+        <p class="note reveal">TempLat grew out of, and powers,
+          <a href="https://cosmolattice.net" target="_blank" rel="noopener">CosmoLattice</a>.
+          If you used it through CosmoLattice, please cite that code as well:
+          <a href="https://arxiv.org/abs/2102.01031" target="_blank" rel="noopener">arXiv:2102.01031</a>.
+        </p>
+      </div>
+    </section>
+
+    <!-- ══ people ══════════════════════════════════════════ -->
+    <section id="people" class="band">
+      <div class="wrap">
+        <p class="eyebrow reveal">People</p>
+        <h2 class="reveal">Who builds TempLat.</h2>
+        <p class="lede reveal">TempLat is developed as part of the
+          <a href="https://cosmolattice.net" target="_blank" rel="noopener">CosmoLattice</a> project.
+        </p>
+
+        <div class="ppl">
+
+          <div class="person reveal">
+            <div class="ph">
+              <picture>
+                <source srcset="assets/people/adrien.webp" type="image/webp">
+                <img src="assets/people/adrien.jpg" width="480" height="480" loading="lazy" alt="Adrien Florio">
+              </picture>
+            </div>
+            <p class="nm"><a href="https://aflorio.science" target="_blank" rel="noopener">Adrien Florio</a></p>
+            <p class="af">Bielefeld University, Germany</p>
+          </div>
+
+          <div class="person reveal">
+            <div class="ph">
+              <picture>
+                <source srcset="assets/people/franz.webp" type="image/webp">
+                <img src="assets/people/franz.jpg" width="480" height="480" loading="lazy" alt="Franz R. Sattler">
+              </picture>
+            </div>
+            <p class="nm">Franz R. Sattler</p>
+            <p class="af">Bielefeld University, Germany</p>
+          </div>
+
+          <!-- ═══════════════════════════════════════════════════════════
+           To add someone: drop a 480×480 square crop into
+           docs/assets/people/ (both .webp and .jpg), then copy this
+           block, uncomment it and fill in the four fields.
+           The .rl line is optional — delete it if there is no role.
+
+      <div class="person reveal">
+        <div class="ph"><picture>
+          <source srcset="assets/people/NAME.webp" type="image/webp">
+          <img src="assets/people/NAME.jpg" width="480" height="480" loading="lazy" alt="FULL NAME">
+        </picture></div>
+        <p class="nm"><a href="HOMEPAGE" target="_blank" rel="noopener">FULL NAME</a></p>
+        <p class="af">INSTITUTE, CITY, COUNTRY</p>
+        <p class="rl">ROLE</p>
+      </div>
+
+           ═══════════════════════════════════════════════════════ -->
+
+        </div>
+
+        <p class="eyebrow reveal">Contributors</p>
+
+        <div class="ppl">
+
+          <div class="person reveal">
+            <div class="ph">
+              <picture>
+                <source srcset="assets/people/jorge.webp" type="image/webp">
+                <img src="assets/people/jorge.jpg" width="480" height="480" loading="lazy"
+                  alt="Jorge Baeza-Ballesteros">
+              </picture>
+            </div>
+            <p class="nm">Jorge Baeza-Ballesteros</p>
+            <p class="af">DESY, Zeuthen, Germany</p>
+          </div>
+
+          <div class="person reveal">
+            <div class="ph">
+              <picture>
+                <source srcset="assets/people/wessel.webp" type="image/webp">
+                <img src="assets/people/wessel.jpg" width="480" height="480" loading="lazy" alt="Wessel Valkenburg">
+              </picture>
+            </div>
+            <p class="nm">Wessel Valkenburg</p>
+            <p class="af">Enjoying la vida loca out of academia</p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══ footer ══════════════════════════════════════════ -->
+  <footer>
+    <div class="wrap foot">
+      <svg viewBox="-20 -20 560 360" role="img" aria-label="TempLat">
+        <g fill="#cc6666">
+          <rect x="110" y="100" width="80" height="20" />
+          <rect x="300" y="100" width="10" height="20" />
+          <rect x="140" y="120" width="10" height="20" />
+          <rect x="300" y="120" width="10" height="20" />
+          <rect x="140" y="140" width="10" height="20" />
+          <rect x="300" y="140" width="10" height="20" />
+          <rect x="410" y="140" width="10" height="20" />
+          <rect x="140" y="160" width="10" height="20" />
+          <rect x="160" y="160" width="30" height="20" />
+          <rect x="200" y="160" width="50" height="20" />
+          <rect x="260" y="160" width="30" height="20" />
+          <rect x="300" y="160" width="10" height="20" />
+          <rect x="360" y="160" width="30" height="20" />
+          <rect x="400" y="160" width="30" height="20" />
+          <rect x="140" y="180" width="10" height="20" />
+          <rect x="160" y="180" width="30" height="20" />
+          <rect x="200" y="180" width="10" height="20" />
+          <rect x="220" y="180" width="10" height="20" />
+          <rect x="240" y="180" width="10" height="20" />
+          <rect x="260" y="180" width="10" height="20" />
+          <rect x="280" y="180" width="10" height="20" />
+          <rect x="300" y="180" width="10" height="20" />
+          <rect x="380" y="180" width="10" height="20" />
+          <rect x="410" y="180" width="10" height="20" />
+          <rect x="140" y="200" width="10" height="20" />
+          <rect x="160" y="200" width="10" height="20" />
+          <rect x="200" y="200" width="10" height="20" />
+          <rect x="220" y="200" width="10" height="20" />
+          <rect x="240" y="200" width="10" height="20" />
+          <rect x="260" y="200" width="10" height="20" />
+          <rect x="280" y="200" width="10" height="20" />
+          <rect x="300" y="200" width="10" height="20" />
+          <rect x="360" y="200" width="30" height="20" />
+          <rect x="410" y="200" width="10" height="20" />
+          <rect x="140" y="220" width="10" height="20" />
+          <rect x="160" y="220" width="30" height="20" />
+          <rect x="200" y="220" width="10" height="20" />
+          <rect x="220" y="220" width="10" height="20" />
+          <rect x="240" y="220" width="10" height="20" />
+          <rect x="260" y="220" width="30" height="20" />
+          <rect x="300" y="220" width="50" height="20" />
+          <rect x="360" y="220" width="30" height="20" />
+          <rect x="410" y="220" width="20" height="20" />
+          <rect x="260" y="240" width="10" height="20" />
+          <rect x="260" y="260" width="10" height="20" />
+        </g>
+      </svg>
+      <div class="links">
+        <a href="https://github.com/cosmolattice/templat" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/cosmolattice/templat#readme" target="_blank" rel="noopener">README</a>
+        <a href="https://github.com/cosmolattice/templat/blob/main/TEST.md" target="_blank" rel="noopener">Testing</a>
+        <a href="https://cosmolattice.net" target="_blank" rel="noopener">CosmoLattice</a>
+      </div>
+      <p class="lic">Released under the MIT licence. © 2021 Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and
+        Wessel Valkenburg.</p>
+    </div>
+  </footer>
+
+  <script src="assets/site.js"></script>
+
+</body>
+
+</html>

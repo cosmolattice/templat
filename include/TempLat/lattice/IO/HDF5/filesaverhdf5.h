@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_IO_HDF5_FILESAVERHDF5_H
 #define TEMPLAT_LATTICE_IO_HDF5_FILESAVERHDF5_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #ifdef HAVE_HDF5
 
@@ -45,6 +45,12 @@ namespace TempLat
     void open(std::string fn) { mFile.open(fn); }
 
     void create(std::string fn, FileMode flag = Overwrite) { mFile.create(fn, flag); }
+
+#ifdef HAVE_MPI
+    /** @brief Point collective I/O at the communicator the lattice is decomposed over.
+     *  Must be called before open/create. See HDF5File::setComm. */
+    void setComm(MPI_Comm comm) { mFile.setComm(comm); }
+#endif
 
     void close() { mFile.close(); }
     void reset() { this->close(); }
@@ -152,7 +158,9 @@ namespace TempLat
     { // used to store a number. The name is the one of the dataset which contains this number.
       using vType = GetGetReturnType<R>::type;
       mDataset = mFile.createDataset<vType>(name, std::vector<hsize_t>(1, 1));
-      mDataset.writeElement(&t, std::vector<hsize_t>(1, 0));
+      // writeElement takes the value by value and passes &data to H5Dwrite itself; passing &t here would
+      // deduce T = R* and store the pointer's address bits instead of the scalar.
+      mDataset.writeElement(t, std::vector<hsize_t>(1, 0));
       mDataset.close();
     }
 
@@ -425,7 +433,8 @@ namespace TempLat
           subMemoryPos[i] = memoryPos[i];
 
         std::vector<vType> sdata(toolBox->mNGridPointsVec[dim]);
-        std::vector<vType> sdatasparse(sparsesizes.back());
+        std::vector<vType> sdatasparse;
+        sdatasparse.reserve(sparsesizes.back());
         // If the input is a field, we can copy directly from memory
         if constexpr (requires(R _r) { _r.getView(); }) {
           // And apply this to get the subview, with the last dimension as a range starting from memoryPos[dim] (which
@@ -454,10 +463,15 @@ namespace TempLat
           // Finally, we can copy this subview to host and write it to the selected hyperslab in the dataset.
           device::memory::copyDeviceToHost(device_buf, sdata.data());
         }
-        for (auto it = sdata.begin(); it < sdata.end(); it += stepcoord)
-          sdatasparse.push_back(*it); // TODO: Jorge: I don't like this, although it is non-critical
-        subdims.back() = (endcoord - inicoord) / stepcoord;
-        mDataset.writeSlices(sdata, subdims, offsets);
+        // Keep every stepcoord-th point of the contiguous rod, sampling only the
+        // filled prefix [0, endcoord-inicoord). The dataset's last-axis extent is
+        // (endcoord-inicoord)/stepcoord, so cap at that count to stay consistent.
+        const auto sparseCount = (endcoord - inicoord) / stepcoord;
+        for (device::Idx j = 0; j < endcoord - inicoord && (device::Idx)sdatasparse.size() < sparseCount;
+             j += stepcoord)
+          sdatasparse.push_back(sdata[j]);
+        subdims.back() = sparseCount;
+        mDataset.writeSlices(sdatasparse, subdims, offsets);
       } else {
         // Recursive call to loop over an arbitrary number of dimensions.
         if constexpr (NDim > 1) {

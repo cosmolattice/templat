@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_COORDINATES_WAVENUMBER_H
 #define TEMPLAT_LATTICE_ALGEBRA_COORDINATES_WAVENUMBER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
 #include "TempLat/util/exception.h"
@@ -23,6 +23,9 @@ namespace TempLat
    *  expressions involving the fourier coordinates.
    *
    * Unit test: ctest -R test-wavenumber
+   *
+   * @vocab-summary The Fourier coordinate of the current site, as an expression. Exposes the individual
+   * components and `norm()` / `norm2()`. Throws if evaluated in configuration space.
    **/
   template <size_t NDim> class WaveNumber /*: public Vector*/
   {

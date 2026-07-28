@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_MEASUREMENTS_MAXIMUM_H
 #define TEMPLAT_LATTICE_MEASUREMENTS_MAXIMUM_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #include "TempLat/util/getcpptypename.h"
 #include "TempLat/lattice/algebra/helpers/getgetreturntype.h"
@@ -46,6 +46,8 @@ namespace TempLat
       if (mSpaceType != SpaceStateType::Configuration) throw(MaximumWrongSpace("Maximum works only in real space."));
       onBeforeAverageConfiguration(mT);
 
+      const auto &layout = mToolBox->mLayouts.getConfigSpaceLayout();
+
       // --------------------------------------------------------
       // Reduce the result on the local lattice
       // --------------------------------------------------------
@@ -55,8 +57,7 @@ namespace TempLat
       {
         device::apply([&](auto &&...args) { update = device::max(DoEval::eval(mT, args...), update); }, idx);
       };
-      device::iteration::reduce("Averager", mToolBox->mLayouts.getConfigSpaceLayout(), functor,
-                                device::iteration::Max<vType>(localResult));
+      device::iteration::reduce("Maximum", layout, functor, device::iteration::Max<vType>(localResult));
 
       // --------------------------------------------------------
       // Reduce the result across all processes
@@ -87,6 +88,9 @@ namespace TempLat
     LayoutStruct<NDim> mLayout;
   };
 
+  /**
+   * @vocab-summary Largest value an expression takes anywhere on the lattice, reduced across all ranks.
+   **/
   template <typename T>
     requires(!IsTempLatGettable<0, T>)
   auto max(T instance, SpaceStateType spaceType = GetGetReturnType<T>::isComplex ? SpaceStateType::Fourier

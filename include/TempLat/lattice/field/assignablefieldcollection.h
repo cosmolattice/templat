@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_FIELD_ASSIGNABLEFIELDCOLLECTION_H
 #define TEMPLAT_LATTICE_FIELD_ASSIGNABLEFIELDCOLLECTION_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2019
+// File info: Main contributor(s): Adrien Florio, Year: 2019
 
 #include "TempLat/lattice/field/field.h"
 #include "TempLat/util/shiftedindexsequence.h"
@@ -39,13 +39,13 @@ namespace TempLat
     {
     }
 
-    void operator=(const AssignableCollectionBase<Args...> &other)
+    void operator=(const AssignableCollectionBase<Q, Args...> &other)
     {
       for_in_range<0, size>([&](auto j) { std::get<j>(fs) = std::get<j>(other.fs); });
     }
 
     template <typename R>
-      requires(!std::is_same_v<R, AssignableCollectionBase<Args...>>)
+      requires(!std::is_same_v<R, AssignableCollectionBase<Q, Args...>>)
     void operator=(R &&r)
     {
       using nakedR = std::decay_t<R>;
@@ -64,7 +64,7 @@ namespace TempLat
       static_assert(M >= Q::SHIFTIND && M < size + Q::SHIFTIND, "Index out of bounds in field collection.");
       return std::get<M - Q::SHIFTIND>(fs);
     }
-    
+
   protected:
     std::tuple<Args...> fs;
   };

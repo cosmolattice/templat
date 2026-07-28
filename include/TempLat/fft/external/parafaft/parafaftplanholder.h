@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_FFT_EXTERNAL_PARAFAFT_PARAFAFTPLANHOLDER_H
 #define TEMPLAT_FFT_EXTERNAL_PARAFAFT_PARAFAFTPLANHOLDER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2026
+// File info: Main contributor(s): Adrien Florio, Year: 2026
 
 #ifndef NOFFT
 #ifdef HAVE_MPI
@@ -22,6 +22,7 @@
 
 #include <memory>
 #include "TempLat/parallel/device.h"
+#include "TempLat/parallel/device_iteration.h"
 
 namespace TempLat
 {
@@ -32,7 +33,7 @@ namespace TempLat
   // itself a class template parameterized on the floating-point precision, so the alias is a template alias.
 #ifdef DEVICE_CUDA
   template <typename T> using ParaFaFT_Backend = parafaft::CuFFTBackend<T>;
-#elif defined(CL_HIP)
+#elif defined(DEVICE_HIP)
   template <typename T> using ParaFaFT_Backend = parafaft::HipFFTBackend<T>;
 #else
   template <typename T> using ParaFaFT_Backend = parafaft::FFTWBackend<T>;
@@ -105,9 +106,18 @@ namespace TempLat
     {
 #ifdef HAVE_MPI
 #ifdef HAVE_PARAFAFT
+      // ParaFaFT reads/writes mBlock.data() through its own (cuFFT/transpose)
+      // streams, which are not ordered against the Kokkos execution space that
+      // produced the buffer. Fence before so any pending device writes to the
+      // buffer are complete before ParaFaFT reads it, and after so ParaFaFT's
+      // writes are complete before downstream Kokkos work reads them. Without
+      // this, the async fill and the FFT race (host-serial backend: no-op).
+      // Mirrors KokkosFFTPlanHolder.
+      device::iteration::fence();
       // Parafaft's forward_in_place accepts padded buffers directly
       // Buffer layout: [N0_local][N1_local][2*(N/2+1)] - matches CosmoLattice
       mParafaft->forward_in_place(mBlock.data());
+      device::iteration::fence();
 #endif
 #endif
     }
@@ -116,9 +126,13 @@ namespace TempLat
     {
 #ifdef HAVE_MPI
 #ifdef HAVE_PARAFAFT
+      // See execute_r2c: fence around the ParaFaFT call to order it against the
+      // Kokkos execution space (no-op on the host-serial backend).
+      device::iteration::fence();
       // Parafaft's backward_in_place accepts padded buffers directly
       // Buffer layout: [N0_local][N1_local][2*(N/2+1)] - matches CosmoLattice
       mParafaft->backward_in_place(mBlock.data());
+      device::iteration::fence();
 #endif
 #endif
     }

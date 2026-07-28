@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_FFT_MEMORYLAYOUTS_FFTWMEMORYLAYOUT_H
 #define TEMPLAT_FFT_MEMORYLAYOUTS_FFTWMEMORYLAYOUT_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 
 #include <algorithm>
 
@@ -65,14 +65,22 @@ namespace TempLat
 
         bool doTranspose = false;
         if constexpr (NDim > 2) {
-          doTranspose = group.size() > 1;
+          // group.size() is the rank count of the base communicator, not a Cartesian extent.
+          doTranspose = group.getBaseComm().size() > 1;
         }
 
         doTranspose = doTranspose && !forbidTransposition;
 
+        // Query the sizes on the SAME communicator the plans are built on (FFTWPlanner uses
+        // getBaseComm()). These used to differ — sizes came from the Cartesian communicator,
+        // plans from the base one — which agreed only because MPI happened not to reorder ranks
+        // when creating the Cartesian communicator. FFTW slabs by rank order, so a disagreement
+        // means the layout describes a different slab than the plan computes.
+        const MPI_Comm fftwComm = group.getBaseComm();
+
         if (doTranspose) {
           ptrdiff_t tmp_ln0, tmp_ls0, tmp_ln1, tmp_ls1;
-          fftwRequiredMemory = fftw_mpi_local_size_transposed((int)NDim, globalLayout.data(), group.getComm(), &tmp_ln0,
+          fftwRequiredMemory = fftw_mpi_local_size_transposed((int)NDim, globalLayout.data(), fftwComm, &tmp_ln0,
                                                               &tmp_ls0, &tmp_ln1, &tmp_ls1);
           confLocalSizes[0] = tmp_ln0;
           confLocalStarts[0] = tmp_ls0;
@@ -81,7 +89,7 @@ namespace TempLat
           std::swap(fourTransposition[0], fourTransposition[1]);
         } else {
           ptrdiff_t tmp_ln0, tmp_ls0;
-          fftwRequiredMemory = fftw_mpi_local_size((int)NDim, globalLayout.data(), group.getComm(), &tmp_ln0, &tmp_ls0);
+          fftwRequiredMemory = fftw_mpi_local_size((int)NDim, globalLayout.data(), fftwComm, &tmp_ln0, &tmp_ls0);
           fourLocalSizes[0] = tmp_ln0;
           fourLocalStarts[0] = tmp_ls0;
           std::copy(fourLocalSizes.begin(), fourLocalSizes.end(), confLocalSizes.begin());

@@ -1,13 +1,14 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_GAUGEALGEBRA_BACKWARDCOVARIANTDERIVATIVE_H
 #define TEMPLAT_LATTICE_ALGEBRA_GAUGEALGEBRA_BACKWARDCOVARIANTDERIVATIVE_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2020
+// File info: Main contributor(s): Adrien Florio, Year: 2020
 
 #include "TempLat/util/assignabletuple.h"
+#include "TempLat/lattice/algebra/helpers/getdx.h"
 #include "TempLat/lattice/algebra/listoperators/foldmultiply.h"
 #include "TempLat/util/rangeiteration/make_list_tag.h"
 
@@ -17,6 +18,11 @@ namespace TempLat
    *
    *
    * Unit test: ctest -R test-backwardcovariantderivative
+   *
+   * @vocab-summary Backward gauge-covariant derivative of a scalar: the backward difference with the scalar
+   * parallel-transported by the daggered link. Takes any number of gauge vectors followed by the scalar, so a
+   * field charged under several groups is written in one call.
+   * @vocab-signature BackwardCovariantDerivative<dim>(Us..., scalar)
    **/
   template <size_t dim, class... Args> auto BackwardCovariantDerivative(Args... args)
   {

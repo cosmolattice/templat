@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_OPERATORS_LISTOPERATORS_DERIVATIVES_H
 #define TEMPLAT_LATTICE_ALGEBRA_OPERATORS_LISTOPERATORS_DERIVATIVES_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2019
+// File info: Main contributor(s): Adrien Florio, Year: 2019
 
 #include "TempLat/util/rangeiteration/make_tuple_tag.h"
 #include "TempLat/lattice/algebra/helpers/getderiv.h"
@@ -29,6 +29,10 @@ namespace TempLat
     /* Put all member variables and private methods here. These may change arbitrarily. */
   };
 
+  /**
+   * @vocab-summary Symbolic derivative of an expression with respect to each field in a collection, returned as
+   * a tuple. Provided for completeness; nothing in TempLat uses it.
+   **/
   template <typename T, typename R> auto derivatives(T &&expr, R &others)
   {
     constexpr size_t size = tuple_size<R>::value;

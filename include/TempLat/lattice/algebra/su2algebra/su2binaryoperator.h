@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2BINARYOPERATOR_H
 #define TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2BINARYOPERATOR_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2get.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2getgetreturntype.h"
@@ -20,6 +20,10 @@
 
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
+
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
 {
@@ -56,6 +60,11 @@ namespace TempLat
     auto getDx() const { return GetDx::getDx(mR); }
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
+    /** @brief Access the two operands. Used by the algebraic simplification rules (e.g. the dagger
+     *  anti-homomorphism (A.B)^dagger = B^dagger.A^dagger, see su2dagger.h). */
+    const R &getFirst() const { return mR; }
+    const T &getSecond() const { return mT; }
+
     inline auto getToolBox() const
     {
       using AT = decltype(GetToolBox::get(mR));
@@ -78,6 +87,24 @@ namespace TempLat
     {
       PostGet::apply(mR);
       PostGet::apply(mT);
+    }
+
+    /** @brief Space/ghost confirmation by walking this SU(2) expression's own (linear) structure -
+     *  forwarded to both operands, mirroring the generic BinaryOperator. This lets an SU(2) assignment
+     *  confirm space/ghosts on the whole expression instead of building the exponential per-component
+     *  SU2Get expansion just for confirmation (see su2liealgebrafield.h / su2field.h operator=). */
+    void doWeNeedGhosts() const
+    {
+      GhostsHunter::apply(mR);
+      GhostsHunter::apply(mT);
+    }
+
+    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mT); }
+
+    template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mR, newLayout, spaceType);
+      ConfirmSpace::apply(mT, newLayout, spaceType);
     }
 
     static constexpr size_t size = 4;

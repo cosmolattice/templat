@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_UTIL_ASSIGNABLETUPLE_H
 #define TEMPLAT_UTIL_ASSIGNABLETUPLE_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2019
+// File info: Main contributor(s): Adrien Florio, Year: 2019
 
 #include "TempLat/util/rangeiteration/for_in_range.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
@@ -42,7 +42,7 @@ namespace TempLat
       static_assert(N >= 0 && N < size, "getComp: N must be between 0 and size-1 for AssignableTuple");
       return (*this)(t + Tag<Shift>());
     }
-    
+
     using Getter = GetComponent;
     static constexpr int SHIFTIND = Shift;
   };

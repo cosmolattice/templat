@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_GAUGEALGEBRA_CENTEREDCOVARIANTDERIVATIVEO4_H
 #define TEMPLAT_LATTICE_ALGEBRA_GAUGEALGEBRA_CENTEREDCOVARIANTDERIVATIVEO4_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2020
+// File info: Main contributor(s): Adrien Florio, Year: 2020
 
 // MATHEMATICS OF  COMPUTATION VOLUME 51,  NUMBER 184 OCTOBER 1988, PAGES 699-706 Generation of Finite Difference
 // Formulas on Arbitrarily Spaced Grids By  Bengt Fornberg
@@ -21,6 +21,9 @@ namespace TempLat
    *
    *
    * Unit test: ctest -R test-centeredcovariantderivativeo4
+   *
+   * @vocab-summary Centred gauge-covariant derivative on a five-point stencil, accurate to $O(dx^4)$.
+   * @vocab-signature CenteredCovariantDerivativeO4<dim>(Us..., scalar)
    **/
 
   template <size_t dim, class... Args> auto CenteredCovariantDerivativeO4(Args... args)
@@ -46,6 +49,9 @@ namespace TempLat
                               (1.0 / 12.0) * UMinusMinus(i) * shift(shift(scalar, -i), -i));
     return Cov;
   }
+  /**
+   * @vocab-summary The ungauged $O(dx^4)$ centred derivative.
+   **/
   template <size_t dim, class T> auto CenteredDerivativeO4(T t) { return CenteredCovariantDerivativeO4<dim>(t); }
 } // namespace TempLat
 

@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_SU2ALGEBRA_SU2WRAPPER_H
 #define COSMOINTERFACE_SU2ALGEBRA_SU2WRAPPER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2019
+// File info: Main contributor(s): Adrien Florio, Year: 2019
 
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
@@ -16,6 +16,9 @@
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 #include "TempLat/parallel/device.h"
 
@@ -81,12 +84,38 @@ namespace TempLat
       PostGet::apply(device::get<3>(data));
     }
 
+    // Space/ghost confirmation forwarded to the 4 stored component expressions (see SU2Field operator=).
+    void doWeNeedGhosts() const
+    {
+      GhostsHunter::apply(device::get<0>(data));
+      GhostsHunter::apply(device::get<1>(data));
+      GhostsHunter::apply(device::get<2>(data));
+      GhostsHunter::apply(device::get<3>(data));
+    }
+    device::Idx confirmGhostsUpToDate() const
+    {
+      return ConfirmGhosts::apply(device::get<0>(data)) + ConfirmGhosts::apply(device::get<1>(data)) +
+             ConfirmGhosts::apply(device::get<2>(data)) + ConfirmGhosts::apply(device::get<3>(data));
+    }
+    template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(device::get<0>(data), newLayout, spaceType);
+      ConfirmSpace::apply(device::get<1>(data), newLayout, spaceType);
+      ConfirmSpace::apply(device::get<2>(data), newLayout, spaceType);
+      ConfirmSpace::apply(device::get<3>(data), newLayout, spaceType);
+    }
+
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
 
     device::tuple<std::decay_t<A>, std::decay_t<B>, std::decay_t<C>, std::decay_t<D>> data;
   };
 
+  /**
+   * @vocab-summary Builds an SU(2)-valued expression from four component expressions, or from a lambda of the
+   * component tag. Nothing is stored: the result is a leaf in the expression tree.
+   * @vocab-signature SU2Wrap(c0, c1, c2, c3)   SU2Wrap(f)
+   **/
   template <class A, class B, class C, class D> auto SU2Wrap(const A &pA, const B &pB, const C &pC, const D &pD)
   {
     return SU2Wrapper<A, B, C, D>(pA, pB, pC, pD);
@@ -94,6 +123,11 @@ namespace TempLat
 
   template <typename F> auto SU2Wrap(const F &f) { return SU2Wrap(f(0_c), f(1_c), f(2_c), f(3_c)); }
 
+/**
+ * @vocab-summary Builds an SU(2) expression whose component `a` is the given expression, written once and
+ * instantiated for $a=0\dots3$.
+ * @vocab-signature MakeSU2(a, expr)
+ **/
 #define MakeSU2(a, expr) SU2Wrap([&](auto a) { return expr; })
 } // namespace TempLat
 

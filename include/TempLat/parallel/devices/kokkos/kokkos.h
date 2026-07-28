@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_PARALLEL_KOKKOS_KOKKOS_H
 #define TEMPLAT_PARALLEL_KOKKOS_KOKKOS_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Franz R. Sattler, Year: 2025
 
 #include "TempLat/util/log/puttostream.h"
 
@@ -61,6 +61,27 @@ static_assert(false,
 #define DEVICE_INLINE_FUNCTION KOKKOS_INLINE_FUNCTION
 #define DEVICE_LAMBDA KOKKOS_LAMBDA
 #define DEVICE_CLASS_LAMBDA KOKKOS_CLASS_LAMBDA
+
+/** @brief Assert to the vectorizer that the iterations of the following loop are independent.
+ *
+ * This is the promise device::iteration::foreach already makes to its callers: a functor dispatched
+ * over the lattice must be site-independent (Kokkos would race on it otherwise), and any kernel that
+ * genuinely accumulates across sites has to say so with atomics -- which no vectorizer touches.
+ * Without this assertion the compiler must assume the field being written may alias the fields being
+ * read, and it then emits purely scalar code for every kernel: the SU(2) kick, for example, is 2.5x
+ * slower with no packed FP instruction in it at all. Kokkos has the same escape hatch
+ * (KOKKOS_ENABLE_IVDEP_MDRANGE) but only ever defines it for the Intel compiler, so on GCC/Clang its
+ * MDRange tile loops get nothing.
+ */
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
+#define TEMPLAT_ASSUME_INDEPENDENT _Pragma("ivdep")
+#elif defined(__clang__)
+#define TEMPLAT_ASSUME_INDEPENDENT _Pragma("clang loop vectorize(assume_safety)")
+#elif defined(__GNUC__)
+#define TEMPLAT_ASSUME_INDEPENDENT _Pragma("GCC ivdep")
+#else
+#define TEMPLAT_ASSUME_INDEPENDENT
+#endif
 
 namespace TempLat::device_kokkos
 {

@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_MEMORY_MEMORYTOOLBOX_H
 #define TEMPLAT_LATTICE_MEMORY_MEMORYTOOLBOX_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 
 #include "TempLat/parallel/mpi/cartesian/mpicartesiangroup.h"
 #include "TempLat/fft/fftlibraryselector.h"
@@ -41,10 +41,9 @@ namespace TempLat
   template <size_t _NDim> class MemoryToolBox
   {
 #ifdef HAVE_MPI
-    static_assert(_NDim > 1,
-                  "MPI builds do not support 1D lattices. FFTW's MPI interface returns a NULL plan "
-                  "for rank=1 R2C transforms (which would segfault on execute), and ParaFaFT requires "
-                  "NDim >= 2. Use NDim >= 2, or build TempLat without MPI for 1D problems.");
+    static_assert(_NDim > 1, "MPI builds do not support 1D lattices. FFTW's MPI interface returns a NULL plan "
+                             "for rank=1 R2C transforms (which would segfault on execute), and ParaFaFT requires "
+                             "NDim >= 2. Use NDim >= 2, or build TempLat without MPI for 1D problems.");
 #endif
 
   public:

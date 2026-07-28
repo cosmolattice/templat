@@ -1,3 +1,7 @@
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
+   Released under the MIT license, see LICENSE.md. */
+
 #include "TempLat/util/tdd/tdd.h"
 #include "TempLat/session/sessionguard.h"
 #include "TempLat/util/benchmark.h"
@@ -24,12 +28,12 @@ int main(int argc, char **argv)
 
   toolBox->unsetVerbose();
 
-  Field<NDim, T> phi("phi", toolBox);
-  Field<NDim, T> pi("pi", toolBox);
+  Field<T, NDim> phi("phi", toolBox);
+  Field<T, NDim> pi("pi", toolBox);
 
   SpatialCoordinate x(toolBox);
 
-  phi = getVectorComponent(x, 0);
+  phi = x(1_c);
 
   auto layout = toolBox->mLayouts.getConfigSpaceLayout();
 
@@ -41,7 +45,7 @@ int main(int argc, char **argv)
   for (size_t i = 0; i < nSteps; ++i) {
     std::cout << "Step " << i << ":\n";
 
-    pi = pi + dt * LatticeLaplacian<NDim, decltype(phi)>(phi) * dt;
+    pi = pi + dt * LatticeLaplacian(phi) * dt;
     phi = phi + dt * pi;
 
     // phi.getMemoryManager()->confirmFFTConfigSpace();

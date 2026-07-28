@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_SU2ALGEBRA_SU2FIELD_H
 #define COSMOINTERFACE_SU2ALGEBRA_SU2FIELD_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/field/assignablefieldcollection.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2get.h"
@@ -28,6 +28,11 @@ namespace TempLat
    * sigma1, sigma2, sigma3 are the Pauli matrices.
    *
    * Unit test: ctest -R test-su2field
+   *
+   * @vocab-summary A single $SU(2)$ link $U_i$ for fixed $i$, held as four reals $c_0\dots c_3$ with $U =
+   * c_0\mathbb{1} + i\,c_a\sigma_a$ and $\sum_a c_a^2 = 1$. unitarize() restores the constraint after
+   * accumulated rounding.
+   * @vocab-signature SU2Field<T, NDim> U("U", toolBox);
    **/
   template <typename T, size_t _NDim = 0> class SU2Field
   {
@@ -76,10 +81,14 @@ namespace TempLat
 
     template <typename R> void operator=(R &&r)
     {
-      fs[0].onBeforeAssignment(r.SU2Get(0_c));
-      fs[1].onBeforeAssignment(r.SU2Get(1_c));
-      fs[2].onBeforeAssignment(r.SU2Get(2_c));
-      fs[3].onBeforeAssignment(r.SU2Get(3_c));
+      // Confirm config-space / ghost requirements by walking the WHOLE SU(2) expression r (linear in its
+      // structure), instead of building r.SU2Get(k) per component (the exponential per-component
+      // expansion, instantiated only to be walked then discarded). One call per target component is
+      // kept: onBeforeAssignment also confirms the target field fs[k] and flags its host mirror.
+      fs[0].onBeforeAssignment(r);
+      fs[1].onBeforeAssignment(r);
+      fs[2].onBeforeAssignment(r);
+      fs[3].onBeforeAssignment(r);
 
       PreGet::apply(r);
 
@@ -140,14 +149,37 @@ namespace TempLat
     auto getDx() const { return GetDx::getDx(fs[0]); }
     auto getKIR() const { return GetKIR::getKIR(fs[0]); }
 
-    inline auto getToolBox() { return GetToolBox::get(fs[0]); }
+    inline auto getToolBox() const { return GetToolBox::get(fs[0]); }
+
+    // Space/ghost confirmation forwarded to the 4 component fields, so this leaf can be walked as a whole
+    // SU(2) expression (see operator=). GhostsHunter::apply on a Field is a no-op (matches the prior
+    // per-component path where r.SU2Get(k) was the bare field fs[k]).
+    void doWeNeedGhosts() const
+    {
+      GhostsHunter::apply(fs[0]);
+      GhostsHunter::apply(fs[1]);
+      GhostsHunter::apply(fs[2]);
+      GhostsHunter::apply(fs[3]);
+    }
+    device::Idx confirmGhostsUpToDate() const
+    {
+      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
+                                        fs[2].getMemoryManager().get(), fs[3].getMemoryManager().get()};
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(mgrs);
+    }
+    void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(fs[0], newLayout, spaceType);
+      ConfirmSpace::apply(fs[1], newLayout, spaceType);
+      ConfirmSpace::apply(fs[2], newLayout, spaceType);
+      ConfirmSpace::apply(fs[3], newLayout, spaceType);
+    }
 
     inline void updateGhosts()
     {
-      fs[0].updateGhosts();
-      fs[1].updateGhosts();
-      fs[2].updateGhosts();
-      fs[3].updateGhosts();
+      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
+                                        fs[2].getMemoryManager().get(), fs[3].getMemoryManager().get()};
+      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
     }
 
     template <typename... IDX>

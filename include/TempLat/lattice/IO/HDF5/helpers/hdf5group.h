@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_IO_HDF5_HELPERS_HDF5GROUP_H
 #define TEMPLAT_LATTICE_IO_HDF5_HELPERS_HDF5GROUP_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2020
+// File info: Main contributor(s): Adrien Florio, Year: 2020
 #ifdef HAVE_HDF5
 
 #include "TempLat/lattice/IO/HDF5/helpers/hdf5object.h"
@@ -16,7 +16,7 @@
 
 namespace TempLat
 {
-  herr_t print_dataset_name(hid_t group_id, const char *name, const H5L_info_t *info, void *op_data)
+  inline herr_t print_dataset_name(hid_t group_id, const char *name, const H5L_info_t *info, void *op_data)
   {
     (void)info;
     (void)op_data;
@@ -47,7 +47,7 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    HDF5Group() = default;
+    HDF5Group() : alreadyClosed(true) {} // default-constructed: no live handle, so destruction must not close
 
     HDF5Group(const hid_t &id) : HDF5Object(id), alreadyClosed(false) {}
 

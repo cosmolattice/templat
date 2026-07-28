@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_UNARYMINUS_H
 #define TEMPLAT_LATTICE_ALGEBRA_UNARYMINUS_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/conditional/conditionalunarygetter.h"
 #include "TempLat/lattice/algebra/constants/onetype.h"
@@ -59,8 +59,9 @@ namespace TempLat
   /** @brief Specialize for possible zero input! */
   constexpr inline ZeroType operator-(ZeroType a) { return a; }
 
-  /** @brief Specialize for double minus signs. */
-  template <typename T> auto operator-(Operators::UnaryMinus<Operators::UnaryMinus<T>> &&a) { return std::move(a); }
+  /** @brief Specialize for double minus signs: -(-(-x)) collapses to -x. The argument a == -(-x) == +x,
+   * so -a == -x, which is exactly the inner UnaryMinus<T> node a.mR. */
+  template <typename T> auto operator-(Operators::UnaryMinus<Operators::UnaryMinus<T>> &&a) { return a.mR; }
 } // namespace TempLat
 
 #endif

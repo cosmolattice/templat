@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2UNARYOPERATOR_H
 #define TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2UNARYOPERATOR_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2020
+// File info: Main contributor(s): Adrien Florio, Year: 2020
 
 #include "TempLat/lattice/algebra/helpers/getkir.h"
 #include "TempLat/lattice/algebra/helpers/getdx.h"
@@ -18,6 +18,10 @@
 
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
+
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2get.h"
 
@@ -53,9 +57,25 @@ namespace TempLat
     auto getDx() const { return GetDx::getDx(mR); }
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
+    /** @brief Access the single operand. Used by the algebraic simplification rules (e.g. dagger
+     *  involution / shift, see su2dagger.h). */
+    const R &getOperand() const { return mR; }
+
     void preGet() { PreGet::apply(mR); }
 
     void postGet() { PostGet::apply(mR); }
+
+    /** @brief Space/ghost confirmation by walking the operand's structure (see SU2BinaryOperator). Note:
+     *  shifters (SU2Shifter/SU2ShifterByOne) OVERRIDE doWeNeedGhosts to trigger the actual ghost
+     *  exchange for the shifted read. */
+    void doWeNeedGhosts() const { GhostsHunter::apply(mR); }
+
+    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR); }
+
+    template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mR, newLayout, spaceType);
+    }
 
     inline auto getToolBox() const { return GetToolBox::get(mR); }
 

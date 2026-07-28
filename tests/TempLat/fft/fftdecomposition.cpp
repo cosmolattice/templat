@@ -1,9 +1,9 @@
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Franz R. Sattler,  Year: 2026
+// File info: Main contributor(s): Franz R. Sattler, Year: 2026
 
 #include "TempLat/fft/fftdecomposition.h"
 #include "TempLat/fft/fftlibraryselector.h"
@@ -64,29 +64,25 @@ namespace TempLat
       auto staticDec = FFTLibrarySelector<NDim>::decomposition(baseComm, nGrid);
       if (staticDec.nDimsToSplit >= static_cast<device::Idx>(NDim)) return true; // no room to over-split
 
-      // Force a decomposition that splits strictly more dims than the backend allows. Easiest:
-      // place factors of baseComm.size() in the LAST allowed+1 dims so that the count of dims > 1
-      // is staticDec.nDimsToSplit + 1 whenever baseComm.size() is composite; for prime rank counts
-      // the simpler case {1,...,size} already exceeds a slab backend's allowed leading split.
+      // Split ONLY the last dimension. No backend does this: FFTW slabs the leading dimension,
+      // ParaFaFT distributes the leading NDim-1 and pins the last to 1. The product still equals
+      // the rank count, so the group itself is constructible and the rejection has to come from
+      // the backend cross-check rather than from arithmetic.
       std::vector<int> badDecomp(NDim, 1);
       const int size = static_cast<int>(baseComm.size());
-      badDecomp[NDim - 1] = size; // last dim splits, which a leading-slab FFTW backend rejects if
-                                  // the backend's nDimsToSplit == 1 and size > 1 — because split
-                                  // is then not in a leading dim.
-      // Not guaranteed to exceed for every backend; fall back to a {size, size, ...} pattern if
-      // needed (handled below by the assertion).
+      badDecomp[NDim - 1] = size;
 
       MPICartesianGroup badGroup(baseComm, static_cast<device::Idx>(NDim), badDecomp);
       try {
         FFTLibrarySelector<NDim> sel(badGroup, nGrid);
-        // If the backend does accept this layout (e.g. ParaFaFT probe happens to pin the same
-        // last-dim split), this particular case isn't actually a mismatch — not a test failure.
-        return true;
       } catch (const FFTLibraryDecompositionMismatchException &) {
-        return true; // expected for FFTW-slab backends
+        return true; // expected: the group contradicts the backend
       } catch (...) {
         return false; // wrong exception type
       }
+      // Reaching here means the mismatch went undetected. This used to `return true` on this
+      // path too, which made the whole check a no-op that passed unconditionally.
+      return false;
     }
 
     // Factored out of Test(): three sibling scopes that each declared a local `constexpr size_t

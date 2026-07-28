@@ -1,9 +1,9 @@
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 #include "TempLat/lattice/algebra/operators/unaryminus.h"
 #include "TempLat/util/tdd/tdd.h"
 #include "TempLat/lattice/algebra/constants/halftype.h"
@@ -32,6 +32,14 @@ namespace TempLat
     // myClass b(4);
     tdd.verify(AlmostEqual((-a).eval(0), -4));
     tdd.verify(AlmostEqual((-HalfType()).eval(0, 0, 0), -0.5));
+
+    // Sanity: a double negation evaluates to the original value.
+    tdd.verify(AlmostEqual((-(-a)).eval(0), 4));
+
+    // --- Regression test for G4: a triple negation must evaluate to -x. ---
+    // The double-minus collapse overload operator-(UnaryMinus<UnaryMinus<T>>&&) returns its argument
+    // unchanged, so -(-(-a)) collapses to +a (== 4) instead of -a (== -4).
+    tdd.verify(AlmostEqual((-(-(-a))).eval(0), -4));
   }
 
 } // namespace TempLat

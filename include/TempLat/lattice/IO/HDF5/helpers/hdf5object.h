@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_IO_HDF5_HELPERS_HDF5OBJECT_H
 #define TEMPLAT_LATTICE_IO_HDF5_HELPERS_HDF5OBJECT_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2020
+// File info: Main contributor(s): Adrien Florio, Year: 2020
 #ifdef HAVE_HDF5
 
 #include <string>
@@ -26,7 +26,7 @@ namespace TempLat
   {
   public:
     /* Put public methods here. These should change very little over time. */
-    HDF5Object() = default;
+    HDF5Object() : mId(-1) {} // H5I_INVALID_HID, so a default-constructed handle is never a live id
 
     HDF5Object(const hid_t &id) : mId(id) {}
 
@@ -45,6 +45,7 @@ namespace TempLat
 
       H5Awrite(attr_id, HDF5Type<T>().type, value);
       H5Aclose(attr_id);
+      H5Sclose(dataspace_id);
     }
 
     void addAtribute(std::string name, std::string value) // single value attribute
@@ -61,6 +62,7 @@ namespace TempLat
 
       H5Awrite(attr_id, HDF5Type<T>().type, values.data());
       H5Aclose(attr_id);
+      H5Sclose(dataspace_id);
     }
 
   private:

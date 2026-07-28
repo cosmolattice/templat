@@ -1,9 +1,9 @@
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 #include "TempLat/lattice/measuringtools/projectionhelpers/radialprojectionresult.h"
 #include "TempLat/util/tdd/tdd.h"
 #include "TempLat/util/log/saycomplete.h"
@@ -19,7 +19,8 @@ namespace TempLat
 
   template <typename T> inline void RadialProjectionResultTester<T>::Test(TDDAssertion &tdd)
   {
-    RadialProjectionResult<T> one(10), two(12), three(10);
+    /* (nBins, deltakBins) — the bin spacing only enters integrate(), which this test does not exercise. */
+    RadialProjectionResult<T> one(10, 1), two(12, 1), three(10, 1);
 
     // tdd.verify(Throws<RadialProjectionResultSizeException>([&]() { one += two; }));
 
@@ -82,6 +83,35 @@ namespace TempLat
 
       tdd.verify(allRight);
     */
+    /* Regression: the converting constructor omitted mDeltakBins from its initializer list, leaving it
+       indeterminate, while integrate() scales its total by it. Build the finalized shape by hand here --
+       push_back into the parent vector and set the bin bounds through the public accessor -- so the check
+       does not need a communicator. */
+    {
+      auto datum = [](double avg) {
+        RadialProjectionSingleDatum<double> d;
+        d.average = avg;
+        d.multiplicity = 1;
+        return d;
+      };
+
+      const double deltakBins = 2.5;
+      RadialProjectionResult<double> src(2, deltakBins);
+      src.getCentralBinBounds()[0] = 1.0;
+      src.getCentralBinBounds()[1] = 2.0;
+      src.push_back(RadialProjectionSingleBinAndValue<double>(datum(1.0), datum(10.0)));
+      src.push_back(RadialProjectionSingleBinAndValue<double>(datum(2.0), datum(20.0)));
+
+      /* integrate(true) sums average/centralBinBound over the bins and scales by deltakBins. */
+      const double expected = (10.0 / 1.0 + 20.0 / 2.0) * deltakBins;
+      tdd.verify(AlmostEqual(src.integrate(true), expected), "integrate scales by deltakBins");
+
+      /* float != double, so this selects the converting constructor rather than the copy constructor. */
+      RadialProjectionResult<float> converted(src);
+      tdd.verify(AlmostEqual(converted.integrate(true), expected, 1e-5),
+                 "converting constructor carries deltakBins across");
+    }
+
     /* test that this compiles */
     for (auto &&it : one) {
       it.getValue().average *= 1;

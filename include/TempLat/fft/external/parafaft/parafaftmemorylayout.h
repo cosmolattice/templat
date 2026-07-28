@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_FFT_EXTERNAL_PARAFAFT_PARAFAFTMEMORYLAYOUT_H
 #define TEMPLAT_FFT_EXTERNAL_PARAFAFT_PARAFAFTMEMORYLAYOUT_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2026
+// File info: Main contributor(s): Adrien Florio, Year: 2026
 
 #ifndef NOFFT
 #ifdef HAVE_MPI
@@ -49,8 +49,12 @@ namespace TempLat
      * populates FFTLayoutStruct with the configuration and Fourier space layouts.
      */
     virtual FFTLayoutStruct<NDim> computeLocalSizes(MPICartesianGroup group, device::IdxArray<NDim> nGridPoints,
-                                                    bool forbidTransposition = false) override
+                                                    [[maybe_unused]] bool forbidTransposition = false) override
     {
+      // forbidTransposition is intentionally ignored: ParaFaFT preserves axis ordering in both
+      // real and Fourier space, so it never produces a transposed layout to forbid. (FFTW honours
+      // the flag; KokkosFFT hard-forces it true.) The transposition map below is the identity.
+
       // Create FFTLayoutStruct - use FFTW mode for r2c padding compatibility
       // (parafaft uses same padding convention as FFTW)
       FFTLayoutStruct<NDim> result(nGridPoints);
@@ -79,13 +83,16 @@ namespace TempLat
       // PARAFAFT_FFTW3F_AVAILABLE / libfftw3f.
       parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend<double>> temp(globalShape, group.getBaseComm());
 
-      // Regression guard: if the MPI group was built via FFTMPIDomainSplit, its shape was
-      // derived from ParafaftInterface::decomposition — the same probe used here — so these
-      // dims must agree. A mismatch means either the user bypassed FFTMPIDomainSplit::makeMPIGroup
-      // with a hand-built group (FFTLibrarySelector's verifyDecompositionMatchesBackend should
-      // have caught that earlier), or ParaFaFT's probe decision is non-deterministic across
-      // planner objects built from the same (baseComm.size(), nGridPoints) — which would be a
-      // ParaFaFT-side bug.
+      // Regression guard. `temp` is built on the same communicator as the real planner
+      // (ParafaftPlanner also uses group.getBaseComm()), so it decomposes exactly as the planner
+      // will. Checking it against the group therefore checks the thing that actually matters:
+      // that the local starts we are about to install describe the same subdomain the group's
+      // ghost exchange will service.
+      //
+      // Both shape AND coordinates are checked. Shape alone was the old guard, and shape alone is
+      // not enough — two communicators can agree on a 2x2 grid while disagreeing about which rank
+      // sits at which cell, which is silent corruption at subdomain boundaries rather than an
+      // error.
       const auto &decomposition = group.getDecomposition();
       int parafaftDecomposition[NDim];
       temp.get_domain_decomposition(parafaftDecomposition);
@@ -97,6 +104,21 @@ namespace TempLat
               ". Build the group via FFTMPIDomainSplit::makeMPIGroup(baseComm, nGridPoints); "
               "if you did, this indicates ParaFaFT's decomposition heuristic is not deterministic "
               "for these inputs.");
+        }
+      }
+
+      constexpr int gridNDims = parafaft::ParaFaFT_R2C<NDim, ParaFaFT_Backend<double>>::get_grid_ndims();
+      int parafaftCoords[gridNDims];
+      temp.get_grid_coords(parafaftCoords);
+      const auto &position = group.getPosition();
+      for (int i = 0; i < gridNDims; ++i) {
+        if (position[i] != parafaftCoords[i]) {
+          throw ParafaftMemoryLayoutException(
+              "ParaFaFT places this rank at grid coordinate ", parafaftCoords[i], " in dimension ", i,
+              " but the MPICartesianGroup places it at ", position[i],
+              ". The local starts come from ParaFaFT while ghost exchange follows the group, so continuing would "
+              "exchange the wrong data at subdomain boundaries. Build the group via "
+              "FFTMPIDomainSplit::makeMPIGroup(baseComm, nGridPoints).");
         }
       }
 

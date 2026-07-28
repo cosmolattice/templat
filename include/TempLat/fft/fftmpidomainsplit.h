@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_FFT_FFTMPIDOMAINSPLIT_H
 #define TEMPLAT_FFT_FFTMPIDOMAINSPLIT_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 
 #include "TempLat/fft/fftlibraryselector.h"
 #include "TempLat/parallel/mpi/cartesian/mpicartesiangroup.h"
@@ -50,10 +50,18 @@ namespace TempLat
       return theSplit;
     }
 
+    /** @brief Build the Cartesian group on the FFT backend's own communicator.
+     *
+     *  The group is created over `topology.comm` with no reordering, and its coordinates are
+     *  cross-checked against the backend's. So the group does not merely have the same *shape*
+     *  as the backend's decomposition — it has the backend's actual rank ordering, which is what
+     *  the layout's local starts are derived from.
+     */
     static MPICartesianGroup makeMPIGroup(MPICommReference baseGroup, const device::IdxArray<NDim> &nGridPoints)
     {
-      return MPICartesianGroup(baseGroup, static_cast<device::Idx>(NDim),
-                               makeDomainDecomposition(baseGroup, nGridPoints));
+      const FFTTopology<NDim> topology = FFTLibrarySelector<NDim>::topology(baseGroup, nGridPoints);
+      return MPICartesianGroup(topology.comm, static_cast<device::Idx>(NDim), topology.dimsVector(),
+                               std::vector<int>(topology.coords.begin(), topology.coords.end()));
     }
     /* default using comm_world */
     static MPICartesianGroup makeMPIGroup(const device::IdxArray<NDim> &nGridPoints)

@@ -12,3 +12,6 @@ build*/
 .dolt/
 *.db
 .beads-credential-key
+
+*.kate-swp
+*.swp

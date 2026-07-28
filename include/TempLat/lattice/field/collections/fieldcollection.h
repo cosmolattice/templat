@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_FIELD_COLLECTIONS_FIELDCOLLECTION_H
 #define TEMPLAT_LATTICE_FIELD_COLLECTIONS_FIELDCOLLECTION_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2020
+// File info: Main contributor(s): Adrien Florio, Year: 2020
 
 #include "TempLat/util/latinindiceslist.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
@@ -22,6 +22,10 @@ namespace TempLat
    *
    *
    * Unit test: ctest -R test-fieldcollection
+   *
+   * @vocab-summary $N$ fields of any one type under a single tag-indexed name.
+   * @vocab-signature FieldCollection<FieldType, N> coll("coll", toolBox);
+   * @vocab-tags Collection
    **/
   template <class Arg, int N, bool flatAssign = false, int SHIFTIND = 0> class FieldCollection
   {

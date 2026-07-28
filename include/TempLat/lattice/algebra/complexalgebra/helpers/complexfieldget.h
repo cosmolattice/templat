@@ -1,16 +1,14 @@
 #ifndef COSMOINTERFACE_COMPLEXFIELDALGEBRA_HELPERS_COMPLEXFIELDGET_H
 #define COSMOINTERFACE_COMPLEXFIELDALGEBRA_HELPERS_COMPLEXFIELDGET_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): AdrienFlorio,  Year: 2019
+// File info: Main contributor(s): Adrien Florio, Year: 2019
 
 #include "TempLat/util/rangeiteration/tag.h"
 #include "TempLat/lattice/algebra/complexalgebra/helpers/hascomplexfieldget.h"
-#include "TempLat/lattice/algebra/complexalgebra/real.h"
-#include "TempLat/lattice/algebra/complexalgebra/imag.h"
 #include "TempLat/lattice/algebra/helpers/iscomplextype.h"
 
 namespace TempLat
@@ -27,14 +25,17 @@ namespace TempLat
       requires IsComplexType<R>
     static auto get(R &&r, Tag<0> t)
     {
-      return Real(r);
+      // Inlined from Real(r) to avoid a real.h -> ascomplexfield.h -> complexfieldget.h include cycle;
+      // for a complex value the HasComplexFieldGet Real overload never applies, so this is Real's only body.
+      return r.real();
     }
 
     template <typename R>
       requires IsComplexType<R>
     static auto get(R &&r, Tag<1> t)
     {
-      return Imag(r);
+      // Inlined from Imag(r); see the note on the Tag<0> overload above.
+      return r.imag();
     }
 
     template <typename R, int N>

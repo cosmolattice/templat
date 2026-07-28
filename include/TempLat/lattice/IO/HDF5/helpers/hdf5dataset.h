@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_IO_HDF5_HELPERS_HDF5DATASET_H
 #define TEMPLAT_LATTICE_IO_HDF5_HELPERS_HDF5DATASET_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2020
+// File info: Main contributor(s): Adrien Florio, Year: 2020
 
 #ifdef HAVE_HDF5
 
@@ -123,26 +123,21 @@ namespace TempLat
       auto memspace_id = H5Screate_simple(mNDimensions, subdims.data(), NULL);
       auto dataspace_id = H5Dget_space(mId);
 
-      auto err1 = H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, offsets.data(), strides.data(), subdims.data(),
-                                      blocks.data());
+      H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, offsets.data(), strides.data(), subdims.data(), blocks.data());
       HDF5Type<T> type;
 
 #ifdef HAVE_MPI
       hid_t plist_id = H5Pcreate(H5P_DATASET_XFER);
       // H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
-      auto err3 = H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_INDEPENDENT);
-      auto err2 = H5Dwrite(mId, type.type, memspace_id, dataspace_id, plist_id, &data);
+      H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_INDEPENDENT);
+      H5Dwrite(mId, type.type, memspace_id, dataspace_id, plist_id, &data);
       H5Pclose(plist_id);
-      H5Eclose_stack(err3);
-
 #else
-      auto err2 = H5Dwrite(mId, type.type, memspace_id, dataspace_id, H5P_DEFAULT, &data);
+      H5Dwrite(mId, type.type, memspace_id, dataspace_id, H5P_DEFAULT, &data);
 #endif
 
       H5Sclose(dataspace_id);
       H5Sclose(memspace_id);
-      H5Eclose_stack(err1);
-      H5Eclose_stack(err2);
       type.close();
     }
 

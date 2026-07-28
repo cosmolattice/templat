@@ -1,9 +1,9 @@
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2019
+// File info: Main contributor(s): Adrien Florio, Year: 2019
 #include "TempLat/lattice/algebra/operators/shift.h"
 #include "TempLat/util/tdd/tdd.h"
 #include "TempLat/parallel/device.h"
@@ -111,7 +111,8 @@ namespace TempLat
     auto runOne = [&](BCType bc, double expectedAtBoundaryHigh) {
       BCSpec<NDim> spec = allPeriodic<NDim>();
       spec[0] = bc;
-      Field<double, NDim> f("f_const_shift", toolBox, LatticeParameters<double>(), spec);
+      Field<double, NDim> f("f_const_shift", toolBox, LatticeParameters<double>());
+      f.setBCSpec(spec);
       f = c;
       f.updateGhosts();
 

@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_UTIL_LOADBALANCE_H
 #define TEMPLAT_UTIL_LOADBALANCE_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2019
+// File info: Main contributor(s): Adrien Florio, Year: 2019
 
 #include <cinttypes>
 #include <cstddef>
@@ -28,6 +28,7 @@ namespace TempLat
 
     inline static std::vector<ptrdiff_t> getConf(ptrdiff_t nPoints, ptrdiff_t nThreads)
     {
+      if (nThreads <= 0) return {}; // no threads: nothing to distribute (and avoid a divide-by-zero)
       auto quotRem = std::imaxdiv(nPoints, nThreads);
       std::vector<ptrdiff_t> res;
       for (ptrdiff_t i = 0; i < nThreads; ++i) {

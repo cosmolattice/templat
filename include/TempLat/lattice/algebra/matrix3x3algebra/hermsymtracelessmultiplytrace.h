@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_MATRIX3X3ALGEBRA_HERMSYMTRACELESSMULTIPLYTRACE_H
 #define COSMOINTERFACE_MATRIX3X3ALGEBRA_HERMSYMTRACELESSMULTIPLYTRACE_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Jorge Baeza-Ballesteros,  Year: 2026
+// File info: Main contributor(s): Jorge Baeza-Ballesteros, Year: 2026
 
 #include "TempLat/lattice/algebra/operators/power.h"
 #include "TempLat/lattice/algebra/operators/multiply.h"
@@ -58,6 +58,11 @@ namespace TempLat
     virtual std::string operatorString() const override { return "*"; }
   };
 
+  /**
+   * @vocab-summary Trace of the product of two $3\times3$ matrix expressions, $\mathrm{tr}(AB)$, evaluated
+   * without ever forming the product.
+   * @vocab-signature multiplyTrace(a, b)
+   **/
   template <typename R, typename T>
     requires(HasHermGet<R> && HasSymTracelessGet<T> && !HasSymGet<R>)
   auto multiplyTrace(const R &r, const T &t)

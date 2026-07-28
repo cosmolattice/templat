@@ -43,9 +43,9 @@ endif()
 FetchContent_Declare(
   Kokkos
   DOWNLOAD_EXTRACT_TIMESTAMP FALSE
-  URL https://github.com/kokkos/kokkos/releases/download/5.1.0/kokkos-5.1.0.tar.gz
+  URL https://github.com/kokkos/kokkos/releases/download/5.1.1/kokkos-5.1.1.tar.gz
   URL_HASH
-    SHA256=7bdbdfc88033ed7d940c7940ed8919e1f2b78a9656c69276beb76ad45c41ec4e
+    SHA256=8bdbee0f0ac383436743ad8a9e3e928705b34b31a25a92dc5179c52a3aa98519
   ${SYSTEM_MARKER})
 FetchContent_MakeAvailable(Kokkos)
 

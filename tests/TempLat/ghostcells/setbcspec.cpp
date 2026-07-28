@@ -110,6 +110,80 @@ namespace TempLat
     }
   }
 
+  /** @brief The coalesced batch entry point must honour the components' BCSpec.
+   *
+   * MemoryManager::updateGhostsBatch is the path every multi-component field takes for
+   * updateGhosts() — ComplexField, SU2Field, SU2Doublet, SU2LieAlgebraField, SymTracelessField.
+   * It originally never read mBCSpec, so a non-Periodic BC was silently downgraded to Periodic for
+   * exactly those fields, while the scalar-Field path the rest of this file covers stayed correct.
+   * Two same-BC managers are driven through the batch; each must end up with the ghost faces the
+   * single-field path produces.
+   */
+  template <size_t NDim> struct MemoryManagerBatchBCTester {
+    static void Test(TDDAssertion &tdd);
+  };
+
+  template <size_t NDim> void MemoryManagerBatchBCTester<NDim>::Test(TDDAssertion &tdd)
+  {
+    constexpr ptrdiff_t nGrid = 8;
+    constexpr ptrdiff_t nGhost = 1;
+    auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
+    toolBox->unsetVerbose();
+
+    for (size_t bcDim = 0; bcDim < NDim; ++bcDim) {
+      for (auto bc : {BCType::Antiperiodic, BCType::Dirichlet, BCType::Neumann, BCType::Periodic}) {
+        BCSpec<NDim> spec = allPeriodic<NDim>();
+        spec[bcDim] = bc;
+
+        Field<double, NDim> f0("batch_bc_0", toolBox, LatticeParameters<double>());
+        Field<double, NDim> f1("batch_bc_1", toolBox, LatticeParameters<double>());
+        f0.setBCSpec(spec);
+        f1.setBCSpec(spec);
+        BCTestDetail::assignCoordinatePlusOne<NDim>(f0, toolBox, bcDim);
+        BCTestDetail::assignCoordinatePlusOne<NDim>(f1, toolBox, bcDim);
+
+        MemoryManager<double, NDim> *mgrs[] = {f0.getMemoryManager().get(), f1.getMemoryManager().get()};
+        MemoryManager<double, NDim>::updateGhostsBatch(mgrs);
+
+        tdd.verify(BCTestDetail::verifyGhostFaces<NDim>(f0, bcDim, bc, nGrid, nGhost));
+        tdd.verify(BCTestDetail::verifyGhostFaces<NDim>(f1, bcDim, bc, nGrid, nGhost));
+      }
+    }
+  }
+
+  /** @brief Components of one multi-component field must agree on their BC. The coalesced exchange
+   * carries a single BCSpec, so a mismatch is rejected rather than silently resolved to whichever
+   * component happens to be first. */
+  template <size_t NDim> struct MemoryManagerBatchBCMismatchTester {
+    static void Test(TDDAssertion &tdd);
+  };
+
+  template <size_t NDim> void MemoryManagerBatchBCMismatchTester<NDim>::Test(TDDAssertion &tdd)
+  {
+    constexpr ptrdiff_t nGrid = 8;
+    constexpr ptrdiff_t nGhost = 1;
+    auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
+    toolBox->unsetVerbose();
+
+    BCSpec<NDim> specA = allPeriodic<NDim>();
+    BCSpec<NDim> specB = allPeriodic<NDim>();
+    specB[0] = BCType::Antiperiodic;
+
+    Field<double, NDim> f0("mismatch_0", toolBox, LatticeParameters<double>());
+    Field<double, NDim> f1("mismatch_1", toolBox, LatticeParameters<double>());
+    f0.setBCSpec(specA);
+    f1.setBCSpec(specB);
+
+    MemoryManager<double, NDim> *mgrs[] = {f0.getMemoryManager().get(), f1.getMemoryManager().get()};
+    bool threw = false;
+    try {
+      MemoryManager<double, NDim>::updateGhostsBatch(mgrs);
+    } catch (const MemoryManagerAccessOutOfBounds &) {
+      threw = true;
+    }
+    tdd.verify(threw);
+  }
+
 } // namespace TempLat
 
 namespace
@@ -122,4 +196,10 @@ namespace
 
   TempLat::TDDContainer<TempLat::FieldSetBCSpecRoundTripTester<2>> setBCSpecRoundTripTest2;
   TempLat::TDDContainer<TempLat::FieldSetBCSpecRoundTripTester<3>> setBCSpecRoundTripTest3;
+
+  TempLat::TDDContainer<TempLat::MemoryManagerBatchBCTester<2>> batchBCTest2;
+  TempLat::TDDContainer<TempLat::MemoryManagerBatchBCTester<3>> batchBCTest3;
+
+  TempLat::TDDContainer<TempLat::MemoryManagerBatchBCMismatchTester<2>> batchBCMismatchTest2;
+  TempLat::TDDContainer<TempLat::MemoryManagerBatchBCMismatchTester<3>> batchBCMismatchTest3;
 } // namespace

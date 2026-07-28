@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_SU2ALGEBRA_SU2LIEALGEBRAFIELD_H
 #define COSMOINTERFACE_SU2ALGEBRA_SU2LIEALGEBRAFIELD_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2021
+// File info: Main contributor(s): Adrien Florio, Year: 2021
 
 #include "TempLat/lattice/algebra/su2algebra/su2field.h"
 
@@ -16,6 +16,10 @@ namespace TempLat
    *(but internally, also expanded as a function of sigma).
    *
    * Unit test: ctest -R test-su2liealgebrafield
+   *
+   * @vocab-summary An $\mathfrak{su}(2)$ field: the same storage as the group type but with $c_0$ pinned to
+   * zero, and component access normalised to $\sigma_a/2$.
+   * @vocab-signature SU2LieAlgebraField<T, NDim> E("E", toolBox);
    **/
   template <typename T, size_t _NDim = 0> class SU2LieAlgebraField
   {
@@ -64,9 +68,13 @@ namespace TempLat
 
     template <typename R> void operator=(R &&r)
     {
-      fs[0].onBeforeAssignment(r.SU2Get(1_c));
-      fs[1].onBeforeAssignment(r.SU2Get(2_c));
-      fs[2].onBeforeAssignment(r.SU2Get(3_c));
+      // Confirm config-space / ghost requirements by walking the WHOLE SU(2) expression r (linear),
+      // instead of building r.SU2Get(k) per component (the exponential per-component expansion built
+      // only for confirmation, then discarded - values use the fused DoEval::eval below). One call per
+      // target component is kept (onBeforeAssignment also confirms the target field fs[k]).
+      fs[0].onBeforeAssignment(r);
+      fs[1].onBeforeAssignment(r);
+      fs[2].onBeforeAssignment(r);
 
       PreGet::apply(r);
 
@@ -114,13 +122,33 @@ namespace TempLat
     auto getDx() const { return GetDx::getDx(fs[0]); }
     auto getKIR() const { return GetKIR::getKIR(fs[0]); }
 
-    inline auto getToolBox() { return GetToolBox::get(fs[0]); }
+    inline auto getToolBox() const { return GetToolBox::get(fs[0]); }
+
+    // Space/ghost confirmation forwarded to the 3 algebra component fields (see operator=).
+    void doWeNeedGhosts() const
+    {
+      GhostsHunter::apply(fs[0]);
+      GhostsHunter::apply(fs[1]);
+      GhostsHunter::apply(fs[2]);
+    }
+    device::Idx confirmGhostsUpToDate() const
+    {
+      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
+                                        fs[2].getMemoryManager().get()};
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(mgrs);
+    }
+    void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(fs[0], newLayout, spaceType);
+      ConfirmSpace::apply(fs[1], newLayout, spaceType);
+      ConfirmSpace::apply(fs[2], newLayout, spaceType);
+    }
 
     inline void updateGhosts()
     {
-      fs[0].updateGhosts();
-      fs[1].updateGhosts();
-      fs[2].updateGhosts();
+      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
+                                        fs[2].getMemoryManager().get()};
+      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
     }
 
     using Getter = SU2Getter;

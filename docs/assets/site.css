@@ -1,0 +1,687 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   TempLat website — shared stylesheet.
+
+   Everything here is used by more than one page (index.html, vocabulary.html).
+   Page-specific components stay in that page's own inline <style>:
+     index.html      .hero*, .logo/.lg-*, .scroll-cue, .btn*, .step*, .paper*,
+                     .ppl/.person*
+     vocabulary.html .vocab-*, .card.vocab, filter-chip state
+
+   Companion script: site.js
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg: #000;
+  --bg-alt: #08080a;
+  --fg: #e9e9ec;
+  --mut: #8f8f98;
+  --dim: #65656e;
+  --line: rgba(255, 255, 255, .09);
+  --line-str: rgba(255, 255, 255, .16);
+  --accent: #cc6666;
+  --accent-hi: #e59a9a;
+  --accent-dim: rgba(204, 102, 102, .16);
+  --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --col: 1080px;
+  --ease: cubic-bezier(.16, 1, .3, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+  display: block
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color .18s ease
+}
+
+a:hover {
+  color: var(--accent-hi)
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px
+}
+
+.wrap {
+  width: 100%;
+  max-width: var(--col);
+  margin: 0 auto;
+  padding: 0 28px
+}
+
+/* ── section scaffolding ─────────────────────────────── */
+section {
+  position: relative;
+  padding: 110px 0;
+  scroll-margin-top: 64px
+}
+
+section.band {
+  background: var(--bg-alt);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line)
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.eyebrow::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent-dim), transparent);
+  max-width: 220px
+}
+
+h2 {
+  font-size: clamp(28px, 4.2vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  margin: 0 0 16px;
+  font-weight: 600
+}
+
+h3 {
+  font-size: 20px;
+  letter-spacing: -.01em;
+  margin: 0 0 8px;
+  font-weight: 600
+}
+
+.lede {
+  color: var(--mut);
+  max-width: 62ch;
+  margin: 0 0 52px;
+  font-size: 18px
+}
+
+/* ── nav ─────────────────────────────────────────────────────────────
+   The nav is visible by default so that it still works with JavaScript
+   disabled. Only when JS is running (html.js, set by an inline script in
+   <head>) is it hidden and handed over to site.js, which reveals it past
+   the hero — or immediately, on a page that has no hero.              */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 28px;
+  background: rgba(0, 0, 0, .72);
+  border-bottom: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  transition: opacity .35s var(--ease), transform .35s var(--ease), border-color .35s ease;
+}
+
+.js .nav {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-100%);
+  border-bottom-color: transparent;
+}
+
+.js .nav.on {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  border-bottom-color: var(--line)
+}
+
+.nav .mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--fg);
+  font-weight: 600;
+  letter-spacing: -.01em
+}
+
+.nav .mark svg {
+  width: 26px;
+  height: auto
+}
+
+.nav nav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap
+}
+
+.nav nav a {
+  color: var(--mut);
+  font-size: 14.5px;
+  padding: 6px 12px;
+  border-radius: 7px;
+  transition: color .18s ease, background .18s ease;
+}
+
+.nav nav a:hover {
+  color: var(--fg);
+  background: rgba(255, 255, 255, .06)
+}
+
+.nav nav a.gh {
+  color: var(--accent)
+}
+
+.nav nav a[aria-current="page"] {
+  color: var(--fg);
+  background: rgba(255, 255, 255, .06)
+}
+
+@media(max-width:640px) {
+  .nav {
+    padding: 10px 16px
+  }
+
+  .nav nav a {
+    padding: 6px 8px;
+    font-size: 13.5px
+  }
+
+  .nav nav a.hide-s {
+    display: none
+  }
+}
+
+/* ── chips ───────────────────────────────────────────── */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 0 0 36px
+}
+
+.chip {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .04em;
+  color: var(--mut);
+  border: 1px solid var(--line-str);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+
+/* ── reveal ──────────────────────────────────────────── */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(26px)
+}
+
+.js .reveal.in {
+  opacity: 1;
+  transform: none;
+  transition: opacity .75s var(--ease) var(--d, 0s), transform .75s var(--ease) var(--d, 0s);
+}
+
+/* ── cards ───────────────────────────────────────────── */
+.feat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px
+}
+
+@media(max-width:660px) {
+  .feat-grid {
+    grid-template-columns: 1fr
+  }
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 26px 24px 28px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .028), rgba(255, 255, 255, .008));
+  transition: border-color .28s ease, background .28s ease, transform .28s var(--ease);
+  position: relative;
+  overflow: hidden;
+}
+
+.card:hover {
+  border-color: rgba(204, 102, 102, .4);
+  transform: translateY(-3px);
+  background: linear-gradient(180deg, rgba(204, 102, 102, .07), rgba(255, 255, 255, .01))
+}
+
+.card .ico {
+  width: 34px;
+  height: 34px;
+  color: var(--accent);
+  margin-bottom: 18px
+}
+
+.card .ico svg {
+  width: 100%;
+  height: 100%
+}
+
+.card p {
+  margin: 0;
+  color: var(--mut);
+  font-size: 15.5px;
+  line-height: 1.6
+}
+
+/* compact code block for inside a card — the full .code component with
+   its header and copy button is far too heavy for a 1/3-width column.
+   Scrolls on its own if a line is too long, so it can never widen the
+   card or the grid.                                                  */
+.card .snip {
+  margin: 14px 0 0;
+  padding: 11px 13px;
+  background: #050506;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--fg);
+  white-space: pre;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.card .snip::-webkit-scrollbar {
+  height: 6px
+}
+
+.card .snip::-webkit-scrollbar-thumb {
+  background: var(--line-str);
+  border-radius: 3px
+}
+
+.card:hover .snip {
+  border-color: rgba(204, 102, 102, .28)
+}
+
+/* .card p is margin:0, so prose following a snippet needs its own gap */
+.card .snip+p {
+  margin-top: 14px
+}
+
+/* inline code in prose: never break a flag or identifier across lines */
+.card code,
+.step p code,
+.lede code,
+td code,
+.more code,
+figure.eq figcaption code {
+  font-family: var(--mono);
+  font-size: .87em;
+  color: var(--fg);
+  background: rgba(255, 255, 255, .06);
+  padding: 1px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.step p code,
+.lede code,
+td code,
+.more code,
+figure.eq figcaption code {
+  background: none;
+  padding: 0;
+  color: var(--fg)
+}
+
+code.w {
+  white-space: normal
+}
+
+/* opt back in for long expressions */
+
+/* ── code blocks ─────────────────────────────────────── */
+.code {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #050506;
+  margin: 0 0 16px;
+}
+
+.code-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 8px 15px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, .022);
+}
+
+.code-head .name {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--dim);
+  letter-spacing: .03em
+}
+
+.copy {
+  display: none;
+  margin-left: auto;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--mut);
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 10px;
+  transition: color .18s ease, border-color .18s ease, background .18s ease;
+}
+
+.js .copy {
+  display: inline-flex
+}
+
+.copy:hover {
+  color: var(--fg);
+  border-color: var(--line-str);
+  background: rgba(255, 255, 255, .05)
+}
+
+.copy.done {
+  color: var(--accent);
+  border-color: var(--accent-dim)
+}
+
+.code pre {
+  margin: 0;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: #d6d6db;
+}
+
+.code pre::-webkit-scrollbar {
+  height: 8px
+}
+
+.code pre::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .14);
+  border-radius: 4px
+}
+
+.c {
+  color: #5f5f68;
+  font-style: italic
+}
+
+.out {
+  color: #7d7d86
+}
+
+/* terminal output — dim, but not a comment */
+.k {
+  color: var(--accent)
+}
+
+.s {
+  color: #9db8a4
+}
+
+.o {
+  color: #8f8f98
+}
+
+/* ── tables ──────────────────────────────────────────── */
+.tbl-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin: 0 0 16px
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14.5px;
+  min-width: 460px
+}
+
+th,
+td {
+  text-align: left;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line)
+}
+
+th {
+  font-size: 12px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 500;
+  background: rgba(255, 255, 255, .022)
+}
+
+tr:last-child td {
+  border-bottom: none
+}
+
+td:first-child {
+  font-family: var(--mono);
+  color: var(--accent);
+  white-space: nowrap;
+  font-size: 13px
+}
+
+td:last-child {
+  color: var(--mut)
+}
+
+.more {
+  font-size: 15px;
+  color: var(--mut)
+}
+
+/* ── tags / badges / notes ───────────────────────────── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  padding: 6px 13px;
+  border-radius: 7px;
+  border: 1px solid var(--line-str);
+  color: var(--mut);
+  transition: color .18s ease, border-color .18s ease, background .18s ease;
+}
+
+a.tag:hover,
+button.tag:hover {
+  color: var(--fg);
+  border-color: var(--accent);
+  background: var(--accent-dim)
+}
+
+.todo {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  color: var(--accent);
+  border: 1px dashed rgba(204, 102, 102, .5);
+  border-radius: 5px;
+  padding: 2px 8px;
+  vertical-align: middle;
+}
+
+.note {
+  color: var(--dim);
+  font-size: 14.5px;
+  margin: 20px 0 0;
+  max-width: 70ch
+}
+
+/* ── footer ──────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--line);
+  padding: 48px 0 56px;
+  background: var(--bg)
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 26px;
+  align-items: center;
+  justify-content: space-between
+}
+
+.foot svg {
+  width: 96px;
+  height: auto;
+  opacity: .55
+}
+
+.foot .links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px
+}
+
+.foot .links a {
+  color: var(--mut);
+  font-size: 14.5px
+}
+
+.foot .links a:hover {
+  color: var(--accent)
+}
+
+.foot .lic {
+  width: 100%;
+  color: var(--dim);
+  font-size: 13.5px;
+  margin: 0
+}
+
+/* ── phones ──────────────────────────────────────────── */
+@media(max-width:520px) {
+  .wrap {
+    padding: 0 20px
+  }
+
+  .chips {
+    margin-bottom: 28px
+  }
+
+  section {
+    padding: 78px 0
+  }
+}
+
+/* ── reduced motion ──────────────────────────────────── */
+@media(prefers-reduced-motion:reduce) {
+  html {
+    scroll-behavior: auto
+  }
+
+  .js .reveal {
+    opacity: 1;
+    transform: none
+  }
+
+  * {
+    transition-duration: .01ms !important
+  }
+}
+
+/* ── math (KaTeX) ────────────────────────────────────────────────────
+   KaTeX ships its own metrics; we only tune colour, size and the
+   block-equation frame so formulas sit in the dark theme rather than
+   on top of it. Display equations scroll on their own when they are
+   wider than the column — the page body never scrolls sideways.     */
+.katex {
+  color: var(--fg);
+  font-size: 1.06em;
+}
+
+.katex-display {
+  margin: 1.6rem 0;
+  padding: 1.15rem 1.25rem;
+  background: var(--bg-alt);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent);
+  border-radius: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.katex-display>.katex {
+  font-size: 1.12em;
+}
+
+/* A numbered/labelled equation: <figure class="eq"> … <figcaption> */
+figure.eq {
+  margin: 1.6rem 0;
+}
+
+figure.eq .katex-display {
+  margin: 0;
+}
+
+figure.eq figcaption {
+  margin-top: .55rem;
+  color: var(--mut);
+  font-size: .88rem;
+  line-height: 1.5;
+}
+
+/* Before KaTeX runs (or if the CDN is blocked) the raw LaTeX is still
+   readable — just make it look deliberate instead of broken.        */
+.katex-error {
+  color: var(--accent-hi);
+  font-family: var(--mono);
+  font-size: .9em;
+}

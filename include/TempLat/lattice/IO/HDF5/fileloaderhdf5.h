@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_IO_HDF5_FILELOADERHDF5_H
 #define TEMPLAT_LATTICE_IO_HDF5_FILELOADERHDF5_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2020
+// File info: Main contributor(s): Adrien Florio, Year: 2020
 
 #ifdef HAVE_HDF5
 
@@ -37,6 +37,12 @@ namespace TempLat
     FileLoaderHDF5() = default;
 
     void open(std::string fn) { mFile.open(fn); }
+
+#ifdef HAVE_MPI
+    /** @brief Point collective I/O at the communicator the lattice is decomposed over.
+     *  Must be called before open. See HDF5File::setComm. */
+    void setComm(MPI_Comm comm) { mFile.setComm(comm); }
+#endif
     void close() { mFile.close(); }
     void reset() { this->close(); }
 

@@ -1,8 +1,8 @@
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
- C opyright Daniel G. Figueroa,* Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
- Released under the MIT license, see LICENSE.md. */
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
+   Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Jorge Baeza-Ballesteros,  Year: 2026
+// File info: Main contributor(s): Jorge Baeza-Ballesteros, Year: 2026
 #include "TempLat/lattice/algebra/matrix3x3algebra/allmatrixcomponents.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
 #include "TempLat/util/rangeiteration/tag.h"

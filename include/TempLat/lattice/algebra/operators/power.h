@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_OPERATORS_POWER_H
 #define TEMPLAT_LATTICE_ALGEBRA_OPERATORS_POWER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/conditional/conditionalbinarygetter.h"
 #include "TempLat/lattice/algebra/helpers/isstdgettable.h"
@@ -79,7 +79,7 @@ namespace TempLat
         return powr<N>(DoEval::eval(mR, idx...));
       }
 
-      std::string toString() const { return "(" + GetString::get(mR) + ")^" + std::to_string(2); }
+      std::string toString() const { return "(" + GetString::get(mR) + ")^" + std::to_string(N); }
 
       /** @brief And passing on the automatic / symbolic derivatives. Having fun here, this is awesome. */
       template <typename U> auto d(const U &other) const
@@ -90,6 +90,12 @@ namespace TempLat
     };
   } // namespace Operators
 
+  /**
+   * @vocab-summary Raises an expression to a power. $x^N$ with a compile-time exponent unrolls into repeated
+   * multiplication; the two-argument form is general. $N=0$ folds to OneType and $N=1$ to the operand itself,
+   * at compile time.
+   * @vocab-signature pow<N>(x)   pow(x, y)
+   **/
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
   auto pow(const R &r, const T &t)

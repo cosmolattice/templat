@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_GAUGEALGEBRA_PLAQUETTE_H
 #define COSMOINTERFACE_GAUGEALGEBRA_PLAQUETTE_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2019
+// File info: Main contributor(s): Adrien Florio, Year: 2019
 
 #include "TempLat/lattice/algebra/su2algebra/su2shift.h"
 #include "TempLat/lattice/algebra/su2algebra/su2dagger.h"
@@ -17,6 +17,11 @@ namespace TempLat
    *
    *
    * Unit test: ctest -R test-plaquette
+   *
+   * @vocab-summary Plaquette $P_{\mu\nu}(x) =
+   * U_\mu(x)\,U_\nu(x+\hat\mu)\,U^\dagger_\mu(x+\hat\nu)\,U^\dagger_\nu(x)$. The product is deliberately
+   * bracketed in pairs: fully expanding a chain of six or more link matrices overflows the stack.
+   * @vocab-signature plaq(Us, mu, nu)
    **/
   template <int Mu, int Nu, typename R> auto plaq(R Us, Tag<Mu> mu, Tag<Nu> nu)
   {

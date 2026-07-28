@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_RANDOM_RANDOMGAUSSIANFIELD_H
 #define TEMPLAT_LATTICE_ALGEBRA_RANDOM_RANDOMGAUSSIANFIELD_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/coordinates/dimensioncountrecorder.h"
 #include "TempLat/util/constexpr_for.h"
@@ -25,27 +25,43 @@ namespace TempLat
    *
    * Unit test: ctest -R test-randomgaussianfield
    **/
-  template <typename T, size_t NDim, bool Real, bool Unitary>
+  template <typename T, size_t NDim, SpaceStateType Space, bool Real, bool Unitary>
   class RandomGaussianFieldHelper : public DimensionCountRecorder<NDim>
   {
     using RNGInteger = typename RandomGaussian<T>::IntegerType;
     static_assert(NDim != 0, "NDim template parameter is required.");
+    static_assert(Space == SpaceStateType::Fourier || Space == SpaceStateType::Configuration,
+                  "Space must be Fourier or Configuration.");
+    static_assert(Space == SpaceStateType::Fourier || (!Real && !Unitary),
+                  "Real/Unitary shape the Fourier complex pair; they are meaningless in configuration space.");
 
   public:
     // Put public methods here. These should change very little over time.
     RandomGaussianFieldHelper(std::string baseSeed, device::memory::host_ptr<MemoryToolBox<NDim>> pToolBox)
-        : DimensionCountRecorder<NDim>(SpaceStateType::undefined), prng(baseSeed), mToolBox(pToolBox),
-          mLayout(mToolBox->mLayouts.getFourierSpaceLayout()), generation(0), mGlobalSizes(mLayout.getGlobalSizes())
+        : DimensionCountRecorder<NDim>(Space), prng(baseSeed), mToolBox(pToolBox), mLayout([&]() -> LayoutStruct<NDim> {
+            if constexpr (Space == SpaceStateType::Fourier)
+              return pToolBox->mLayouts.getFourierSpaceLayout();
+            else
+              return pToolBox->mLayouts.getConfigSpaceLayout();
+          }()),
+          generation(RNGInteger(0)), mGenerationSnapshot(0), mGlobalSizes(mLayout.getGlobalSizes())
     {
-      DimensionCountRecorder<NDim>::confirmSpace(mLayout, SpaceStateType::Fourier);
+      DimensionCountRecorder<NDim>::confirmSpace(mLayout, Space);
     }
 
-    void reset() { generation = 0; }
+    void reset() { *generation = 0; }
+
+    void preGet()
+    {
+      // `generation` is a host-only host_ptr (its device copy is null). Snapshot its value on the host into a
+      // plain, device-copyable member so eval() -- which runs on-device -- never dereferences the host_ptr.
+      mGenerationSnapshot = *generation;
+    }
 
     void postGet()
     {
       // This is called after the get, so we can increase the generation.
-      generation++;
+      (*generation)++;
     }
 
     /**
@@ -56,7 +72,7 @@ namespace TempLat
     {
       std::ostringstream oss;
       oss << prng.saveState() << "\n"; // Underlying RNG state
-      oss << generation << " ";        // Generation counter
+      oss << *generation << " ";       // Generation counter
       return oss.str();
     }
 
@@ -70,7 +86,7 @@ namespace TempLat
       std::string uniformState;
       std::getline(iss, uniformState);
       prng.loadState(uniformState);
-      iss >> generation;
+      iss >> *generation;
     }
 
     DEVICE_INLINE_FUNCTION std::tuple<RNGInteger, RNGInteger> gidx_to_idx2(const device::IdxArray<NDim> &gidx) const
@@ -104,32 +120,44 @@ namespace TempLat
 
     template <typename... IDX>
       requires IsVariadicNDIndex<NDim, IDX...>
-    DEVICE_INLINE_FUNCTION complex<T> eval(const IDX &...idx) const
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
-      device::IdxArray<NDim> global_coord;
-      mLayout.putSpatialLocationFromMemoryIndexInto(global_coord, idx...);
+      if constexpr (Space == SpaceStateType::Fourier) {
+        device::IdxArray<NDim> global_coord;
+        mLayout.putSpatialLocationFromMemoryIndexInto(global_coord, idx...);
 
-      device::IdxArray<NDim> hermitianPartner;
-      auto hermitianType = DimensionCountRecorder<NDim>::getCurrentLayout().getHermitianPartners().putHermitianPartner(
-          global_coord, hermitianPartner);
+        device::IdxArray<NDim> hermitianPartner;
+        auto hermitianType =
+            DimensionCountRecorder<NDim>::getCurrentLayout().getHermitianPartners().putHermitianPartner(
+                global_coord, hermitianPartner);
 
-      // We do not need coordinates actually, but rather (positive!) global indices.
-      for (size_t d = 0; d < NDim; ++d) {
-        if (global_coord[d] < 0) global_coord[d] += mGlobalSizes[d];
-        if (hermitianPartner[d] < 0) hermitianPartner[d] += mGlobalSizes[d];
-      }
+        // We do not need coordinates actually, but rather (positive!) global indices.
+        for (size_t d = 0; d < NDim; ++d) {
+          if (global_coord[d] < 0) global_coord[d] += mGlobalSizes[d];
+          if (hermitianPartner[d] < 0) hermitianPartner[d] += mGlobalSizes[d];
+        }
 
-      if (hermitianType == HermitianRedundancy::none) {
-        const auto [r, c] = gidx_to_idx2(global_coord);
-        const complex<T> val = to_complex(prng.getPair(r, c, generation, Real, Unitary));
-        return val;
+        if (hermitianType == HermitianRedundancy::none) {
+          const auto [r, c] = gidx_to_idx2(global_coord);
+          const complex<T> val = to_complex(prng.getPair(r, c, mGenerationSnapshot, Real, Unitary));
+          return val;
+        } else {
+          const auto [r, c] = gidx_to_idx2(hermitianPartner);
+          const complex<T> val = to_complex(prng.getPair(r, c, mGenerationSnapshot, Real, Unitary));
+          return (hermitianType == HermitianRedundancy::positivePartner)   ? val
+                 : (hermitianType == HermitianRedundancy::negativePartner) ? device::conj(val)
+                 : (hermitianType == HermitianRedundancy::realValued)      ? complex<T>(device::real(val))
+                                                                           : complex<T>(0.0, 0.0);
+        }
       } else {
-        const auto [r, c] = gidx_to_idx2(hermitianPartner);
-        const complex<T> val = to_complex(prng.getPair(r, c, generation, Real, Unitary));
-        return (hermitianType == HermitianRedundancy::positivePartner)   ? val
-               : (hermitianType == HermitianRedundancy::negativePartner) ? device::conj(val)
-               : (hermitianType == HermitianRedundancy::realValued)      ? complex<T>(device::real(val))
-                                                                         : complex<T>(0.0, 0.0);
+        // Configuration space: independent real N(0,1) white noise per site. No Hermitian structure.
+        // Keyed on the GLOBAL coordinate, so the field is rank-independent and reproducible.
+        device::IdxArray<NDim> global_coord;
+        mLayout.putSpatialLocationFromMemoryIndexInto(global_coord, idx...);
+        for (size_t d = 0; d < NDim; ++d)
+          if (global_coord[d] < 0) global_coord[d] += mGlobalSizes[d];
+        const auto [r, c] = gidx_to_idx2(global_coord);
+        return prng.get(r, c, mGenerationSnapshot);
       }
     }
 
@@ -142,16 +170,41 @@ namespace TempLat
     RandomGaussian<T> prng;
     device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
     LayoutStruct<NDim> mLayout;
-    RNGInteger generation;
+    device::memory::host_ptr<RNGInteger> generation;
+    RNGInteger mGenerationSnapshot; // device-copyable snapshot of *generation, set on host in preGet()
     device::IdxArray<NDim> mGlobalSizes;
   };
 
-  template <typename T, size_t NDim = 0> using RandomGaussianField = RandomGaussianFieldHelper<T, NDim, false, false>;
-
-  template <typename T, size_t NDim = 0> using RandomRayleighField = RandomGaussianFieldHelper<T, NDim, true, false>;
-
+  /**
+   * @vocab-summary Gaussian random field generated directly in Fourier space.
+   * @vocab-tags Field, Fourier
+   **/
   template <typename T, size_t NDim = 0>
-  using RandomUniformUnitaryField = RandomGaussianFieldHelper<T, NDim, false, true>;
+  using RandomGaussianField = RandomGaussianFieldHelper<T, NDim, SpaceStateType::Fourier, false, false>;
+
+  /**
+   * @vocab-summary Fourier-space field with Rayleigh-distributed amplitude and uniform random phase.
+   * @vocab-tags Field, Fourier
+   **/
+  template <typename T, size_t NDim = 0>
+  using RandomRayleighField = RandomGaussianFieldHelper<T, NDim, SpaceStateType::Fourier, true, false>;
+
+  /**
+   * @vocab-summary Fourier-space field of unit modulus with uniformly random phase.
+   * @vocab-tags Field, Fourier
+   **/
+  template <typename T, size_t NDim = 0>
+  using RandomUniformUnitaryField = RandomGaussianFieldHelper<T, NDim, SpaceStateType::Fourier, false, true>;
+
+  /** @brief A Gaussian random field directly in configuration space: independent real N(0,1) white noise
+   *  per lattice site (flat spectrum). NOT equivalent to drawing in Fourier space and transforming unless
+   *
+   * @vocab-summary Gaussian random field in configuration space: an independent normal draw per site. The
+   * counter-based generator makes each site independent of every other, so results are identical whatever the
+   *   decomposition.
+   *  the target spectrum is flat -- for a specific P(k), assign in Fourier space instead. */
+  template <typename T, size_t NDim = 0>
+  using RandomGaussianFieldConfig = RandomGaussianFieldHelper<T, NDim, SpaceStateType::Configuration, false, false>;
 
 } // namespace TempLat
 

@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_PARALLEL_MPI_COMM_MPICARTESIANGROUP_H
 #define TEMPLAT_PARALLEL_MPI_COMM_MPICARTESIANGROUP_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 
 #include "TempLat/util/exception.h"
 
@@ -26,26 +26,37 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    /** @brief Constructor: templated for the optional proposed decomposition, if you are unhappy
-     *        with the built-in decomposition.
+    /** @brief Constructor that adopts an externally-determined topology, normally the FFT
+     *        backend's (see `FFTTopology`, built by `FFTMPIDomainSplit::makeMPIGroup`).
      *
-     *  \param mBaseGroup the MPI Comm from which you start (typically just MPICommReference() == MPI_COMM_WORLD).
+     *  The Cartesian communicator is created over `topologyGroup` with **no reordering**, so this
+     *  group's rank->coordinate mapping is exactly that communicator's. `expectedCoords`, when
+     *  non-empty, is then checked against the coordinates MPI actually hands back, and a mismatch
+     *  throws.
+     *
+     *  This matters because the local starts installed into the layout come from the backend's
+     *  coordinates, while ghost neighbours come from `MPI_Cart_shift` on the communicator built
+     *  here. These used to be two independently-reordered topologies reconciled only by comparing
+     *  grid *shape*; when they disagreed, subdomain boundaries exchanged the wrong data silently.
+     *
+     *  \param topologyGroup the MPI Comm whose rank order defines the topology.
      *  \param nDimensions the dimensionality of the Cartesian setup.
-     *  \param (optional)decomposition A vector with your domain decomposition, overriding the defaults.
-     *  \param (optional)periodic A vector which indicates periodicity (1=true or 0=false) of each dimension. Default is
-     * all periodic.
+     *  \param decomposition the grid shape (rank counts per lattice dimension).
+     *  \param expectedCoords this rank's coordinates as the topology's owner reports them, or
+     *         empty to skip the cross-check.
+     *  \param (optional)periodic per-dimension periodicity (1=true, 0=false). Default all periodic.
      */
-    MPICartesianGroup(MPICommReference baseGroup, ptrdiff_t nDimensions, std::vector<int> decomposition,
+    MPICartesianGroup(MPICommReference topologyGroup, ptrdiff_t nDimensions, std::vector<int> decomposition,
+                      std::vector<int> expectedCoords = std::vector<int>(),
                       std::vector<int> periodic = std::vector<int>())
-        : mBaseGroup(baseGroup), mCartesianGroup(mBaseGroup), mCartesianGroup_onlyDividedDimensions(mBaseGroup),
-          mNDimensions(nDimensions), mDecomposition(decomposition), mPeriodic(periodic), mNumDividedDimensions(1)
+        : mBaseGroup(topologyGroup), mCartesianGroup(mBaseGroup), mNDimensions(nDimensions),
+          mDecomposition(decomposition), mPeriodic(periodic), mExpectedCoords(expectedCoords)
     {
-      //            if ( nDimensions < 2 && mBaseGroup.size() > 1u ) throw MPICartesianGroupException("Sorry, we only do
-      //            2 or more dimensions, not", nDimensions, "when mpi size is larger than one.");
-
       verifyInput();
 
       createGroups();
+
+      verifyCoordsMatchTopology();
     }
 
     /** @brief convenience short-hand constructor with MPI_COMM_WORLD */
@@ -56,7 +67,6 @@ namespace TempLat
 
     /** @brief Get the MPI_Comm already. */
     MPI_Comm getComm() const { return mCartesianGroup; }
-    MPI_Comm getComm_onlyDividedDimensions() const { return mCartesianGroup_onlyDividedDimensions; }
     MPICommReference getBaseComm() const { return mBaseGroup; }
 
     int getRank() { return mCartesianGroup.getRank(); }
@@ -67,10 +77,7 @@ namespace TempLat
      *         to the rank layout, nothing else. */
     const std::vector<int> &getPosition() const { return mSelfPosition; }
 
-    /** @brief Returns number of dimensions in which a splitting is performed. */
-    const ptrdiff_t &getNumberOfDividedDimensions() const { return mNumDividedDimensions; }
-
-    /** @brief Only for testing purposes: get the decomposition of this group to verify whatever. */
+    /** @brief The decomposition (grid shape) of this group. */
     const std::vector<int> &getDecomposition() const { return mDecomposition; }
 
     auto size() const { return mBaseGroup.size(); }
@@ -96,16 +103,11 @@ namespace TempLat
      * dimensions that were passed in the constructor.
      */
     MPICommReference mCartesianGroup;
-    /**
-     * @brief The CartesianGroup_onlyDividedDimensions is the MPI_Comm that is created from the CartesianGroup, and is
-     * split up only in those dimensions whose splitting > 1.
-     */
-    MPICommReference mCartesianGroup_onlyDividedDimensions;
 
     const ptrdiff_t mNDimensions;
     std::vector<int> mDecomposition;
     std::vector<int> mPeriodic;
-    ptrdiff_t mNumDividedDimensions;
+    std::vector<int> mExpectedCoords;
     std::vector<int> mSelfPosition;
 
     std::vector<int> fetchPosition(int ofRank)
@@ -123,16 +125,11 @@ namespace TempLat
     void createGroups()
     {
 #ifdef HAVE_MPI
-      mCartesianGroup = createOneGroup(mBaseGroup, mNDimensions, true);
-
-      /* next, keep only those leading dimensions whose splitting is larger than one, and keeping at least the first
-       * entry */
-      mNumDividedDimensions = mDecomposition.size();
-      while (mNumDividedDimensions > 1 && mDecomposition[mNumDividedDimensions - 1] < 2)
-        --mNumDividedDimensions;
-
-      mCartesianGroup_onlyDividedDimensions =
-          createOneGroup(mCartesianGroup, mNumDividedDimensions, false /* no re-ordering! Already ordered. */);
+      /* No reordering. The rank order of mBaseGroup is the topology, so the Cartesian
+       * communicator must preserve it: the layout's local starts are derived from that order,
+       * and ghost neighbours are derived from MPI_Cart_shift on the communicator built here.
+       * Letting MPI permute ranks lets those two disagree. */
+      mCartesianGroup = createOneGroup(mBaseGroup, mNDimensions, false);
 #endif
 
       mSelfPosition = fetchPosition(mCartesianGroup.rank());
@@ -143,13 +140,39 @@ namespace TempLat
       MPI_Comm newComm;
 
 #ifdef HAVE_MPI
-      // sayMPI << this << "Cart create: " << nDim << " " << mDecomposition << " " << mPeriodic << " " << reorder <<
-      // "\n";
-      MPI_Cart_create(mBaseGroup, nDim, mDecomposition.data(), mPeriodic.data(), reorder, &newComm);
+      /* Build from fromGroup, not mBaseGroup: this used to ignore its own argument. */
+      MPI_Cart_create(fromGroup, nDim, mDecomposition.data(), mPeriodic.data(), reorder, &newComm);
 #else
+      (void)fromGroup;
+      (void)nDim;
+      (void)reorder;
       newComm = MPI_COMM_WORLD;
 #endif
       return MPICommReference(newComm);
+    }
+
+    /** @brief Confirm the coordinates MPI computed are the ones the topology's owner expects.
+     *
+     *  With `reorder = false` this holds by construction, so a failure here means either that an
+     *  MPI implementation permuted ranks anyway or that the supplied grid shape does not describe
+     *  the supplied communicator. Both silently corrupt subdomain boundaries, so fail loudly.
+     */
+    void verifyCoordsMatchTopology() const
+    {
+      if (mExpectedCoords.empty()) return;
+
+      if ((ptrdiff_t)mExpectedCoords.size() != mNDimensions)
+        throw MPICartesianGroupException("Expected coordinates have ", mExpectedCoords.size(), " entries, but this is a ",
+                                         mNDimensions, "-dimensional group.");
+
+      for (ptrdiff_t i = 0; i < mNDimensions; ++i) {
+        if (mSelfPosition[i] != mExpectedCoords[i])
+          throw MPICartesianGroupException(
+              "Cartesian coordinates disagree with the topology that produced this group: MPI places this rank at ",
+              mSelfPosition, " but the topology's owner reports ", mExpectedCoords, " (decomposition ", mDecomposition,
+              "). The layout's local starts follow the latter while ghost exchange follows the former, so continuing "
+              "would silently exchange the wrong data at subdomain boundaries.");
+      }
     }
 
     void verifyInput()
@@ -162,24 +185,20 @@ namespace TempLat
       if ((ptrdiff_t)mDecomposition.size() > mNDimensions) mDecomposition.resize(mNDimensions);
       if ((ptrdiff_t)mPeriodic.size() > mNDimensions) mPeriodic.resize(mNDimensions);
 
-      /* verify that decomposition doesn't violate the group size */
+      /* The decomposition must tile the communicator exactly. This used to "repair" a mismatch
+       * by overwriting mDecomposition[0] and then zeroing trailing entries from the right, which
+       * silently mangled an explicitly-pinned backend grid into something the backend would not
+       * use — precisely the disagreement this class now exists to prevent. */
       ptrdiff_t groupSize = mBaseGroup.size();
-      auto &&product = [&]() {
-        ptrdiff_t result = 1;
-        for (auto &&it : mDecomposition)
-          result *= it;
-        return result;
-      };
-      if (product() < groupSize) {
-        say << "Decomposition " << mDecomposition << " yields fewer ranks than current group size " << groupSize
-            << ". Either provide a smaller MPI_Comm, or accept that we override your decomposition. Overriding now.\n";
-        mDecomposition[0] = groupSize;
-      }
-      for (auto it = mDecomposition.rbegin(); it != mDecomposition.rend(); ++it) {
-        if (product() > groupSize) {
-          *it = 1;
-        }
-      }
+      ptrdiff_t product = 1;
+      for (auto &&it : mDecomposition)
+        product *= it;
+
+      if (product != groupSize)
+        throw MPICartesianGroupException("Decomposition ", mDecomposition, " describes ", product,
+                                         " ranks but the communicator has ", groupSize,
+                                         ". The decomposition must tile the communicator exactly; build the group via "
+                                         "FFTMPIDomainSplit::makeMPIGroup so it matches the FFT backend.");
     }
   };
 } // namespace TempLat
