@@ -610,7 +610,11 @@ namespace TempLat
 #endif
     }
 
-  private:
+    // Public, not private, only because of an nvcc restriction: the function enclosing an
+    // extended __host__ __device__ lambda (which is what DEVICE_LAMBDA expands to under CUDA)
+    // must not have private or protected access within its class. Both helpers below are
+    // implementation details of the BC path and are not meant to be called from outside.
+  public:
     // Elementwise dst = -src over all sites. Same shape required. GPU-safe via foreach.
     // Guarded by if-constexpr on unary minus so the Antiperiodic branch of applyLocalBCAtDimDepth
     // stays instantiable for element types that do not support negation (e.g. test-only struct types
