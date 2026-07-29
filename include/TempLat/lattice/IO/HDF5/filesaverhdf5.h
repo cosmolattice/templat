@@ -187,6 +187,30 @@ namespace TempLat
     }
 
     /**
+     * @brief Save a uint64_t scalar to a named dataset
+     * @param value The value to save
+     * @param name Dataset name
+     *
+     * Rank-independent counterpart to savePerRank: every rank writes the same
+     * value to a single-element dataset. Used for replicated checkpoint state
+     * (RNG generation counters, aggregated acceptance totals) so that a
+     * checkpoint can be reloaded under any MPI decomposition.
+     */
+    void saveScalarU64(uint64_t value, const std::string &name)
+    {
+      std::string fullName = "/" + name;
+      hsize_t dims[1] = {1};
+      auto dataspace = H5Screate_simple(1, dims, nullptr);
+      auto dataset = H5Dcreate2(mFile.getHandle(), fullName.c_str(), H5T_NATIVE_UINT64, dataspace, H5P_DEFAULT,
+                                H5P_DEFAULT, H5P_DEFAULT);
+
+      H5Dwrite(dataset, H5T_NATIVE_UINT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, &value);
+
+      H5Dclose(dataset);
+      H5Sclose(dataspace);
+    }
+
+    /**
      * @brief Save a string to a named dataset
      * @param str The string to save
      * @param name Dataset name

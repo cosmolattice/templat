@@ -95,6 +95,87 @@ namespace TempLat
     }
 
     /**
+     * @brief Load a uint64_t scalar from a named dataset
+     * @param value The value to load into
+     * @param name Dataset name
+     */
+    void loadScalarU64(uint64_t &value, const std::string &name)
+    {
+      std::string fullName = "/" + name;
+      auto dataset = H5Dopen2(mFile.getHandle(), fullName.c_str(), H5P_DEFAULT);
+
+      H5Dread(dataset, H5T_NATIVE_UINT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, &value);
+
+      H5Dclose(dataset);
+    }
+
+    /**
+     * @brief Check whether a named dataset exists in the file
+     * @param name Dataset name
+     *
+     * Lets callers branch on checkpoint layout without provoking an HDF5 error.
+     */
+    bool datasetExists(const std::string &name)
+    {
+      std::string fullName = "/" + name;
+      return H5Lexists(mFile.getHandle(), fullName.c_str(), H5P_DEFAULT) > 0;
+    }
+
+    /**
+     * @brief Get the dimensions of a named dataset
+     * @param name Dataset name
+     * @return One entry per rank of the dataspace
+     *
+     * Used to distinguish checkpoint RNG layouts: legacy per-rank datasets are
+     * [nRanks, stateLen], where stateLen == 1 for the counter-based generator
+     * and 313/316 for the pre-Philox Mersenne-Twister state.
+     */
+    std::vector<hsize_t> getDatasetDims(const std::string &name)
+    {
+      std::string fullName = "/" + name;
+      auto dataset = H5Dopen2(mFile.getHandle(), fullName.c_str(), H5P_DEFAULT);
+      auto filespace = H5Dget_space(dataset);
+
+      const int ndims = H5Sget_simple_extent_ndims(filespace);
+      std::vector<hsize_t> dims(ndims > 0 ? ndims : 0);
+      if (ndims > 0) H5Sget_simple_extent_dims(filespace, dims.data(), nullptr);
+
+      H5Sclose(filespace);
+      H5Dclose(dataset);
+      return dims;
+    }
+
+    /**
+     * @brief Load every element of a 1-D double dataset
+     * @param values Output: resized to the dataset extent
+     * @param name Dataset name
+     *
+     * loadPerRank reads only this rank's element. This reads the whole array,
+     * which is what a rank-count change needs in order to re-aggregate
+     * per-rank acceptance counters written by a differently sized run.
+     */
+    void loadWholeArray(std::vector<double> &values, const std::string &name)
+    {
+      std::string fullName = "/" + name;
+      auto dataset = H5Dopen2(mFile.getHandle(), fullName.c_str(), H5P_DEFAULT);
+      auto filespace = H5Dget_space(dataset);
+
+      hsize_t dims[1];
+      H5Sget_simple_extent_dims(filespace, dims, nullptr);
+      values.assign(static_cast<size_t>(dims[0]), 0.0);
+
+      auto plist = H5Pcreate(H5P_DATASET_XFER);
+#ifdef HAVE_MPI
+      H5Pset_dxpl_mpio(plist, H5FD_MPIO_INDEPENDENT);
+#endif
+      H5Dread(dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, plist, values.data());
+
+      H5Pclose(plist);
+      H5Sclose(filespace);
+      H5Dclose(dataset);
+    }
+
+    /**
      * @brief Load a string from a named dataset
      * @param str String to load into
      * @param name Dataset name
