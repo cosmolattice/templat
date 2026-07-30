@@ -30,8 +30,6 @@ namespace TempLat
     using SU2DoubletBinaryOperator<R, T>::mR;
     using SU2DoubletBinaryOperator<R, T>::mT;
 
-    using SV = typename SU2GetGetReturnType<R>::type;
-
     SU2SU2DoubletMultiplication(const R &pR, const T &pT) : SU2DoubletBinaryOperator<R, T>(pR, pT) {}
 
     auto SU2DoubletGet(Tag<0> t) const
@@ -66,7 +64,9 @@ namespace TempLat
       const auto cL = DoEval::eval(mR, idx...);
       const auto cR = DoEval::eval(mT, idx...);
 
-      device::array<SV, 4> result;
+      // Element type from the evaluated operands.
+      using SVE = std::decay_t<decltype(cL[0] * cR[0])>;
+      device::array<SVE, 4> result;
       result[0] = cL[0] * cR[0] + cL[2] * cR[2] - cL[3] * cR[1] - cL[1] * cR[3];
       result[1] = cL[0] * cR[1] + cL[3] * cR[0] + cL[2] * cR[3] + cL[1] * cR[2];
       result[2] = -cL[1] * cR[1] + cL[3] * cR[3] - cL[2] * cR[0] + cL[0] * cR[2];

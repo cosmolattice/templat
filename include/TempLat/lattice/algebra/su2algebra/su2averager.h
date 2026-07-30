@@ -18,6 +18,7 @@
 #include "TempLat/util/getcpptypename.h"
 #include "TempLat/lattice/algebra/helpers/getstring.h"
 #include "TempLat/lattice/measuringtools/averagerhelper.h"
+#include "TempLat/lattice/measuringtools/accumulatortype.h"
 #include "TempLat/lattice/algebra/helpers/istemplatgettable.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2getgetreturntype.h"
 #include "TempLat/lattice/algebra/helpers/doeval.h"
@@ -35,7 +36,9 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    using vType = typename SU2GetGetReturnType<T>::type;
+    // Accumulate (and report) in double precision, as the scalar Averager does: a lattice sum runs
+    // over N^3 same-sign terms and loses all significance if kept in a single-precision field type.
+    using vType = AccumulatorType<typename SU2GetGetReturnType<T>::type>;
     static constexpr bool isComplexValued = IsComplexType<vType>;
     static constexpr size_t size = tuple_size<T>::value;
 

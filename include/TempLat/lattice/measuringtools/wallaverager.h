@@ -14,6 +14,7 @@
 #include "TempLat/lattice/algebra/helpers/getndim.h"
 #include "TempLat/lattice/algebra/helpers/haseval.h"
 #include "TempLat/lattice/measuringtools/averagerhelper.h"
+#include "TempLat/lattice/measuringtools/accumulatortype.h"
 
 #include "TempLat/parallel/device_memory.h"
 #include "TempLat/parallel/device_iteration.h"
@@ -29,7 +30,8 @@ namespace TempLat
   template <typename T> class WallAverager
   {
   public:
-    using vType = typename GetGetReturnType<T>::type;
+    // Double-precision accumulation; see the note in su2averager.h.
+    using vType = AccumulatorType<typename GetGetReturnType<T>::type>;
     static constexpr bool isComplexValued = GetGetReturnType<T>::isComplex;
     static constexpr size_t NDim = GetNDim::get<T>();
 

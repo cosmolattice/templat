@@ -65,8 +65,27 @@ namespace TempLat
 
     device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mT); }
 
-    auto getDx() const { return HasDx<R> ? GetDx::getDx(mR) : (HasDx<T> ? GetDx::getDx(mT) : 1.); }
-    auto getKIR() const { return HasKIR<R> ? GetKIR::getKIR(mR) : (HasKIR<T> ? GetKIR::getKIR(mT) : 1.); }
+    // if constexpr rather than a ternary: a ternary would need a common type across the three
+    // branches, and the `1.` fallback used to drag the result to double for every subtree --
+    // including one built entirely out of single-precision fields.
+    auto getDx() const
+    {
+      if constexpr (HasDx<R>)
+        return GetDx::getDx(mR);
+      else if constexpr (HasDx<T>)
+        return GetDx::getDx(mT);
+      else
+        return 1;
+    }
+    auto getKIR() const
+    {
+      if constexpr (HasKIR<R>)
+        return GetKIR::getKIR(mR);
+      else if constexpr (HasKIR<T>)
+        return GetKIR::getKIR(mT);
+      else
+        return 1;
+    }
 
     /** @brief Override this method in your derived class, to have an easy implementation of your toString method. */
     virtual std::string operatorString() const = 0;

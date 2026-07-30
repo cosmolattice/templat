@@ -16,6 +16,7 @@
 #include "TempLat/lattice/algebra/operators/unaryoperator.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
 #include "TempLat/util/powr.h"
+#include "TempLat/lattice/algebra/constants/halftype.h"
 
 namespace TempLat
 {
@@ -48,7 +49,14 @@ namespace TempLat
       {
         using NT1 = std::decay_t<decltype(DoEval::eval(mR, idx...))>;
         using NT2 = std::decay_t<decltype(DoEval::eval(mT, idx...))>;
-        using NT = decltype(NT1{} * NT2{});
+        // sqrt(x) is spelled Power<x, HalfType>, and HalfType evaluates to a double 0.5. Taking the
+        // common type of the two operands would therefore evaluate every square root of a
+        // single-precision expression in double. A square root's natural result type is the one
+        // device::sqrt gives: float for float, double for double or for an integer expression --
+        // which is what the common-type rule already produced in those two cases.
+        using NT = std::conditional_t<std::is_same_v<std::decay_t<T>, HalfType>,
+                                      std::decay_t<decltype(device::sqrt(std::declval<NT1>()))>,
+                                      decltype(NT1{} * NT2{})>;
         return pow(static_cast<NT>(DoEval::eval(mR, idx...)), static_cast<NT>(DoEval::eval(mT, idx...)));
       }
 

@@ -37,8 +37,8 @@ namespace TempLat
 
     auto CovMinus = MakeVector(
         i, 1, dim,
-        (1.0 / dx) * (scalar - fold_multiply(MakeArray(j, 0, size - 2, dagger(shift(list.getComp(j)(i), -i)))) *
-                                   shift(scalar, -i)));
+        (scalar - fold_multiply(MakeArray(j, 0, size - 2, dagger(shift(list.getComp(j)(i), -i)))) * shift(scalar, -i)) /
+            dx);
 
     return CovMinus;
   }

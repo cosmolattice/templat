@@ -15,11 +15,11 @@ namespace TempLat
    * direction. Returns a vector expression when called without an index.
    * @vocab-signature electricField2(Es)   electricField2(Es, i)
    **/
-  template <typename R> auto electricField2(R Es, Tag<1> t) { return 0.5 * (Es(1_c) + shift(Es(1_c), -1_c)); }
+  template <typename R> auto electricField2(R Es, Tag<1> t) { return 0.5f * (Es(1_c) + shift(Es(1_c), -1_c)); }
 
-  template <typename R> auto electricField2(R Es, Tag<2> t) { return 0.5 * (Es(2_c) + shift(Es(2_c), -2_c)); }
+  template <typename R> auto electricField2(R Es, Tag<2> t) { return 0.5f * (Es(2_c) + shift(Es(2_c), -2_c)); }
 
-  template <typename R> auto electricField2(R Es, Tag<3> t) { return 0.5 * (Es(3_c) + shift(Es(3_c), -3_c)); }
+  template <typename R> auto electricField2(R Es, Tag<3> t) { return 0.5f * (Es(3_c) + shift(Es(3_c), -3_c)); }
 
   template <typename R> auto electricField2(R &&Es) { return MakeVector(i, 1, 3, electricField2(Es, i)); }
 } // namespace TempLat

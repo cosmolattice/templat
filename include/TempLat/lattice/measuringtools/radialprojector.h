@@ -300,9 +300,9 @@ namespace TempLat
     /** @brief Creates the lambda that maps the IterationCoordinates to a bin. */
     inline auto makeBinComputer(device::Idx nLinearBins, sType minValue, sType maxValue = -1, sType deltakBins = -1)
     {
-      auto rMax = maxValue < 0 ? mLayout.getMaxRadius() : maxValue;
+      const sType rMax = maxValue < 0 ? mLayout.template getMaxRadius<sType>() : maxValue;
 
-      return RadialBinComputer(minValue, rMax, nLinearBins, deltakBins);
+      return RadialBinComputer<sType>(minValue, rMax, nLinearBins, deltakBins);
     }
   };
 

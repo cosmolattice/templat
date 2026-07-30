@@ -42,11 +42,14 @@ namespace TempLat
     auto UMinusMinus = MakeVector(
         i, 1, dim, fold_multiply(MakeArray(j, 0, size - 2, dagger(shift(shift(list.getComp(j)(i), -i), -i)))));
 
+    // The stencil weights are not exactly representable, so they are formed in the lattice's own
+    // float type: as double literals they would promote the whole expression to fp64.
+    using FT = std::decay_t<decltype(dx)>;
     auto Cov = MakeVector(i, 1, dim,
-                          (1 / dx) * (-(1.0 / 12) * UPlusPlus(i) * shift(shift(scalar, i), i) +
-                                      +(2.0 / 3.0) * UPlus(i) * shift(scalar, i) -
-                                      (2.0 / 3.0) * UMinus(i) * shift(scalar, -i)) +
-                              (1.0 / 12.0) * UMinusMinus(i) * shift(shift(scalar, -i), -i));
+                          (1 / dx) * (-(FT(1) / FT(12)) * UPlusPlus(i) * shift(shift(scalar, i), i) +
+                                      +(FT(2) / FT(3)) * UPlus(i) * shift(scalar, i) -
+                                      (FT(2) / FT(3)) * UMinus(i) * shift(scalar, -i)) +
+                              (FT(1) / FT(12)) * UMinusMinus(i) * shift(shift(scalar, -i), -i));
     return Cov;
   }
   /**

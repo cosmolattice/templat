@@ -30,8 +30,6 @@ namespace TempLat
   template <typename R, typename T> class SU2Multiplication : public SU2BinaryOperator<R, T>
   {
   public:
-    using SV = typename SU2GetGetReturnType<R>::type;
-
     using SU2BinaryOperator<R, T>::mR;
     using SU2BinaryOperator<R, T>::mT;
 
@@ -69,7 +67,9 @@ namespace TempLat
     {
       const auto cL = DoEval::eval(mR, idx...);
       const auto cR = DoEval::eval(mT, idx...);
-      device::array<SV, 4> result;
+      // The element type has to come from the operands we actually evaluated.
+      using SVE = std::decay_t<decltype(cL[0] * cR[0])>;
+      device::array<SVE, 4> result;
       PauliVectorsAlgebra::multiply_inplace(result, cL, cR);
       return result;
     }
