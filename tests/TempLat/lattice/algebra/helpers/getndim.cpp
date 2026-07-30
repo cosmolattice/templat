@@ -1,9 +1,9 @@
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Franz R. Sattler, Year: 2025
 #include "TempLat/lattice/algebra/helpers/getndim.h"
 #include "TempLat/util/tdd/tdd.h"
 #include "TempLat/lattice/field/field.h"
@@ -17,7 +17,10 @@ namespace TempLat
 
   void GetNDimTester::Test(TDDAssertion &tdd)
   {
+    // 1D MemoryToolBox is rejected at compile time in MPI builds (see memorytoolbox.h static_assert).
+#ifndef HAVE_MPI
     tdd.verify(GetNDim::get<Field<double, 1>>() == 1);
+#endif
     tdd.verify(GetNDim::get<Field<double, 2>>() == 2);
     tdd.verify(GetNDim::get<Field<double, 3>>() == 3);
     tdd.verify(GetNDim::get<Field<double, 4>>() == 4);

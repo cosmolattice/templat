@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_COMPLEXFIELDALGEBRA_U1WRAPPER_H
 #define COSMOINTERFACE_COMPLEXFIELDALGEBRA_U1WRAPPER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2019
+// File info: Main contributor(s): Adrien Florio, Year: 2019
 
 #include "TempLat/util/rangeiteration/make_list_tag.h"
 #include "TempLat/lattice/algebra/helpers/doeval.h"
@@ -44,6 +44,11 @@ namespace TempLat
     std::string toString() const { return "U1(" + GetString::get(mR) + ")"; }
   };
 
+  /**
+   * @vocab-summary Exponential map for $U(1)$: turns a real phase $\theta$ into the unit-modulus complex number
+   *   $e^{i\theta}$.
+   * @vocab-tags ComplexField
+   **/
   template <typename R> auto complexPhase(R &&r) { return U1Exponential<R>(std::forward<R>(r)); }
 } // namespace TempLat
 

@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2EXPMAP_H
 #define TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2EXPMAP_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2024
+// File info: Main contributor(s): Adrien Florio, Year: 2024
 
 #include "TempLat/lattice/algebra/su2algebra/helpers/hassu2get.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
@@ -33,7 +33,6 @@ namespace TempLat
   template <typename R> class SU2ExpMap : public SU2UnaryOperator<R>
   {
   public:
-    using SV = typename SU2GetGetReturnType<R>::type;
     using SU2UnaryOperator<R>::mR;
 
     SU2ExpMap(const R &pR) : SU2UnaryOperator<R>(pR) {}
@@ -63,7 +62,8 @@ namespace TempLat
       }
     DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
-      device::array<SV, 4> cL = DoEval::eval(mR, idx...);
+      // Keep the element type of the evaluated operand; see the note in su2multiply.h
+      auto cL = DoEval::eval(mR, idx...);
       PauliVectorsAlgebra::expmap_inplace(cL);
       return cL;
     }
@@ -71,6 +71,9 @@ namespace TempLat
     std::string toString() const { return "exp(" + GetString::get(mR) + ")"; }
   };
 
+  /**
+   * @vocab-summary Exponential map from the su(2) algebra to the SU(2) group.
+   **/
   template <class R>
     requires HasSU2Get<R>
   auto exp(const R &r)

@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_COORDINATES_MULTIPLICITY_H
 #define TEMPLAT_LATTICE_ALGEBRA_COORDINATES_MULTIPLICITY_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Nicolas Loayza, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Nicolás Loayza, Franz R. Sattler, Year: 2025
 
 #include <vector>
 #include <cmath>
@@ -67,6 +67,9 @@ namespace TempLat
    *        Generalized to arbitrary NDim.
    *
    * Unit test: ctest -R test-momentummultiplicity
+   *
+   * @vocab-summary How many modes share the $|k|$ of the current Fourier site — the weight a correctly
+   * normalised spectrum needs.
    */
   template <typename T, size_t NDim> class MomentumMultiplicity
   {

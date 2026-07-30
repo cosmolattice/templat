@@ -1,14 +1,15 @@
 #ifndef COSMOINTERFACE_MATRIX3X3ALGEBRA_SYMTRACELESSWRAPPER_H
 #define COSMOINTERFACE_MATRIX3X3ALGEBRA_SYMTRACELESSWRAPPER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Jorge Baeza-Ballesteros,  Year: 2026
+// File info: Main contributor(s): Jorge Baeza-Ballesteros, Year: 2026
 
 #include "TempLat/lattice/algebra/matrix3x3algebra/allmatrixoperator.h"
 #include "TempLat/lattice/algebra/helpers/doeval.h"
+#include "TempLat/lattice/algebra/helpers/getgetreturntype.h"
 #include "TempLat/lattice/algebra/helpers/getstring.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
 
@@ -17,10 +18,10 @@
 
 namespace TempLat
 {
-  /** @brief A class which wraps two objects as a symmetric traceless .
+  /** @brief A class which wraps six expressions as a symmetric 3x3 matrix whose trace is subtracted on evaluation.
    *
    *
-   * Unit test: ctest -R test-symtracelesswrapperwrapper
+   * Unit test: ctest -R test-symtracelesswrapper
    **/
   template <class R0, class R1, class R2, class R3, class R4, class R5>
   class SymTracelessWrapper : public SymTracelessOperator
@@ -34,12 +35,18 @@ namespace TempLat
     }
     SymTracelessWrapper() = default;
 
-    auto SymTracelessGet(Tag<0> t) const { return (2. / 3.) * mR0 - (1. / 3.) * mR3 - (1. / 3.) * mR5; }
+    // The trace-subtraction weights are formed in the operands' own numeric type: as double literals
+    // they would promote the whole symbolic expression, which then disagrees with the eval path below.
+    using FT = typename GetGetReturnType<R0>::type;
+    static FT oneThird() { return FT(1) / FT(3); }
+    static FT twoThirds() { return FT(2) / FT(3); }
+
+    auto SymTracelessGet(Tag<0> t) const { return twoThirds() * mR0 - oneThird() * mR3 - oneThird() * mR5; }
     auto SymTracelessGet(Tag<1> t) const { return mR1; }
     auto SymTracelessGet(Tag<2> t) const { return mR2; }
-    auto SymTracelessGet(Tag<3> t) const { return -(1. / 3.) * mR0 + (2. / 3.) * mR3 - (1. / 3.) * mR5; }
+    auto SymTracelessGet(Tag<3> t) const { return -oneThird() * mR0 + twoThirds() * mR3 - oneThird() * mR5; }
     auto SymTracelessGet(Tag<4> t) const { return mR4; }
-    auto SymTracelessGet(Tag<5> t) const { return -(1. / 3.) * mR0 - (1. / 3.) * mR3 + (2. / 3.) * mR5; }
+    auto SymTracelessGet(Tag<5> t) const { return -oneThird() * mR0 - oneThird() * mR3 + twoThirds() * mR5; }
 
     auto SymTracelessGet(Tag<1> t1, Tag<1> t2) const { return SymTracelessGet(0_c); }
     auto SymTracelessGet(Tag<1> t1, Tag<2> t2) const { return SymTracelessGet(1_c); }
@@ -77,8 +84,9 @@ namespace TempLat
       result[3] = DoEval::eval(mR3, idx...);
       result[4] = DoEval::eval(mR4, idx...);
       const auto trace = result[0] + result[3] + DoEval::eval(mR5, idx...);
-      result[0] -= 1. / 3. * trace;
-      result[3] -= 1. / 3. * trace;
+      using ET = std::decay_t<decltype(trace)>;
+      result[0] -= ET(1) / ET(3) * trace;
+      result[3] -= ET(1) / ET(3) * trace;
       return result;
     }
 
@@ -118,6 +126,12 @@ namespace TempLat
     R5 mR5;
   };
 
+  /**
+   * @vocab-summary Builds a symmetric $3\times3$ expression whose trace is subtracted on evaluation, so the
+   * result is traceless by construction.
+   * @vocab-signature ConstructSymTraceless(t11, t12, t13, t22, t23, t33)
+   * @vocab-tags SymTraceless
+   **/
   template <typename R0, typename R1, typename R2, typename R3, typename R4, typename R5>
   SymTracelessWrapper<R0, R1, R2, R3, R4, R5> ConstructSymTraceless(const R0 &r0, const R1 &r1, const R2 &r2,
                                                                     const R3 &r3, const R4 &r4, const R5 &r5)

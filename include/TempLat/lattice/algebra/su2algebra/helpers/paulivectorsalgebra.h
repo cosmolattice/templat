@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_HELPERS_PAULIVECTORSALGEBRA_H
 #define TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_HELPERS_PAULIVECTORSALGEBRA_H
 
-/*  This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s):  Adrien Florio, Year: 2025
+// File info: Main contributor(s): Adrien Florio, Year: 2025
 
 #include "TempLat/parallel/device.h"
 
@@ -29,14 +29,22 @@ namespace TempLat
      * @param cL The left element of the multiplication. Must be an array of size 4.
      * @param cR The right element of the multiplication. Must be an array of size 4.
      */
-    template <typename Array>
-      requires requires(Array a) {
+    template <typename ResArray, typename ArrayL, typename ArrayR>
+      requires requires(ResArray r, ArrayL a, ArrayR b) {
+        r[0];
+        r[1];
+        r[2];
+        r[3];
         a[0];
         a[1];
         a[2];
         a[3];
+        b[0];
+        b[1];
+        b[2];
+        b[3];
       }
-    DEVICE_INLINE_FUNCTION static void multiply_inplace(Array &res, const Array &cL, const Array &cR)
+    DEVICE_INLINE_FUNCTION static void multiply_inplace(ResArray &res, const ArrayL &cL, const ArrayR &cR)
     {
       res[0] = cL[0] * cR[0] - cL[1] * cR[1] - cL[2] * cR[2] - cL[3] * cR[3];
       res[1] = cL[0] * cR[1] + cL[1] * cR[0] + cL[3] * cR[2] - cL[2] * cR[3];

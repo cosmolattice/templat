@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_OPERATORS_DIVIDE_H
 #define TEMPLAT_LATTICE_ALGEBRA_OPERATORS_DIVIDE_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 
 #include "TempLat/lattice/algebra/helpers/getderiv.h"
 #include "TempLat/lattice/algebra/operators/binaryoperator.h"
@@ -91,7 +91,10 @@ namespace TempLat
     };
   } // namespace Operators
 
-  /** @brief Exposing our newly define multiplication operation to the world. */
+  /** @brief Exposing our newly define multiplication operation to the world.
+   *
+   * @vocab-summary Element-wise division.
+   **/
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
   auto operator/(const R &r, const T &t)
@@ -99,6 +102,11 @@ namespace TempLat
     return Operators::Division<R, T>(r, t);
   }
 
+  /**
+   * @vocab-summary Division that yields exactly zero where the numerator does, instead of evaluating 0/0.
+   * Written for normalising spectra against a cutoff.
+   * @vocab-signature safeDivide(numerator, denominator)
+   **/
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
   auto safeDivide(const R &r, const T &t)

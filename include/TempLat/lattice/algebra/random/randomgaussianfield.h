@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_RANDOM_RANDOMGAUSSIANFIELD_H
 #define TEMPLAT_LATTICE_ALGEBRA_RANDOM_RANDOMGAUSSIANFIELD_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/coordinates/dimensioncountrecorder.h"
 #include "TempLat/util/constexpr_for.h"
@@ -175,17 +175,33 @@ namespace TempLat
     device::IdxArray<NDim> mGlobalSizes;
   };
 
+  /**
+   * @vocab-summary Gaussian random field generated directly in Fourier space.
+   * @vocab-tags Field, Fourier
+   **/
   template <typename T, size_t NDim = 0>
   using RandomGaussianField = RandomGaussianFieldHelper<T, NDim, SpaceStateType::Fourier, false, false>;
 
+  /**
+   * @vocab-summary Fourier-space field with Rayleigh-distributed amplitude and uniform random phase.
+   * @vocab-tags Field, Fourier
+   **/
   template <typename T, size_t NDim = 0>
   using RandomRayleighField = RandomGaussianFieldHelper<T, NDim, SpaceStateType::Fourier, true, false>;
 
+  /**
+   * @vocab-summary Fourier-space field of unit modulus with uniformly random phase.
+   * @vocab-tags Field, Fourier
+   **/
   template <typename T, size_t NDim = 0>
   using RandomUniformUnitaryField = RandomGaussianFieldHelper<T, NDim, SpaceStateType::Fourier, false, true>;
 
   /** @brief A Gaussian random field directly in configuration space: independent real N(0,1) white noise
    *  per lattice site (flat spectrum). NOT equivalent to drawing in Fourier space and transforming unless
+   *
+   * @vocab-summary Gaussian random field in configuration space: an independent normal draw per site. The
+   * counter-based generator makes each site independent of every other, so results are identical whatever the
+   *   decomposition.
    *  the target spectrum is flat -- for a specific P(k), assign in Fourier space instead. */
   template <typename T, size_t NDim = 0>
   using RandomGaussianFieldConfig = RandomGaussianFieldHelper<T, NDim, SpaceStateType::Configuration, false, false>;

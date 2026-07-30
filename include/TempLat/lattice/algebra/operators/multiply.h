@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_MULTIPLY_H
 #define TEMPLAT_LATTICE_ALGEBRA_MULTIPLY_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/conditional/conditionalbinarygetter.h"
 #include "TempLat/lattice/algebra/helpers/getderiv.h"
@@ -81,7 +81,11 @@ namespace TempLat
     };
   } // namespace Operators
 
-  /** @brief Exposing our newly define multiplication operation to the world. */
+  /** @brief Exposing our newly define multiplication operation to the world.
+   *
+   * @vocab-summary Product of two expressions. The meaning follows the operands: numbers and fields multiply
+   * point-wise, SU(2) elements compose as quaternions, matrices contract, collections multiply component-wise.
+   **/
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
   auto operator*(const R &r, const T &t)

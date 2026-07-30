@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_BINARYOPERATOR_H
 #define TEMPLAT_LATTICE_ALGEBRA_BINARYOPERATOR_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 #include "TempLat/lattice/algebra/helpers/confirmspace.h"
@@ -65,8 +65,27 @@ namespace TempLat
 
     device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mT); }
 
-    auto getDx() const { return HasDx<R> ? GetDx::getDx(mR) : (HasDx<T> ? GetDx::getDx(mT) : 1.); }
-    auto getKIR() const { return HasKIR<R> ? GetKIR::getKIR(mR) : (HasKIR<T> ? GetKIR::getKIR(mT) : 1.); }
+    // if constexpr rather than a ternary: a ternary would need a common type across the three
+    // branches, and the `1.` fallback used to drag the result to double for every subtree --
+    // including one built entirely out of single-precision fields.
+    auto getDx() const
+    {
+      if constexpr (HasDx<R>)
+        return GetDx::getDx(mR);
+      else if constexpr (HasDx<T>)
+        return GetDx::getDx(mT);
+      else
+        return 1;
+    }
+    auto getKIR() const
+    {
+      if constexpr (HasKIR<R>)
+        return GetKIR::getKIR(mR);
+      else if constexpr (HasKIR<T>)
+        return GetKIR::getKIR(mT);
+      else
+        return 1;
+    }
 
     /** @brief Override this method in your derived class, to have an easy implementation of your toString method. */
     virtual std::string operatorString() const = 0;

@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_GAUGEALGEBRA_FORWARDCOVARIANTDERIVATIVE_H
 #define COSMOINTERFACE_GAUGEALGEBRA_FORWARDCOVARIANTDERIVATIVE_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2019
+// File info: Main contributor(s): Adrien Florio, Year: 2019
 
 #include "TempLat/util/assignabletuple.h"
 #include "TempLat/lattice/algebra/listoperators/foldmultiply.h"
@@ -31,7 +31,7 @@ namespace TempLat
      vector. auto dx = decltype(scalar)::Getter::get(scalar,0_c).getDx();
 
           auto CovPlus = MakeVector(i,1,dim,
-                                   (1.0/dx)*(binary_fold(
+                                   (1.0f / dx)*(binary_fold(
                                            [](auto x, auto y){return x*y;},
                                            MakeArray(j,0,size-2,list.getComp(j)(i)),
                                            [](auto x){return x;},shift(scalar,i))

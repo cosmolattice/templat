@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_MEASUREMENTS_PROJECTIONHELPERS_UNBINNEDRADIALPROJECTIONRESULT_H
 #define TEMPLAT_LATTICE_MEASUREMENTS_PROJECTIONHELPERS_UNBINNEDRADIALPROJECTIONRESULT_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Jorge Baeza-Ballesteros,  Year: 2026
+// File info: Main contributor(s): Jorge Baeza-Ballesteros, Year: 2026
 //            Based on: Wessel Valkenburg, Year: 2019
 
 #include "TempLat/util/exception.h"
@@ -75,6 +75,7 @@ namespace TempLat
 
     auto integrate(bool dummy)
     {
+      ensureBinWidths(); // setBinWidths() need not have run; fall back to unit widths rather than index OOB.
       auto total = 0.;
       for (size_t i = 0; i < this->size(); ++i) {
         total += std::get<1>((*this)[i]).average / std::get<0>((*this)[i])  * binWidths[i];
@@ -124,6 +125,9 @@ namespace TempLat
       const size_t n = (*this).size();
       if (n < 2) return; // need at least two bins to form a finite bin width
 
+      // finalize() sizes binWidths, but the entries may also have been filled in directly (and a rebinning
+      // changes the count), so size it here rather than relying on the caller.
+      binWidths.assign(n, 1.);
 
       // First bin: forward half-difference, minus the 0.5 offset of the lowest binned mode.
       binWidths[0] = (std::get<0>((*this)[1]) - std::get<0>((*this)[0])) / 2 - 0.5;
@@ -200,6 +204,14 @@ namespace TempLat
     size_t mNBins;
     RadialProjectionSingleQuantity<T> mValues;
     std::vector<T> binWidths; // Width of the bins
+
+    /** @brief binWidths is sized by finalize() and given real values by setBinWidths(), but an instance
+     *  whose entries were filled in directly has run neither. Restore the same unit widths finalize()
+     *  initializes, so a reader can never index out of bounds. */
+    void ensureBinWidths()
+    {
+      if (binWidths.size() != this->size()) binWidths.assign(this->size(), 1.);
+    }
 
     using DeviceView = device::memory::NDView<floatType, 1>;
     using HostMirror = typename DeviceView::host_mirror_type;

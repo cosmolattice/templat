@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_OPERATORS_SINH_H
 #define TEMPLAT_LATTICE_ALGEBRA_OPERATORS_SINH_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/conditional/conditionalunarygetter.h"
 #include "TempLat/lattice/algebra/constants/onetype.h"
@@ -55,7 +55,10 @@ namespace TempLat
     };
   } // namespace Operators
 
-  /** @brief Exposing our newly define exp operation to the world. */
+  /** @brief Exposing our newly define exp operation to the world.
+   *
+   * @vocab-summary Hyperbolic sine, element-wise.
+   **/
   template <typename T>
     requires ConditionalUnaryGetter<T>
   auto sinh(T a)

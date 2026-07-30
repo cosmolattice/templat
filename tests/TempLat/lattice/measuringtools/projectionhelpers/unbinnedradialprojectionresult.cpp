@@ -1,9 +1,9 @@
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Franz R. Sattler,  Year: 2026
+// File info: Main contributor(s): Franz R. Sattler, Year: 2026
 #include "TempLat/lattice/measuringtools/projectionhelpers/unbinnedradialprojectionresult.h"
 #include "TempLat/util/tdd/tdd.h"
 #include "TempLat/util/almostequal.h"
@@ -53,6 +53,18 @@ namespace TempLat
     // E3: toString() used to call getHeader()/toString() on the std::tuple element and did not compile if
     // instantiated. It should now render the stored (position, datum) tuples.
     tdd.verify(!r.toString().empty(), "toString renders the tuple entries");
+
+    // Regression: integrate() reads binWidths, which only finalize() ever sized. On an instance whose
+    // entries were filled in directly -- as above, to avoid needing a communicator -- that was an
+    // out-of-bounds read. It should fall back to the unit widths finalize() would have installed.
+    {
+      UnbinnedRadialProjectionResult<double> u(2);
+      u.push_back(std::make_tuple(1.0, datum(10.0)));
+      u.push_back(std::make_tuple(2.0, datum(20.0)));
+
+      // sum of average/position, each weighted by a unit bin width: 10/1 + 20/2.
+      tdd.verify(AlmostEqual(u.integrate(false), 20.0), "integrate defaults to unit bin widths");
+    }
   }
 
 } // namespace TempLat

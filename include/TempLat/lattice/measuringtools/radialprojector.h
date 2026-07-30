@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_MEASUREMENTS_RADIALPROJECTOR_H
 #define TEMPLAT_LATTICE_MEASUREMENTS_RADIALPROJECTOR_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 //            Modified by: Jorge Baeza-Ballesteros, Year: 2024
 
 #include <algorithm>
@@ -300,12 +300,15 @@ namespace TempLat
     /** @brief Creates the lambda that maps the IterationCoordinates to a bin. */
     inline auto makeBinComputer(device::Idx nLinearBins, sType minValue, sType maxValue = -1, sType deltakBins = -1)
     {
-      auto rMax = maxValue < 0 ? mLayout.getMaxRadius() : maxValue;
+      const sType rMax = maxValue < 0 ? mLayout.template getMaxRadius<sType>() : maxValue;
 
-      return RadialBinComputer(minValue, rMax, nLinearBins, deltakBins);
+      return RadialBinComputer<sType>(minValue, rMax, nLinearBins, deltakBins);
     }
   };
 
+  /**
+   * @vocab-summary Bins an expression by radius, giving a radial profile of an $N$-dimensional lattice.
+   **/
   template <size_t NDim, typename T>
   RadialProjector<T> projectRadially(T instance, SpaceStateType spaceType,
                                      device::memory::host_ptr<MemoryToolBox<NDim>> pToolBox,
@@ -319,6 +322,10 @@ namespace TempLat
     return projectRadially(instance, SpaceStateType::Configuration, GetToolBox::get(instance), useBinCentralValues);
   }
 
+  /**
+   * @vocab-summary Bins an expression by $|k|$, the usual way to take a power spectrum.
+   * @vocab-tags Field, Fourier
+   **/
   template <typename T> RadialProjector<T> projectRadiallyFourier(T instance, bool useBinCentralValues = false)
   {
     return projectRadially(instance, SpaceStateType::Fourier, GetToolBox::get(instance), useBinCentralValues);

@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_OPERATORS_LISTOPERATORS_TOTAL_H
 #define TEMPLAT_LATTICE_ALGEBRA_OPERATORS_LISTOPERATORS_TOTAL_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2026
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2026
 
 #include "TempLat/lattice/algebra/constants/zerotype.h"
 #include "TempLat/lattice/algebra/operators/add.h"
@@ -26,6 +26,10 @@ namespace TempLat
    *
    *  @param tup the tuple to sum over
    *  @param func the function to apply to each component before summing
+   *
+   * @vocab-summary Sums every component of a tuple-like expression, optionally applying a function to each
+   * first. Reduces over the components, not over the lattice.
+   * @vocab-signature total(tup)   total(tup, f)
    **/
   template <class Tuple, typename Function> constexpr auto total(Tuple &&tup, Function &&func)
   {

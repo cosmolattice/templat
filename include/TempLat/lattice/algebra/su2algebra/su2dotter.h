@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2DOTTER_H
 #define TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2DOTTER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Franz R. Sattler,  Year: 2026
+// File info: Main contributor(s): Franz R. Sattler, Year: 2026
 
 #include "TempLat/lattice/algebra/operators/binaryoperator.h"
 #include "TempLat/lattice/algebra/helpers/doeval.h"
@@ -55,6 +55,10 @@ namespace TempLat
     virtual std::string operatorString() const override { return "·"; }
   };
 
+  /**
+   * @vocab-summary Lie-algebra inner product $\langle A,B\rangle = \sum_{a=1}^{3} A_a B_a$, evaluated in one
+   * fused pass rather than by building three component expressions.
+   **/
   template <class R, class T>
     requires(HasSU2Get<R> && HasSU2Get<T>)
   auto su2dotter(const R &r, const T &t)

@@ -2,11 +2,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_SHIFT_H
 #define TEMPLAT_LATTICE_ALGEBRA_SHIFT_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
 #include "TempLat/lattice/algebra/operators/unaryoperator.h"
@@ -87,6 +87,13 @@ namespace TempLat
     std::string toString() const { return GetString::get(mR) + "_(->" + std::to_string(N) + ")"; }
   };
 
+  /**
+   * @vocab-summary Reads an expression at a site offset by a constant lattice vector: `shift(phi, 1_c)` is
+   * $\phi(x+\hat e_1)$. Every finite-difference operator is built from it, and it is what tells TempLat which
+   * ghost cells to exchange.
+   * @vocab-signature shift(expr, mu)   shift<i,j,k>(expr)
+   * @vocab-example auto p = (Us(mu) * shift(Us(nu), mu)) * dagger(shift(Us(mu), nu)) * dagger(Us(nu));
+   **/
   template <int... shifts, class R>
     requires((sizeof...(shifts) > 1) && tuple_size<R>::value == 1)
   auto shift(const R &pR)

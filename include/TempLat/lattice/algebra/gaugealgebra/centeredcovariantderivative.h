@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_GAUGEALGEBRA_CENTEREDCOVARIANTDERIVATIVE_H
 #define TEMPLAT_LATTICE_ALGEBRA_GAUGEALGEBRA_CENTEREDCOVARIANTDERIVATIVE_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2020
+// File info: Main contributor(s): Adrien Florio, Year: 2020
 
 #include "TempLat/util/assignabletuple.h"
 #include "TempLat/lattice/algebra/listoperators/foldmultiply.h"
@@ -18,6 +18,10 @@ namespace TempLat
    *
    *
    * Unit test: ctest -R test-centeredcovariantderivative
+   *
+   * @vocab-summary Centred gauge-covariant derivative, accurate to $O(dx^2)$. Takes the gauge vectors followed
+   * by the scalar.
+   * @vocab-signature CenteredCovariantDerivative<dim>(Us..., scalar)
    **/
   template <size_t dim, class... Args> auto CenteredCovariantDerivative(Args... args)
   {
@@ -32,11 +36,14 @@ namespace TempLat
     auto UMinus =
         MakeVector(i, 1, dim, fold_multiply(MakeArray(j, 0, size - 2, dagger(shift(list.getComp(j)(i), -i)))));
 
-    auto Cov = MakeVector(i, 1, dim, (0.5 / dx) * (UPlus(i) * shift(scalar, i) - UMinus(i) * shift(scalar, -i)));
+    auto Cov = MakeVector(i, 1, dim, (0.5f / dx) * (UPlus(i) * shift(scalar, i) - UMinus(i) * shift(scalar, -i)));
 
     return Cov;
   }
 
+  /**
+   * @vocab-summary The ungauged centred derivative — CenteredCovariantDerivative with no links.
+   **/
   template <size_t dim, class T> auto CenteredDerivative(T t) { return CenteredCovariantDerivative<dim>(t); }
 } // namespace TempLat
 

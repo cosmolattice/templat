@@ -1,5 +1,11 @@
 # TempLat
-*This repo is under active development; expect breaking changes.*
+
+[![TempLat Logo](https://raw.githubusercontent.com/cosmolattice/templat/refs/heads/main/docs/logo/logo_red_nobg.svg)](https://cosmolattice.github.io/templat/index.html)
+
+[![Static Badge](https://img.shields.io/badge/website-grey?link=https%3A%2F%2Fcosmolattice.github.io%2Ftemplat%2Findex.html)](https://cosmolattice.github.io/templat/index.html)
+[![Static Badge](https://img.shields.io/badge/docs-blue?link=https%3A%2F%2Fcosmolattice.github.io%2Ftemplat%2Fvocabulary.html)](https://cosmolattice.github.io/templat/vocabulary.html)
+
+
 ## Using TempLat in your project
 
 *Minimal requirements:* 
@@ -53,6 +59,36 @@ Which should output
 Hello, TempLat!
 ```
 
+### The umbrella header
+
+TempLat is header-only and spread over several hundred headers. Rather than tracking down
+which header a given class lives in, you can pull in the entire library at once:
+
+```c++
+#include <TempLat.h>
+
+int main(int argc, char *argv[])
+{
+  using namespace TempLat;
+  SessionGuard guard(argc, argv);
+
+  auto toolBox = MemoryToolBox<3>::makeShared(128, 1);
+  Field<double, 3> phi("phi", toolBox);
+  phi = 2 + RandomGaussianFieldConfig<double, 3>("seed", toolBox);
+
+  sayMPI << "<phi> = " << average(phi) << "\n";
+
+  return 0;
+};
+```
+
+`<TempLat.h>` adapts itself to how TempLat was configured — the MPI, HDF5, ParaFaFT and
+KokkosFFT parts switch themselves off when you did not build against those libraries — and it
+picks the FFT and device backends for you.
+
+It is a convenience, not a replacement: including everything costs compile time, so translation
+units that only touch a small corner of the library are still better off including the individual
+headers directly.
 
 ### Choosing the device
 
@@ -138,3 +174,20 @@ All custom CMake flags can be passed when configuring the user project, e.g. `cm
 | `KOKKOS_NUM_THREADS` | Requested number of CPU threads per process. Treated as an upper bound: the effective count is `min(value, hardwareCores / MPI-ranks-per-node)`.                                                                |
 | `OMP_NUM_THREADS`    | Same effect as `KOKKOS_NUM_THREADS`. If both variables are set, the larger value wins.                                                                                                                          |
 | `GPU_NOCONSTRAIN`    | Set to `1` to allow more MPI ranks per node than GPUs (oversubscription, e.g. via CUDA MPS). By default the session aborts if `local_ranks > num_devices`. Device assignment wraps via `shmrank % num_devices`. |
+
+### Documentation
+
+The vocabulary page — every field type, container and expression-algebra
+operation, filterable by the types that take part in it — is published at
+[cosmolattice.github.io/templat/vocabulary.html](https://cosmolattice.github.io/templat/vocabulary.html).
+
+It is generated from the headers and committed, so regenerate it whenever you
+add or change an operation:
+
+```bash
+python3 tools/docgen/gen_vocabulary.py --write
+```
+
+A new operation needs no annotation to appear correctly tagged; its filter tags
+are read off the `requires` clause. Write the one-line description into the
+header as `@vocab-summary`. See [tools/docgen/README.md](tools/docgen/README.md).

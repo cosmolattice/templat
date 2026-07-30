@@ -1,0 +1,53 @@
+name: Vocabulary page is up to date
+
+# docs/vocabulary.html is generated from the headers and committed, so that
+# deploy-pages.yml can stay a plain static upload of docs/. This job is what
+# keeps the committed copy honest.
+on:
+  pull_request:
+    paths:
+      - 'include/TempLat/**'
+      - 'docs/vocabulary.html'
+      - 'tools/docgen/**'
+      - '.github/workflows/docs-vocabulary.yml'
+  push:
+    branches: [main, website]
+    paths:
+      - 'include/TempLat/**'
+      - 'docs/vocabulary.html'
+      - 'tools/docgen/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Parser assertions: each one pins a real bug the scanner has hit
+      # before (runaway declaration heads, commented-out code being read,
+      # constant-folding overloads leaking in). Run these first, because a
+      # broken parser makes the staleness check meaningless.
+      - name: Parser self-test
+        run: python3 tools/docgen/gen_vocabulary.py --selftest
+
+      - name: Page is up to date
+        run: python3 tools/docgen/gen_vocabulary.py --check
+
+      - name: Show what regenerating would change
+        if: failure()
+        run: |
+          python3 tools/docgen/gen_vocabulary.py --write || true
+          git --no-pager diff -- docs/vocabulary.html
+          echo
+          echo "::error::docs/vocabulary.html is stale."
+          echo "Run 'python3 tools/docgen/gen_vocabulary.py --write' and commit the result."

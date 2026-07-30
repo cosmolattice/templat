@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_UTIL_RANGEITERATION_SUM_IN_RANGE_H
 #define TEMPLAT_UTIL_RANGEITERATION_SUM_IN_RANGE_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2026
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2026
 
 #include "TempLat/lattice/algebra/constants/zerotype.h"
 #include "TempLat/lattice/algebra/operators/add.h"
@@ -35,6 +35,11 @@ namespace TempLat
 // requires-expression, which clang rejects ("non-local lambda expression cannot have a capture-default"),
 // breaking nested `Total(i, ..., Total(j, ...))` (B2SU2, theta_ijk, ...). Gating on the range keeps the
 // empty-range safety (for end < beg the `expr` branch is never instantiated) without that hazard.
+/**
+ * @vocab-summary Sums `expr` over a compile-time index range — the expression-level $\sum_i$.
+ * @vocab-signature Total(i, beg, end, expr)
+ * @vocab-example auto S = Total(mu, 1, NDim, Total(nu, 1, NDim, trace(plaq(Us, mu, nu))));
+ **/
 #define Total(i, beg, end, expr)                                                                                       \
   TempLat::sum_in_range<beg, end + 1>([&](auto i) {                                                                    \
     if constexpr ((end) < (beg)) {                                                                                     \

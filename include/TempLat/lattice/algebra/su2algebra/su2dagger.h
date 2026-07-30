@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_SU2ALGEBRA_SU2DAGGER_H
 #define COSMOINTERFACE_SU2ALGEBRA_SU2DAGGER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2019
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2019
 
 #include <type_traits>
 
@@ -66,6 +66,10 @@ namespace TempLat
     std::string toString() const { return GetString::get(mR) + "^\u2020"; }
   };
 
+  /**
+   * @vocab-summary Hermitian conjugate. For SU(2) it negates the three vector components; the operator factory
+   * also simplifies as it builds, collapsing $(A^\dagger)^\dagger$ to $A$ and commuting past a shift.
+   **/
   template <class R>
     requires HasSU2Get<R>
   auto dagger(const R &r)
@@ -112,6 +116,9 @@ namespace TempLat
   template <class R, int... N> auto dagger(const SU2Shifter<R, N...> &s) { return shift<N...>(dagger(s.getOperand())); }
   template <class R, int N> auto dagger(const SU2ShifterByOne<R, N> &s) { return shift<N>(dagger(s.getOperand())); }
 
+  /**
+   * @vocab-summary Short spelling of dagger.
+   **/
   template <class R>
     requires HasSU2Get<R>
   auto dag(const R &r)

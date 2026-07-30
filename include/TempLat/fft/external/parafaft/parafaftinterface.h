@@ -1,11 +1,11 @@
 #if !defined(TempLat_FFT_EXTERNAL_PARAFAFT_PARAFAFTINTERFACE_H) && defined(HAVE_PARAFAFT)
 #define TempLat_FFT_EXTERNAL_PARAFAFT_PARAFAFTINTERFACE_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2026
+// File info: Main contributor(s): Adrien Florio, Year: 2026
 
 #include "TempLat/fft/external/parafaft/parafaftmemorylayout.h"
 #include "TempLat/fft/fftdecomposition.h"

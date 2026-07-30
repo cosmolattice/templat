@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_COMPLEXALGEBRA_ARG2_H
 #define TEMPLAT_LATTICE_ALGEBRA_COMPLEXALGEBRA_ARG2_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2026
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2026
 
 #include "TempLat/lattice/algebra/conditional/conditionalbinarygetter.h"
 #include "TempLat/lattice/algebra/constants/onetype.h"
@@ -60,6 +60,10 @@ namespace TempLat
     };
   } // namespace Operators
 
+  /**
+   * @vocab-summary Two-argument arc tangent $\mathrm{atan2}(y, x)$, giving a phase in $(-\pi, \pi]$.
+   * @vocab-signature arg2(y, x)
+   **/
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
   auto arg2(R r, T t)

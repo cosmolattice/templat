@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_SPATIALDERIVATIVES_BACKDIFF_H
 #define TEMPLAT_LATTICE_ALGEBRA_SPATIALDERIVATIVES_BACKDIFF_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #include "TempLat/util/rangeiteration/tag.h"
 #include "TempLat/lattice/algebra/helpers/getdx.h"
@@ -64,6 +64,10 @@ namespace TempLat
     const FloatType dx;
   };
 
+  /**
+   * @vocab-summary Backward finite difference $\big(f(x) - f(x-\hat e_\mu)\big)/dx$ along direction `mu`.
+   * @vocab-signature backDiff(expr, mu)
+   **/
   template <class R, int N>
     requires(HasEvalMethod<R> && GetNDim::get<std::decay_t<R>>() > 0)
   auto backDiff(R pR, Tag<N> t)

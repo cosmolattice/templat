@@ -1,9 +1,9 @@
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 #include "TempLat/lattice/measuringtools/projectionhelpers/radialbincomputer.h"
 #include "TempLat/util/tdd/tdd.h"
 
@@ -17,7 +17,7 @@ namespace TempLat
   void RadialBinComputerTester::Test(TDDAssertion &tdd)
   {
 
-    RadialBinComputer pc(1, 3, 4, 1);
+    RadialBinComputer<double> pc(1, 3, 4, 1);
 
     /* Default is to fail: to remind yourself to implement something here. */
     tdd.verify(pc(1.1) == 0);

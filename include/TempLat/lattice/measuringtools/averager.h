@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_MEASUREMENTS_AVERAGER_H
 #define TEMPLAT_LATTICE_MEASUREMENTS_AVERAGER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
 
 #include "TempLat/util/getcpptypename.h"
 #include "TempLat/lattice/algebra/helpers/getgetreturntype.h"
@@ -14,13 +14,15 @@
 #include "TempLat/lattice/algebra/helpers/getndim.h"
 #include "TempLat/lattice/algebra/helpers/getstring.h"
 #include "TempLat/lattice/measuringtools/averagerhelper.h"
+#include "TempLat/lattice/measuringtools/accumulatortype.h"
 
 #include "TempLat/parallel/device_iteration.h"
 
 namespace TempLat
 {
-  template <typename T>
-  using AveragerReturnType = std::conditional_t<std::is_integral_v<T> || std::is_floating_point_v<T>, double, T>;
+  /** @brief Kept as the historical name for AccumulatorType, which additionally promotes
+   * complex<float> to complex<double> instead of leaving it in single precision. **/
+  template <typename T> using AveragerReturnType = AccumulatorType<T>;
 
   /** @brief A class which computes the average value of a getter.
    *
@@ -137,6 +139,11 @@ namespace TempLat
   }
 
   // 0-dim expressions (Number<T>, pow<2>(Number<T>), etc): evaluate at index 0
+  /**
+   * @vocab-summary Average of an expression over the whole lattice and across all MPI ranks. Defaults to
+   * configuration or Fourier space according to the operand.
+   * @vocab-signature average(expr)   average(expr, space)
+   **/
   template <typename T>
     requires(!std::is_arithmetic_v<T> && !std::is_same_v<std::decay_t<T>, ZeroType> &&
              GetNDim::get<std::decay_t<T>>() == 0)

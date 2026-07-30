@@ -6,3 +6,6 @@ build*/
 *.DS_Store
 */.DS_Store
 */*/.DS_Store
+
+*.kate-swp
+*.swp

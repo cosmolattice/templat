@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_MEASUREMENTS_PROJECTIONHELPERS_RADIALPROJECTIONRESULT_H
 #define TEMPLAT_LATTICE_MEASUREMENTS_PROJECTIONHELPERS_RADIALPROJECTIONRESULT_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 
 #include "TempLat/util/exception.h"
 #include "TempLat/lattice/algebra/helpers/getfloattype.h"
@@ -48,7 +48,7 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     RadialProjectionResult(size_t nBins, T deltakBins, bool pUseBinCentralValues = false, bool pIsInFourier = false)
         : std::vector<RadialProjectionSingleBinAndValue<T>>(), finalizedOnce(false), mNBins(nBins), mDeltakBins(deltakBins), mValues(mNBins),
-          mBinBounds(mNBins), mUseBinCentralValues(pUseBinCentralValues), mIsInFourier(pIsInFourier)
+          mBinBounds(mNBins), centralBinBounds(mNBins), mUseBinCentralValues(pUseBinCentralValues), mIsInFourier(pIsInFourier)
     {
       mMultiplicitiesDevice = DeviceView("RadialProjectionResult::mMultiplicitiesDevice", mNBins);
       mMultiplicities = device::memory::createMirrorView(mMultiplicitiesDevice);
@@ -64,8 +64,8 @@ namespace TempLat
     template <typename U>
     RadialProjectionResult(const RadialProjectionResult<U> &other)
         : std::vector<RadialProjectionSingleBinAndValue<T>>(), finalizedOnce(other.finalizedOnce), mNBins(other.mNBins),
-          mValues(other.mNBins), mBinBounds(other.mNBins), mUseBinCentralValues(other.mUseBinCentralValues),
-          mIsInFourier(other.mIsInFourier)
+          mDeltakBins(static_cast<T>(other.mDeltakBins)), mValues(other.mNBins), mBinBounds(other.mNBins),
+          mUseBinCentralValues(other.mUseBinCentralValues), mIsInFourier(other.mIsInFourier)
     {
       this->reserve(other.size());
       for (const auto &bv : other)
@@ -217,7 +217,9 @@ namespace TempLat
     size_t mNBins;
     T mDeltakBins;
     RadialProjectionSingleQuantity<T> mValues, mBinBounds;
-    std::vector<T> centralBinBounds; // Naive central values of the bin. Does not need to be set.
+    // Naive central values of the bin. Sized to mNBins at construction and zero-filled, so finalize() can
+    // always index it; RadialProjector overwrites it with the real values via setCentralBinBounds().
+    std::vector<T> centralBinBounds;
 
     using DeviceView = device::memory::NDView<floatType, 1>;
     using HostMirror = typename DeviceView::host_mirror_type;

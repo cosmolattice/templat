@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2EXPMAPINV_H
 #define TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2EXPMAPINV_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2024
+// File info: Main contributor(s): Adrien Florio, Year: 2024
 
 #include "TempLat/lattice/algebra/su2algebra/helpers/hassu2get.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
@@ -33,7 +33,6 @@ namespace TempLat
   template <typename R> class SU2ExpMapInv : public SU2UnaryOperator<R>
   {
   public:
-    using SV = typename SU2GetGetReturnType<R>::type;
     using SU2UnaryOperator<R>::mR;
 
     SU2ExpMapInv(const R &pR) : SU2UnaryOperator<R>(pR) {}
@@ -74,10 +73,10 @@ namespace TempLat
       const auto a = device::acos(c[0]);
       const auto sina = device::sin(a);
       // Safe-divide guard: a/sin(a) → 1 as a → 0
-      const auto ratio = (sina * sina > SV(1e-30)) ? a / sina : SV(0);
+      const auto ratio = (sina * sina > decltype(sina)(1e-30)) ? a / sina : decltype(a / sina)(0);
 
       // We can work in-place on c.
-      c[0] = SV(0);
+      c[0] = std::decay_t<decltype(c[0])>(0);
       c[1] = c[1] * ratio;
       c[2] = c[2] * ratio;
       c[3] = c[3] * ratio;
@@ -89,6 +88,10 @@ namespace TempLat
     static constexpr size_t numberToSkipAsTuple = 1;
   };
 
+  /**
+   * @vocab-summary Inverse of the SU(2) exponential map — the logarithm, taking a group element back to the
+   *   algebra.
+   **/
   template <class R>
     requires HasSU2Get<R>
   auto expinv(const R &r)

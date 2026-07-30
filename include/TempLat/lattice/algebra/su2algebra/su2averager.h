@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_SU2ALGEBRA_SU2AVERAGER_H
 #define COSMOINTERFACE_SU2ALGEBRA_SU2AVERAGER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/helpers/getndim.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/hassu2get.h"
@@ -18,6 +18,7 @@
 #include "TempLat/util/getcpptypename.h"
 #include "TempLat/lattice/algebra/helpers/getstring.h"
 #include "TempLat/lattice/measuringtools/averagerhelper.h"
+#include "TempLat/lattice/measuringtools/accumulatortype.h"
 #include "TempLat/lattice/algebra/helpers/istemplatgettable.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2getgetreturntype.h"
 #include "TempLat/lattice/algebra/helpers/doeval.h"
@@ -35,7 +36,9 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    using vType = typename SU2GetGetReturnType<T>::type;
+    // Accumulate (and report) in double precision, as the scalar Averager does: a lattice sum runs
+    // over N^3 same-sign terms and loses all significance if kept in a single-precision field type.
+    using vType = AccumulatorType<typename SU2GetGetReturnType<T>::type>;
     static constexpr bool isComplexValued = IsComplexType<vType>;
     static constexpr size_t size = tuple_size<T>::value;
 
@@ -142,6 +145,9 @@ namespace TempLat
     device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
   };
 
+  /**
+   * @vocab-summary Lattice average of an SU(2)-valued expression, aware of cached link operations.
+   **/
   template <typename T>
     requires HasSU2Get<T>
   auto su2average(T instance, SpaceStateType spaceType = IsComplexType<typename SU2GetGetReturnType<T>::type>

@@ -1,7 +1,10 @@
 #ifndef TEMPLAT_UTIL_DEBUG_STACKTRACEPLAINPTRS_H
 #define TEMPLAT_UTIL_DEBUG_STACKTRACEPLAINPTRS_H
-/* File created by Wessel Valkenburg, 2019 */
-/* Released under the MIT license, see LICENSE.md. */
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
+   Released under the MIT license, see LICENSE.md. */
+
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 
 #include <stdio.h>
 #include <stdlib.h>

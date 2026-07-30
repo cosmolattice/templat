@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2COMMUTATOR_H
 #define TEMPLAT_LATTICE_ALGEBRA_SU2ALGEBRA_SU2COMMUTATOR_H
 
-/*  This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #include "TempLat/util/rangeiteration/tagliteral.h"
 #include "TempLat/lattice/algebra/su2algebra/su2binaryoperator.h"
@@ -31,8 +31,6 @@ namespace TempLat
     using SU2BinaryOperator<R, T>::mR;
     using SU2BinaryOperator<R, T>::mT;
 
-    using SV = typename SU2GetGetReturnType<R>::type;
-
     SU2Commutator(const R &pR, const T &pT) : SU2BinaryOperator<R, T>(pR, pT) {}
 
     auto SU2Get(Tag<0> t) const { return ZeroType(); }
@@ -50,8 +48,10 @@ namespace TempLat
     {
       const auto cL = DoEval::eval(mR, idx...);
       const auto cR = DoEval::eval(mT, idx...);
-      device::array<SV, 4> result;
-      result[0] = SV(0);
+      // Element type from the evaluated operands, not from the symbolic SU2Get path; see su2multiply.h.
+      using SVE = std::decay_t<decltype(cL[0] * cR[0])>;
+      device::array<SVE, 4> result;
+      result[0] = SVE(0);
       result[1] = 2 * (cL[3] * cR[2] - cL[2] * cR[3]);
       result[2] = 2 * (cL[1] * cR[3] - cL[3] * cR[1]);
       result[3] = 2 * (cL[2] * cR[1] - cL[1] * cR[2]);
@@ -63,6 +63,9 @@ namespace TempLat
   private:
   };
 
+  /**
+   * @vocab-summary Commutator $[A,B] = AB - BA$ of two SU(2)-valued expressions.
+   **/
   template <typename R, typename T>
     requires(HasSU2Get<R> && HasSU2Get<T>)
   auto commutator(const R &r, const T &t)

@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_OPERATORS_POWER_H
 #define TEMPLAT_LATTICE_ALGEBRA_OPERATORS_POWER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/conditional/conditionalbinarygetter.h"
 #include "TempLat/lattice/algebra/helpers/isstdgettable.h"
@@ -16,6 +16,7 @@
 #include "TempLat/lattice/algebra/operators/unaryoperator.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
 #include "TempLat/util/powr.h"
+#include "TempLat/lattice/algebra/constants/halftype.h"
 
 namespace TempLat
 {
@@ -48,7 +49,14 @@ namespace TempLat
       {
         using NT1 = std::decay_t<decltype(DoEval::eval(mR, idx...))>;
         using NT2 = std::decay_t<decltype(DoEval::eval(mT, idx...))>;
-        using NT = decltype(NT1{} * NT2{});
+        // sqrt(x) is spelled Power<x, HalfType>, and HalfType evaluates to a double 0.5. Taking the
+        // common type of the two operands would therefore evaluate every square root of a
+        // single-precision expression in double. A square root's natural result type is the one
+        // device::sqrt gives: float for float, double for double or for an integer expression --
+        // which is what the common-type rule already produced in those two cases.
+        using NT = std::conditional_t<std::is_same_v<std::decay_t<T>, HalfType>,
+                                      std::decay_t<decltype(device::sqrt(std::declval<NT1>()))>,
+                                      decltype(NT1{} * NT2{})>;
         return pow(static_cast<NT>(DoEval::eval(mR, idx...)), static_cast<NT>(DoEval::eval(mT, idx...)));
       }
 
@@ -90,6 +98,12 @@ namespace TempLat
     };
   } // namespace Operators
 
+  /**
+   * @vocab-summary Raises an expression to a power. $x^N$ with a compile-time exponent unrolls into repeated
+   * multiplication; the two-argument form is general. $N=0$ folds to OneType and $N=1$ to the operand itself,
+   * at compile time.
+   * @vocab-signature pow<N>(x)   pow(x, y)
+   **/
   template <typename R, typename T>
     requires ConditionalBinaryGetter<R, T>
   auto pow(const R &r, const T &t)

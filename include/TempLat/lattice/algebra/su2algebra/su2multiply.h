@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_SU2ALGEBRA_SU2MULTIPLY_H
 #define COSMOINTERFACE_SU2ALGEBRA_SU2MULTIPLY_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Franz R. Sattler, Year: 2025
 
 #include "TempLat/util/rangeiteration/tagliteral.h"
 #include "TempLat/lattice/algebra/su2algebra/su2binaryoperator.h"
@@ -30,8 +30,6 @@ namespace TempLat
   template <typename R, typename T> class SU2Multiplication : public SU2BinaryOperator<R, T>
   {
   public:
-    using SV = typename SU2GetGetReturnType<R>::type;
-
     using SU2BinaryOperator<R, T>::mR;
     using SU2BinaryOperator<R, T>::mT;
 
@@ -69,7 +67,9 @@ namespace TempLat
     {
       const auto cL = DoEval::eval(mR, idx...);
       const auto cR = DoEval::eval(mT, idx...);
-      device::array<SV, 4> result;
+      // The element type has to come from the operands we actually evaluated.
+      using SVE = std::decay_t<decltype(cL[0] * cR[0])>;
+      device::array<SVE, 4> result;
       PauliVectorsAlgebra::multiply_inplace(result, cL, cR);
       return result;
     }

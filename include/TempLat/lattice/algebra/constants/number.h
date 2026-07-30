@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_CONSTANTS_NUMBER_H
 #define TEMPLAT_LATTICE_ALGEBRA_CONSTANTS_NUMBER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2026
+// File info: Main contributor(s): Adrien Florio, Year: 2026
 
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
 #include "TempLat/lattice/algebra/helpers/haseval.h"
@@ -33,6 +33,9 @@ namespace TempLat
    *   4. ZeroType: no-op
    *
    * Unit test: ctest -R test-number
+   *
+   * @vocab-summary A runtime-mutable scalar that takes part in expressions: change its value and every
+   * expression holding it sees the new one, without rebuilding the tree.
    **/
   template <typename T> struct Number {
     T value;

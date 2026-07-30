@@ -1,11 +1,11 @@
 #ifndef COSMOINTERFACE_SU2ALGEBRA_SU2LIEALGEBRAFIELD_H
 #define COSMOINTERFACE_SU2ALGEBRA_SU2LIEALGEBRAFIELD_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2021
+// File info: Main contributor(s): Adrien Florio, Year: 2021
 
 #include "TempLat/lattice/algebra/su2algebra/su2field.h"
 
@@ -16,6 +16,10 @@ namespace TempLat
    *(but internally, also expanded as a function of sigma).
    *
    * Unit test: ctest -R test-su2liealgebrafield
+   *
+   * @vocab-summary An $\mathfrak{su}(2)$ field: the same storage as the group type but with $c_0$ pinned to
+   * zero, and component access normalised to $\sigma_a/2$.
+   * @vocab-signature SU2LieAlgebraField<T, NDim> E("E", toolBox);
    **/
   template <typename T, size_t _NDim = 0> class SU2LieAlgebraField
   {

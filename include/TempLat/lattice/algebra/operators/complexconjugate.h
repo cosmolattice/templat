@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_OPERATORS_COMPLEXCONJUGATE_H
 #define TEMPLAT_LATTICE_ALGEBRA_OPERATORS_COMPLEXCONJUGATE_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/complexalgebra/helpers/hascomplexfieldget.h"
 #include "TempLat/lattice/algebra/matrix3x3algebra/helpers/hassymtracelessget.h"
@@ -53,6 +53,8 @@ namespace TempLat
   } // namespace Operators
 
   /** @brief Exposing our newly define multiplication operation to the world.
+   *
+   * @vocab-summary Complex conjugate, element-wise.
    *  Excluded for complex field types (HasComplexFieldGet) which have their own conj overload. */
   template <typename T>
     requires(ConditionalUnaryGetter<T> && !HasComplexFieldGet<T> && !HasSymTracelessGet<T>)

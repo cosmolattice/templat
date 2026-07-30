@@ -1,8 +1,8 @@
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Franz R. Sattler,  Year: 2026
+// File info: Main contributor(s): Franz R. Sattler, Year: 2026
 
 /* A ladder of SU(2) kicks, from TempLat's own kernel to a hand-written ceiling, to localise where
  * the ~2.3x of the scalar-codegen gap actually lives. All variants do the SAME arithmetic on the

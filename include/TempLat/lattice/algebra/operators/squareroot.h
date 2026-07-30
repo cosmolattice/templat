@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_ALGEBRA_OPERATORS_SQUAREROOT_H
 #define TEMPLAT_LATTICE_ALGEBRA_OPERATORS_SQUAREROOT_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler,  Year: 2025
+// File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
 
 #include "TempLat/lattice/algebra/operators/power.h"
 
@@ -49,6 +49,10 @@ namespace TempLat
     };
   } // namespace Operators
 
+  /**
+   * @vocab-summary Square root that clamps a negative argument to zero, for quantities that are positive up to
+   *   rounding.
+   **/
   template <typename R>
     requires ConditionalUnaryGetter<R>
   auto safeSqrt(const R &r)
@@ -56,6 +60,9 @@ namespace TempLat
     return Operators::SafeSqrt<R>(r);
   }
 
+  /**
+   * @vocab-summary Square root, built as $x^{1/2}$ so the expression stays symbolically differentiable.
+   **/
   template <typename T>
     requires(ConditionalBinaryGetter<T, HalfType> && !std::is_arithmetic_v<T>)
   auto sqrt(T a)

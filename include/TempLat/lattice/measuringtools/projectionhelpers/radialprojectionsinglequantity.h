@@ -1,17 +1,18 @@
 #ifndef TEMPLAT_LATTICE_MEASUREMENTS_PROJECTIONHELPERS_RADIALPROJECTIONSINGLEQUANTITY_H
 #define TEMPLAT_LATTICE_MEASUREMENTS_PROJECTIONHELPERS_RADIALPROJECTIONSINGLEQUANTITY_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Wessel Valkenburg,  Year: 2019
+// File info: Main contributor(s): Wessel Valkenburg, Year: 2019
 
 #include <limits>
 #include <algorithm>
 
 #include "TempLat/util/exception.h"
 #include "TempLat/lattice/measuringtools/projectionhelpers/radialprojectionsingledatum.h"
+#include "TempLat/lattice/measuringtools/accumulatortype.h"
 #include "TempLat/parallel/mpi/comm/mpicommreference.h"
 
 #include "TempLat/parallel/device_memory.h"
@@ -31,10 +32,16 @@ namespace TempLat
   {
 
   public:
+    /** @brief Sums and sums of squares are accumulated in double precision even for single-precision
+     * fields: a bin of a large lattice collects O(N^3/nBins) same-sign contributions, and
+     * `value * value` additionally overflows a float for |value| > 1.8e19 (Planck-unit quantities
+     * square to ~1e37). Minima and maxima need no promotion. **/
+    using AccT = AccumulatorType<T>;
+
     RadialProjectionSingleQuantity(device::Idx size)
     {
-      mAveragesDevice = DeviceView("RadialProjectionSingleQuantity::mAveragesDevice", size);
-      mVariancesDevice = DeviceView("RadialProjectionSingleQuantity::mVariancesDevice", size);
+      mAveragesDevice = AccDeviceView("RadialProjectionSingleQuantity::mAveragesDevice", size);
+      mVariancesDevice = AccDeviceView("RadialProjectionSingleQuantity::mVariancesDevice", size);
       mMinsDevice = DeviceView("RadialProjectionSingleQuantity::mMinsDevice", size);
       mMaxsDevice = DeviceView("RadialProjectionSingleQuantity::mMaxsDevice", size);
 
@@ -53,8 +60,9 @@ namespace TempLat
     void add_device(device::Idx i, const T &value, const T &weight) const
     {
       checkBounds(i);
-      device::atomic_add(&mAveragesDevice(i), weight * value);
-      device::atomic_add(&mVariancesDevice(i), weight * value * value);
+      const AccT w = weight, v = value;
+      device::atomic_add(&mAveragesDevice(i), w * v);
+      device::atomic_add(&mVariancesDevice(i), w * v * v);
       device::atomic_min(&mMinsDevice(i), value);
       device::atomic_max(&mMaxsDevice(i), value);
     }
@@ -101,7 +109,8 @@ namespace TempLat
     RadialProjectionSingleDatum<T> getFinal(device::Idx i, const T &multiplicity)
     {
       checkBounds(i);
-      return RadialProjectionSingleDatum<T>(mAverages[i], mVariances[i], mMins[i], mMaxs[i], multiplicity);
+      // Normalize and take the variance's cancellation in the accumulator type, narrow only the result.
+      return RadialProjectionSingleDatum<AccT>(mAverages[i], mVariances[i], mMins[i], mMaxs[i], multiplicity);
     }
 
     template <typename S> friend class RadialProjectionResult;
@@ -109,14 +118,16 @@ namespace TempLat
   private:
     using DeviceView = device::memory::NDView<T, 1>;
     using HostMirror = typename DeviceView::host_mirror_type;
+    using AccDeviceView = device::memory::NDView<AccT, 1>;
+    using AccHostMirror = typename AccDeviceView::host_mirror_type;
 
-    DeviceView mAveragesDevice;
-    DeviceView mVariancesDevice;
+    AccDeviceView mAveragesDevice;
+    AccDeviceView mVariancesDevice;
     DeviceView mMinsDevice;
     DeviceView mMaxsDevice;
 
-    HostMirror mAverages;
-    HostMirror mVariances;
+    AccHostMirror mAverages;
+    AccHostMirror mVariances;
     HostMirror mMins;
     HostMirror mMaxs;
 

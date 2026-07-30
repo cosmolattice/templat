@@ -1,11 +1,11 @@
 #ifndef TEMPLAT_LATTICE_MEASUREMENTS_WALLAVERAGER_H
 #define TEMPLAT_LATTICE_MEASUREMENTS_WALLAVERAGER_H
 
-/* This file is part of CosmoLattice, available at www.cosmolattice.net .
-   Copyright Daniel G. Figueroa, Adrien Florio, Francisco Torrenti and Wessel Valkenburg.
+/* This file is part of TempLat, available at https://cosmolattice.github.io/templat .
+   Copyright 2021-2026 The TempLat authors, see AUTHORS.md.
    Released under the MIT license, see LICENSE.md. */
 
-// File info: Main contributor(s): Adrien Florio,  Year: 2025
+// File info: Main contributor(s): Adrien Florio, Year: 2025
 
 #include "TempLat/util/getcpptypename.h"
 #include "TempLat/lattice/algebra/helpers/getgetreturntype.h"
@@ -14,6 +14,7 @@
 #include "TempLat/lattice/algebra/helpers/getndim.h"
 #include "TempLat/lattice/algebra/helpers/haseval.h"
 #include "TempLat/lattice/measuringtools/averagerhelper.h"
+#include "TempLat/lattice/measuringtools/accumulatortype.h"
 
 #include "TempLat/parallel/device_memory.h"
 #include "TempLat/parallel/device_iteration.h"
@@ -29,7 +30,8 @@ namespace TempLat
   template <typename T> class WallAverager
   {
   public:
-    using vType = typename GetGetReturnType<T>::type;
+    // Double-precision accumulation; see the note in su2averager.h.
+    using vType = AccumulatorType<typename GetGetReturnType<T>::type>;
     static constexpr bool isComplexValued = GetGetReturnType<T>::isComplex;
     static constexpr size_t NDim = GetNDim::get<T>();
 
@@ -157,6 +159,9 @@ namespace TempLat
     size_t nGhosts;
   };
 
+  /**
+   * @vocab-summary Averages over the first $d-1$ coordinates, leaving a profile along the last one.
+   **/
   template <typename T>
     requires HasEvalMethod<T>
   auto wallAverager(T instance, SpaceStateType spaceType = SpaceStateType::Configuration)
