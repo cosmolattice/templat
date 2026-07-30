@@ -133,16 +133,34 @@ namespace TempLat
         if (mExchangeManager.getMPICartesianGroup().size() > 1) {
           pUpdateBatch(blocks, bcSpec);
         } else {
-          for (auto *b : blocks)
-            pUpdate_NOMPI(*b, bcSpec);
+          pUpdate_NOMPI_batchOrLoop(blocks, bcSpec);
         }
       } else
 #endif
       {
-        for (auto *b : blocks)
-          pUpdate_NOMPI(*b, bcSpec);
+        pUpdate_NOMPI_batchOrLoop(blocks, bcSpec);
       }
     }
+
+  private:
+    /** @brief The single-rank leg of updateBatch. Coalescing across components used to stop at
+     *  the MPI boundary: with one rank (or with every dimension undecomposed) updateBatch fell
+     *  through to a per-component pUpdate_NOMPI loop, so a 4-component field paid 4x the ghost
+     *  launches even though the batch machinery was right there. On one GPU that was ~1174 copy
+     *  launches per MC sweep against 70 sweep kernels. */
+    template <typename T>
+    void pUpdate_NOMPI_batchOrLoop(std::span<MemoryBlock<T, NDim> *const> blocks,
+                                   BCSpec<NDim> bcSpec)
+    {
+#ifdef TEMPLAT_BATCH_LOCAL_GHOSTS
+      pUpdate_NOMPI_batch<T>(blocks, bcSpec);
+#else
+      for (auto *b : blocks)
+        pUpdate_NOMPI(*b, bcSpec);
+#endif
+    }
+
+  public:
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
@@ -209,10 +227,16 @@ namespace TempLat
 #endif
       for (size_t d = 0; d < NDim; ++d) {
 #ifdef HAVE_MPI
-        // Non-split dimensions: local BC-aware copy per block (no MPI overhead).
+        // Non-split dimensions: local BC-aware copy, no MPI. Batched across components for the
+        // same reason the split dimensions are -- with a 1-D decomposition two of three
+        // dimensions land here, so this is most of the ghost work even under MPI.
         if (decomp[d] <= 1) {
+#ifdef TEMPLAT_BATCH_LOCAL_GHOSTS
+          pUpdate_NOMPI_singleDim_batch<T>(blocks, d, bcSpec);
+#else
           for (auto *b : blocks)
             pUpdate_NOMPI_singleDim(*b, d, bcSpec);
+#endif
           continue;
         }
 #endif
@@ -780,6 +804,131 @@ namespace TempLat
         }
       }
     }
+
+#ifdef TEMPLAT_BATCH_LOCAL_GHOSTS
+    /** @brief Largest component count the fused local ghost kernel handles in one launch.
+     *  The widest batching caller today is SymTracelessField (5 components); SU2Field and
+     *  SU2Doublet use 4. Wider batches fall back to the per-component path, so this is a
+     *  capture-size budget rather than a correctness limit. */
+    static constexpr size_t cMaxLocalGhostBatch = 8;
+
+    /** @brief Fused local BC ghost fill at one (dim, depth) across a batch of components.
+     *
+     *  applyLocalBCAtDimDepth issues two strided copyDeviceToDevice per component per
+     *  (dim, depth) -- a low-face and a high-face copy. Over a full MC sweep that is ~1174
+     *  copies, against 70 actual sweep kernels, and at small volumes the launch count rather
+     *  than the byte count is what costs. This does the same writes for every component in
+     *  ONE kernel: 6C copies per pass collapse to 3 launches (one per dimension).
+     *
+     *  Unlike the MPI batch path there is no slab to pack -- a local wrap is a direct
+     *  device-to-device move -- so the saving has to come from kernel fusion, not from
+     *  coalescing messages. Indices are therefore computed in-kernel instead of via subviews,
+     *  which also keeps the captured argument small (one view array, not four subview arrays).
+     *
+     *  Only the non-mpiPostStep semantics are implemented, which is all the local path needs;
+     *  the MPI boundary post-step keeps using the per-component routine.
+     */
+    template <typename T>
+    void applyLocalBCAtDimDepthBatch(std::span<MemoryBlock<T, NDim> *const> blocks, size_t dim,
+                                     size_t depth, const device::IdxArray<NDim> &sizes,
+                                     device::Idx ghostDepth, BCType bc)
+    {
+      const size_t nb = blocks.size();
+
+      device::IdxArray<NDim> full_sizes{};
+      for (size_t i = 0; i < NDim; ++i)
+        full_sizes[i] = ghostDepth + sizes[i] + ghostDepth;
+
+      using ViewT = decltype(blocks[0]->template getNDView<T>(full_sizes));
+      device::array<ViewT, cMaxLocalGhostBatch> views{};
+      for (size_t c = 0; c < nb; ++c)
+        views[c] = blocks[c]->template getNDView<T>(full_sizes);
+
+      // Destination planes are BC-independent; only the source differs. Mirrors exactly the
+      // btf_/ftb_ slice arithmetic in applyLocalBCAtDimDepth.
+      const bool mirror = (bc == BCType::Neumann);
+      const device::Idx dstLow = ghostDepth - depth;
+      const device::Idx dstHigh = ghostDepth + sizes[dim] + (depth - 1);
+      const device::Idx srcLow = mirror ? ghostDepth + (depth - 1) : ghostDepth + sizes[dim] - depth;
+      const device::Idx srcHigh = mirror ? ghostDepth + sizes[dim] - depth : ghostDepth + (depth - 1);
+      const bool negate = (bc == BCType::Antiperiodic);
+      const bool zero = (bc == BCType::Dirichlet);
+
+      // Iterate the face: full extent (ghosts included, which is what fills corners) in every
+      // direction but `dim`, collapsed to a single plane along `dim`. Sources and destinations
+      // are disjoint -- interior vs ghost -- so writing both faces in one kernel is safe.
+      device::array<device::Idx, NDim> starts{};
+      device::array<device::Idx, NDim> stops{};
+      for (size_t i = 0; i < NDim; ++i) {
+        starts[i] = 0;
+        stops[i] = (i == dim) ? 1 : full_sizes[i];
+      }
+
+      device::iteration::foreach (
+          "GhostUpdaterBatch", starts, stops,
+          DEVICE_LAMBDA(const device::IdxArray<NDim> &idx) {
+            device::IdxArray<NDim> lo = idx, hi = idx, sl = idx, sh = idx;
+            lo[dim] = dstLow;
+            hi[dim] = dstHigh;
+            sl[dim] = srcLow;
+            sh[dim] = srcHigh;
+            for (size_t c = 0; c < nb; ++c) {
+              if (zero) {
+                device::apply([&](const auto &...a) { views[c](a...) = T{0}; }, lo);
+                device::apply([&](const auto &...a) { views[c](a...) = T{0}; }, hi);
+              } else {
+                const auto vlo = device::apply([&](const auto &...a) { return views[c](a...); }, sl);
+                const auto vhi = device::apply([&](const auto &...a) { return views[c](a...); }, sh);
+                device::apply([&](const auto &...a) { views[c](a...) = negate ? -vlo : vlo; }, lo);
+                device::apply([&](const auto &...a) { views[c](a...) = negate ? -vhi : vhi; }, hi);
+              }
+            }
+          });
+    }
+
+    /** @brief Fused local ghost update of one dimension across a batch of components. */
+    template <typename T>
+    void pUpdate_NOMPI_singleDim_batch(std::span<MemoryBlock<T, NDim> *const> blocks, size_t dim,
+                                       BCSpec<NDim> bcSpec = allPeriodic<NDim>())
+    {
+      if (blocks.empty()) return;
+      // NDim == 1 has its own hand-written branch in applyLocalBCAtDimDepth, and an
+      // over-wide batch would blow the capture budget: defer both to the per-component path.
+      if constexpr (NDim == 1) {
+        for (auto *b : blocks)
+          pUpdate_NOMPI_singleDim(*b, dim, bcSpec);
+        return;
+      } else {
+        if (blocks.size() > cMaxLocalGhostBatch) {
+          for (auto *b : blocks)
+            pUpdate_NOMPI_singleDim(*b, dim, bcSpec);
+          return;
+        }
+        const auto ghostDepth = mLayout.getPadding()[0][0];
+        device::IdxArray<NDim> sizes;
+        for (size_t i = 0; i < NDim; ++i)
+          sizes[i] = mLayout.getSizesInMemory()[i];
+        for (size_t depth = 1; depth <= (size_t)mGhostDepth; ++depth)
+          applyLocalBCAtDimDepthBatch<T>(blocks, dim, depth, sizes, ghostDepth, bcSpec[dim]);
+      }
+    }
+
+    /** @brief Fused local ghost update over all dimensions for a batch of components.
+     *
+     *  The dimension sweep stays outermost and sequential, which is what makes corner and edge
+     *  ghosts correct: dimension d reads the ghosts that dimension d-1 just wrote. Note this
+     *  inverts the loop nesting relative to `for (b : blocks) pUpdate_NOMPI(*b)`, which is
+     *  component-outer / dimension-inner. That is safe because components are independent
+     *  allocations -- what must be ordered is the dimensions *within* a component, and every
+     *  component still sees them in the same order. */
+    template <typename T>
+    void pUpdate_NOMPI_batch(std::span<MemoryBlock<T, NDim> *const> blocks,
+                             BCSpec<NDim> bcSpec = allPeriodic<NDim>())
+    {
+      for (size_t d = 0; d < NDim; ++d)
+        pUpdate_NOMPI_singleDim_batch<T>(blocks, d, bcSpec);
+    }
+#endif
 
   public:
     /** @brief Local BC-aware ghost copy for a single dimension (no MPI). */
