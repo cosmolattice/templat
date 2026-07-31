@@ -18,6 +18,7 @@
 #include "TempLat/util/getcpptypename.h"
 #include "TempLat/lattice/algebra/helpers/getstring.h"
 #include "TempLat/lattice/measuringtools/averagerhelper.h"
+#include "TempLat/lattice/measuringtools/accumulatortype.h"
 #include "TempLat/lattice/algebra/helpers/istemplatgettable.h"
 #include "TempLat/lattice/algebra/complexalgebra/helpers/complexgetgetreturntype.h"
 #include "TempLat/lattice/algebra/helpers/doeval.h"
@@ -34,7 +35,8 @@ namespace TempLat
   template <typename T> class ComplexFieldAverager
   {
   public:
-    using vType = typename ComplexGetGetReturnType<T>::type;
+    // Double-precision accumulation; see the note in su2averager.h.
+    using vType = AccumulatorType<typename ComplexGetGetReturnType<T>::type>;
     static constexpr bool isComplexValued = IsComplexType<vType>;
     static constexpr size_t size = tuple_size<T>::value;
 

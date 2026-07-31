@@ -412,6 +412,7 @@
 // ---------------------------------------------------------------------------
 // Measurements: averagers, maxima and radial projections
 // ---------------------------------------------------------------------------
+#include "TempLat/lattice/measuringtools/accumulatortype.h"
 #include "TempLat/lattice/measuringtools/averager.h"
 #include "TempLat/lattice/measuringtools/averagerhelper.h"
 #include "TempLat/lattice/measuringtools/maximum.h"

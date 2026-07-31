@@ -43,7 +43,7 @@ namespace TempLat
         (dag(sh1<-Mu>(Us(mu))) * dag(sh1<-Mu, -Nu>(Us(nu)))) * (sh1<-Mu, -Nu>(Us(mu)) * sh1<-Nu>(Us(nu)));
     const auto plaq4 = (dag(sh1<-Nu>(Us(nu))) * sh1<-Nu>(Us(mu))) * (sh1<-Nu, Mu>(Us(nu)) * dag(Us(mu)));
 
-    return 0.25 * (plaq1 + plaq2 + plaq3 + plaq4);
+    return 0.25f * (plaq1 + plaq2 + plaq3 + plaq4);
   }
 
   /**

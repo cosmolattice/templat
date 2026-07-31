@@ -31,7 +31,7 @@ namespace TempLat
      vector. auto dx = decltype(scalar)::Getter::get(scalar,0_c).getDx();
 
           auto CovPlus = MakeVector(i,1,dim,
-                                   (1.0/dx)*(binary_fold(
+                                   (1.0f / dx)*(binary_fold(
                                            [](auto x, auto y){return x*y;},
                                            MakeArray(j,0,size-2,list.getComp(j)(i)),
                                            [](auto x){return x;},shift(scalar,i))

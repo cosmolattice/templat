@@ -21,17 +21,17 @@ namespace TempLat
    **/
   template <typename R> auto magneticField4(R Bs, Tag<1> t)
   {
-    return 0.25 * (Bs + shift(Bs, -2_c) + shift(Bs, -3_c) + shift(shift(Bs, -2_c), -3_c));
+    return 0.25f * (Bs + shift(Bs, -2_c) + shift(Bs, -3_c) + shift(shift(Bs, -2_c), -3_c));
   }
 
   template <typename R> auto magneticField4(R &&Bs, Tag<2> t)
   {
-    return 0.25 * (Bs + shift(Bs, -1_c) + shift(Bs, -3_c) + shift(shift(Bs, -1_c), -3_c));
+    return 0.25f * (Bs + shift(Bs, -1_c) + shift(Bs, -3_c) + shift(shift(Bs, -1_c), -3_c));
   }
 
   template <typename R> auto magneticField4(R &&Bs, Tag<3> t)
   {
-    return 0.25 * (Bs + shift(Bs, -1_c) + shift(Bs, -2_c) + shift(shift(Bs, -2_c), -1_c));
+    return 0.25f * (Bs + shift(Bs, -1_c) + shift(Bs, -2_c) + shift(shift(Bs, -2_c), -1_c));
   }
 
   template <typename R> auto magneticField4(R &&Bs) { return MakeVector(i, 1, 3, magneticField4(Bs, i)); }

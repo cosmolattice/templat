@@ -14,13 +14,15 @@
 #include "TempLat/lattice/algebra/helpers/getndim.h"
 #include "TempLat/lattice/algebra/helpers/getstring.h"
 #include "TempLat/lattice/measuringtools/averagerhelper.h"
+#include "TempLat/lattice/measuringtools/accumulatortype.h"
 
 #include "TempLat/parallel/device_iteration.h"
 
 namespace TempLat
 {
-  template <typename T>
-  using AveragerReturnType = std::conditional_t<std::is_integral_v<T> || std::is_floating_point_v<T>, double, T>;
+  /** @brief Kept as the historical name for AccumulatorType, which additionally promotes
+   * complex<float> to complex<double> instead of leaving it in single precision. **/
+  template <typename T> using AveragerReturnType = AccumulatorType<T>;
 
   /** @brief A class which computes the average value of a getter.
    *

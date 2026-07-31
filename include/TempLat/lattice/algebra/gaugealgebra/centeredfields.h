@@ -24,22 +24,22 @@ namespace TempLat
 
     template <typename ElectricField, int I> static auto E2(ElectricField E, Tag<I> i)
     {
-      return 0.5 * (E(i) + shift(E(i), -i));
+      return 0.5f * (E(i) + shift(E(i), -i));
     }
 
     template <typename MagneticField> static auto B4(MagneticField B, Tag<1>)
     {
-      return 0.25 * (B(1_c) + shift(B(1_c), -2_c) + shift(B(1_c), -3_c) + shift(shift(B(1_c), -2_c), -3_c));
+      return 0.25f * (B(1_c) + shift(B(1_c), -2_c) + shift(B(1_c), -3_c) + shift(shift(B(1_c), -2_c), -3_c));
     }
 
     template <typename MagneticField> static auto B4(MagneticField B, Tag<2>)
     {
-      return 0.25 * (B(2_c) + shift(B(2_c), -1_c) + shift(B(2_c), -3_c) + shift(shift(B(2_c), -1_c), -3_c));
+      return 0.25f * (B(2_c) + shift(B(2_c), -1_c) + shift(B(2_c), -3_c) + shift(shift(B(2_c), -1_c), -3_c));
     }
 
     template <typename MagneticField> static auto B4(MagneticField B, Tag<3>)
     {
-      return 0.25 * (B(3_c) + shift(B(3_c), -1_c) + shift(B(3_c), -2_c) + shift(shift(B(3_c), -1_c), -2_c));
+      return 0.25f * (B(3_c) + shift(B(3_c), -1_c) + shift(B(3_c), -2_c) + shift(shift(B(3_c), -1_c), -2_c));
     }
   };
 } // namespace TempLat

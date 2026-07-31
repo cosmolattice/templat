@@ -45,11 +45,11 @@ namespace TempLat
 
           say << CovMinus;
 
-          auto central =  (2.0 * dim) * scalar;
+          auto central =  (2 * dim) * scalar;
 
           auto dx2 = pow<2>(GetDx::getDx(scalar));
 
-          return (1.0 / dx2 ) * (CovPlus + CovMinus - central);
+          return (1.0f / dx2) * (CovPlus + CovMinus - central);
 
       }
 

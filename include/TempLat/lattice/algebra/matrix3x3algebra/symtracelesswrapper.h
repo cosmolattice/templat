@@ -9,6 +9,7 @@
 
 #include "TempLat/lattice/algebra/matrix3x3algebra/allmatrixoperator.h"
 #include "TempLat/lattice/algebra/helpers/doeval.h"
+#include "TempLat/lattice/algebra/helpers/getgetreturntype.h"
 #include "TempLat/lattice/algebra/helpers/getstring.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
 
@@ -34,12 +35,18 @@ namespace TempLat
     }
     SymTracelessWrapper() = default;
 
-    auto SymTracelessGet(Tag<0> t) const { return (2. / 3.) * mR0 - (1. / 3.) * mR3 - (1. / 3.) * mR5; }
+    // The trace-subtraction weights are formed in the operands' own numeric type: as double literals
+    // they would promote the whole symbolic expression, which then disagrees with the eval path below.
+    using FT = typename GetGetReturnType<R0>::type;
+    static FT oneThird() { return FT(1) / FT(3); }
+    static FT twoThirds() { return FT(2) / FT(3); }
+
+    auto SymTracelessGet(Tag<0> t) const { return twoThirds() * mR0 - oneThird() * mR3 - oneThird() * mR5; }
     auto SymTracelessGet(Tag<1> t) const { return mR1; }
     auto SymTracelessGet(Tag<2> t) const { return mR2; }
-    auto SymTracelessGet(Tag<3> t) const { return -(1. / 3.) * mR0 + (2. / 3.) * mR3 - (1. / 3.) * mR5; }
+    auto SymTracelessGet(Tag<3> t) const { return -oneThird() * mR0 + twoThirds() * mR3 - oneThird() * mR5; }
     auto SymTracelessGet(Tag<4> t) const { return mR4; }
-    auto SymTracelessGet(Tag<5> t) const { return -(1. / 3.) * mR0 - (1. / 3.) * mR3 + (2. / 3.) * mR5; }
+    auto SymTracelessGet(Tag<5> t) const { return -oneThird() * mR0 - oneThird() * mR3 + twoThirds() * mR5; }
 
     auto SymTracelessGet(Tag<1> t1, Tag<1> t2) const { return SymTracelessGet(0_c); }
     auto SymTracelessGet(Tag<1> t1, Tag<2> t2) const { return SymTracelessGet(1_c); }
@@ -77,8 +84,9 @@ namespace TempLat
       result[3] = DoEval::eval(mR3, idx...);
       result[4] = DoEval::eval(mR4, idx...);
       const auto trace = result[0] + result[3] + DoEval::eval(mR5, idx...);
-      result[0] -= 1. / 3. * trace;
-      result[3] -= 1. / 3. * trace;
+      using ET = std::decay_t<decltype(trace)>;
+      result[0] -= ET(1) / ET(3) * trace;
+      result[3] -= ET(1) / ET(3) * trace;
       return result;
     }
 

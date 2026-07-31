@@ -21,13 +21,18 @@ namespace TempLat
   {
     if (std::isnan(a) || std::isnan(b)) return false;
     if (a == b) return true;
-    if (std::abs(a) < epsilon)
-      return std::abs(b) < epsilon;
-    else if (std::abs(b) < epsilon)
-      return std::abs(a) < epsilon;
-    else
-      // I added a test of absolute difference to catch the edge-case where both values are effectively zero.
-      return std::abs(a / b - 1) < epsilon || std::abs(a - b) < std::numeric_limits<T3>::epsilon() * 2;
+
+    // Relative error is meaningless once either side approaches zero, so below `epsilon` we fall back
+    // to comparing the difference absolutely. This has to stay symmetric in a and b: comparing
+    // "is the other one also below epsilon" instead would report two values straddling epsilon as
+    // unequal however well they agree -- for epsilon = 1e3 * sqrt(FLT_EPSILON) = 0.345, the pair
+    // (0.345338, 0.345192) took that branch and failed despite agreeing to 4e-4 relative.
+    const bool aNearZero = std::abs(a) < epsilon;
+    const bool bNearZero = std::abs(b) < epsilon;
+    if (aNearZero || bNearZero) return (aNearZero && bNearZero) || std::abs(a - b) < epsilon;
+
+    // Also test the absolute difference, to catch values that are effectively equal.
+    return std::abs(a / b - 1) < epsilon || std::abs(a - b) < std::numeric_limits<T3>::epsilon() * 2;
   };
 
   /** @brief overload for complex values.  */

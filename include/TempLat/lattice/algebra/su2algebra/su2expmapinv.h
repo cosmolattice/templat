@@ -33,7 +33,6 @@ namespace TempLat
   template <typename R> class SU2ExpMapInv : public SU2UnaryOperator<R>
   {
   public:
-    using SV = typename SU2GetGetReturnType<R>::type;
     using SU2UnaryOperator<R>::mR;
 
     SU2ExpMapInv(const R &pR) : SU2UnaryOperator<R>(pR) {}
@@ -74,10 +73,10 @@ namespace TempLat
       const auto a = device::acos(c[0]);
       const auto sina = device::sin(a);
       // Safe-divide guard: a/sin(a) → 1 as a → 0
-      const auto ratio = (sina * sina > SV(1e-30)) ? a / sina : SV(0);
+      const auto ratio = (sina * sina > decltype(sina)(1e-30)) ? a / sina : decltype(a / sina)(0);
 
       // We can work in-place on c.
-      c[0] = SV(0);
+      c[0] = std::decay_t<decltype(c[0])>(0);
       c[1] = c[1] * ratio;
       c[2] = c[2] * ratio;
       c[3] = c[3] * ratio;

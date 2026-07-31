@@ -31,8 +31,6 @@ namespace TempLat
     using SU2BinaryOperator<R, T>::mR;
     using SU2BinaryOperator<R, T>::mT;
 
-    using SV = typename SU2GetGetReturnType<R>::type;
-
     SU2Commutator(const R &pR, const T &pT) : SU2BinaryOperator<R, T>(pR, pT) {}
 
     auto SU2Get(Tag<0> t) const { return ZeroType(); }
@@ -50,8 +48,10 @@ namespace TempLat
     {
       const auto cL = DoEval::eval(mR, idx...);
       const auto cR = DoEval::eval(mT, idx...);
-      device::array<SV, 4> result;
-      result[0] = SV(0);
+      // Element type from the evaluated operands, not from the symbolic SU2Get path; see su2multiply.h.
+      using SVE = std::decay_t<decltype(cL[0] * cR[0])>;
+      device::array<SVE, 4> result;
+      result[0] = SVE(0);
       result[1] = 2 * (cL[3] * cR[2] - cL[2] * cR[3]);
       result[2] = 2 * (cL[1] * cR[3] - cL[3] * cR[1]);
       result[3] = 2 * (cL[2] * cR[1] - cL[1] * cR[2]);

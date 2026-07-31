@@ -33,7 +33,6 @@ namespace TempLat
   template <typename R> class SU2ExpMap : public SU2UnaryOperator<R>
   {
   public:
-    using SV = typename SU2GetGetReturnType<R>::type;
     using SU2UnaryOperator<R>::mR;
 
     SU2ExpMap(const R &pR) : SU2UnaryOperator<R>(pR) {}
@@ -63,7 +62,8 @@ namespace TempLat
       }
     DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
-      device::array<SV, 4> cL = DoEval::eval(mR, idx...);
+      // Keep the element type of the evaluated operand; see the note in su2multiply.h
+      auto cL = DoEval::eval(mR, idx...);
       PauliVectorsAlgebra::expmap_inplace(cL);
       return cL;
     }

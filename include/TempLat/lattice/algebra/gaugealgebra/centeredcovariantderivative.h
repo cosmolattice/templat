@@ -36,7 +36,7 @@ namespace TempLat
     auto UMinus =
         MakeVector(i, 1, dim, fold_multiply(MakeArray(j, 0, size - 2, dagger(shift(list.getComp(j)(i), -i)))));
 
-    auto Cov = MakeVector(i, 1, dim, (0.5 / dx) * (UPlus(i) * shift(scalar, i) - UMinus(i) * shift(scalar, -i)));
+    auto Cov = MakeVector(i, 1, dim, (0.5f / dx) * (UPlus(i) * shift(scalar, i) - UMinus(i) * shift(scalar, -i)));
 
     return Cov;
   }
