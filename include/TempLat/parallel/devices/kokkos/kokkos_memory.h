@@ -93,7 +93,6 @@ namespace TempLat::device_kokkos::memory
 
     bool contiguous = src.span_is_contiguous() && dest.span_is_contiguous();
     if (contiguous) {
-#ifdef TEMPLAT_STREAM_ORDERED_D2D
       // Stream-ordered copy instead of a fenced one.
       //
       // The no-instance Kokkos::deep_copy overload wraps the copy in two DEVICE-WIDE
@@ -118,9 +117,6 @@ namespace TempLat::device_kokkos::memory
       //
       // Revisit if a second execution space instance / stream is ever introduced.
       Kokkos::deep_copy(typename View1::execution_space(), dest, src);
-#else
-      Kokkos::deep_copy(dest, src);
-#endif
     } else {
       // If not, we need to do a manual copy
       device::array<ptrdiff_t, dim> localSizes;
