@@ -133,12 +133,12 @@ namespace TempLat
         if (mExchangeManager.getMPICartesianGroup().size() > 1) {
           pUpdateBatch(blocks, bcSpec);
         } else {
-          pUpdate_NOMPI_batchOrLoop(blocks, bcSpec);
+          pUpdate_NOMPI_batchLocal(blocks, bcSpec);
         }
       } else
 #endif
       {
-        pUpdate_NOMPI_batchOrLoop(blocks, bcSpec);
+        pUpdate_NOMPI_batchLocal(blocks, bcSpec);
       }
     }
 
@@ -149,15 +149,10 @@ namespace TempLat
      *  launches even though the batch machinery was right there. On one GPU that was ~1174 copy
      *  launches per MC sweep against 70 sweep kernels. */
     template <typename T>
-    void pUpdate_NOMPI_batchOrLoop(std::span<MemoryBlock<T, NDim> *const> blocks,
-                                   BCSpec<NDim> bcSpec)
+    void pUpdate_NOMPI_batchLocal(std::span<MemoryBlock<T, NDim> *const> blocks,
+                                  BCSpec<NDim> bcSpec)
     {
-#ifdef TEMPLAT_BATCH_LOCAL_GHOSTS
       pUpdate_NOMPI_batch<T>(blocks, bcSpec);
-#else
-      for (auto *b : blocks)
-        pUpdate_NOMPI(*b, bcSpec);
-#endif
     }
 
   public:
@@ -231,12 +226,7 @@ namespace TempLat
         // same reason the split dimensions are -- with a 1-D decomposition two of three
         // dimensions land here, so this is most of the ghost work even under MPI.
         if (decomp[d] <= 1) {
-#ifdef TEMPLAT_BATCH_LOCAL_GHOSTS
           pUpdate_NOMPI_singleDim_batch<T>(blocks, d, bcSpec);
-#else
-          for (auto *b : blocks)
-            pUpdate_NOMPI_singleDim(*b, d, bcSpec);
-#endif
           continue;
         }
 #endif
@@ -805,7 +795,30 @@ namespace TempLat
       }
     }
 
-#ifdef TEMPLAT_BATCH_LOCAL_GHOSTS
+    /** @brief Whether `T` supports unary minus, i.e. whether antiperiodic BCs are expressible
+     *  for it at all. Only the fused kernel needs to ask: the per-component path reaches its
+     *  negation through a branch that a non-negatable type never instantiates. */
+    template <typename U>
+    static constexpr bool cCanNegate = requires(const U &x) { -x; };
+
+    /** @brief `neg ? -v : v`, with the negation instantiated only when `U` can be negated.
+     *
+     *  A free function rather than a `if constexpr` inside the kernel body: nvcc rejects an
+     *  extended __host__ __device__ lambda that *first-captures* a variable inside a
+     *  constexpr-if context, which is exactly what capturing `negate` there amounts to
+     *  ("cannot first-capture variable in constexpr-if context"). Confining the branch to a
+     *  named DEVICE_INLINE_FUNCTION keeps the lambda's captures unconditional.
+     *
+     *  The `else` branch is unreachable in practice -- applyLocalBCAtDimDepthBatch throws
+     *  before launch if antiperiodic BCs are asked of a non-negatable type -- so it exists to
+     *  make the kernel compile for such types, not to define behaviour for them. */
+    template <typename U>
+    static DEVICE_INLINE_FUNCTION U negateIf(const U &v, bool neg)
+    {
+      if constexpr (cCanNegate<U>) return neg ? -v : v;
+      else return v;
+    }
+
     /** @brief Largest component count the fused local ghost kernel handles in one launch.
      *  The widest batching caller today is SymTracelessField (5 components); SU2Field and
      *  SU2Doublet use 4. Wider batches fall back to the per-component path, so this is a
@@ -854,6 +867,20 @@ namespace TempLat
       const bool negate = (bc == BCType::Antiperiodic);
       const bool zero = (bc == BCType::Dirichlet);
 
+      // Antiperiodic is the only BC that needs unary minus, and the per-component path only
+      // ever instantiates it inside its Antiperiodic branch (negatingCopySubview). The fused
+      // kernel below applies it through negateIf(), which is where the requirement is confined;
+      // written inline as `negate ? -v : v` it would instead demand operator- from EVERY
+      // component type under EVERY boundary condition -- not a requirement the path it replaces
+      // imposes, and one that does not hold for types carrying no arithmetic at all
+      // (test-ghostupdaterbatch's labelled<N> markers being the case that caught it).
+      // Refuse here the one combination negateIf() cannot honour, rather than silently
+      // dropping a sign.
+      if constexpr (!cCanNegate<T>)
+        if (negate)
+          throw GhostUpdaterException("Antiperiodic boundary conditions require a component type "
+                                      "supporting unary minus; this one does not.");
+
       // Iterate the face: full extent (ghosts included, which is what fills corners) in every
       // direction but `dim`, collapsed to a single plane along `dim`. Sources and destinations
       // are disjoint -- interior vs ghost -- so writing both faces in one kernel is safe.
@@ -879,8 +906,8 @@ namespace TempLat
               } else {
                 const auto vlo = device::apply([&](const auto &...a) { return views[c](a...); }, sl);
                 const auto vhi = device::apply([&](const auto &...a) { return views[c](a...); }, sh);
-                device::apply([&](const auto &...a) { views[c](a...) = negate ? -vlo : vlo; }, lo);
-                device::apply([&](const auto &...a) { views[c](a...) = negate ? -vhi : vhi; }, hi);
+                device::apply([&](const auto &...a) { views[c](a...) = negateIf(vlo, negate); }, lo);
+                device::apply([&](const auto &...a) { views[c](a...) = negateIf(vhi, negate); }, hi);
               }
             }
           });
@@ -928,7 +955,6 @@ namespace TempLat
       for (size_t d = 0; d < NDim; ++d)
         pUpdate_NOMPI_singleDim_batch<T>(blocks, d, bcSpec);
     }
-#endif
 
   public:
     /** @brief Local BC-aware ghost copy for a single dimension (no MPI). */
