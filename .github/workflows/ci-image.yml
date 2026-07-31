@@ -7,9 +7,18 @@ name: Refresh CI images
 #
 # This is the one workflow that does *not* run on pull requests: it is what keeps
 # the images that PR jobs consume up to date.
+#
+# On merges to main it is invoked by ci.yml via workflow_call rather than by its
+# own push trigger, so that the tests there run *after* the refresh and against
+# the image they just produced. Triggering on push here as well would race it.
 on:
-  push:
-    branches: [main]
+  workflow_call:
+    inputs:
+      full:
+        description: 'Rebuild from scratch instead of incrementally'
+        required: false
+        type: boolean
+        default: false
   schedule:
     # Monday 03:00 UTC. Deliberately a *full* rebuild: incremental refreshes
     # append a Docker layer each time, and this is what bounds that growth (and
