@@ -287,6 +287,7 @@
 #include "TempLat/lattice/algebra/su2algebra/su2subtract.h"
 #include "TempLat/lattice/algebra/su2algebra/su2sum.h"
 #include "TempLat/lattice/algebra/su2algebra/su2trace.h"
+#include "TempLat/lattice/algebra/su2algebra/su2tracedeficit.h"
 #include "TempLat/lattice/algebra/su2algebra/su2unaryoperator.h"
 #include "TempLat/lattice/algebra/su2algebra/su2wrapper.h"
 
