@@ -33,6 +33,43 @@ namespace TempLat
     MemoryManager(device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, std::string name = "")
         : mToolBox(toolBox), mName(name), mAllocated(false)
     {
+      // A null toolbox is not this class's error to report: ConfigView's constructor throws
+      // FieldViewConfigMissingToolBox immediately after this one returns, exactly as it did
+      // before the cold block moved here. Just leave the block default-constructed.
+      if (mToolBox != nullptr) initConfigColdBlock();
+    }
+
+    /** @brief The configuration-space cold block, moved out of ConfigView.
+     *
+     * These three are pure functions of the toolbox's config-space layout, written once and
+     * never again, and each used to be a member of ConfigView -- which is to say a member of
+     * every leaf of every expression tree, deep-copied once per level of tree depth, because
+     * expression nodes store their operands by value with the deduced type. 360 B of the
+     * 456 B ConfigView was this. The manager is already one per field and already reference
+     * counted, so holding them here costs nothing per copy.
+     *
+     * Returned by CONST REFERENCE, never by value: a 288 B layout copy on a path reachable
+     * from expression evaluation is precisely the cost this removes.
+     *
+     * CONFIG-SCOPED IN THE NAME, DELIBERATELY. A Field's ConfigView and its FourierView share
+     * ONE MemoryManager (field.h builds the Fourier view from *this, copying mManager), but
+     * the two views hold DIFFERENT values for exactly these quantities:
+     *
+     *   layout         config-space layout           vs. Fourier-space layout
+     *   memory sizes   real, ghost-padded            vs. Fourier, complex<T>-shaped
+     *   local slicing  (nGhosts, nGhosts + local)    vs. never assigned -- no ghosts in k-space
+     *
+     * so one unscoped set here cannot serve both. The tempting symmetric cleanup -- having
+     * FourierView::getFullNDHostView() read these too -- would hand it the config extents and
+     * produce a host view with the wrong strides and silently wrong data; and the two slicing
+     * types are not even interconvertible, so it need not fail to compile in a way that warns
+     * you. FourierView keeps its own memorySizes. Do not unify these.
+     */
+    const LayoutStruct<NDim> &configLayout() const { return mConfigLayout; }
+    const device::IdxArray<NDim> &configMemorySizes() const { return mConfigMemorySizes; }
+    const device::array<std::pair<device::Idx, device::Idx>, NDim> &configLocalSlicing() const
+    {
+      return mConfigLocalSlicing;
     }
 
     device::Idx allocate()
@@ -285,6 +322,29 @@ namespace TempLat
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
+
+    /** @brief Derive the config-space cold block from the toolbox layouts.
+     *
+     * Verbatim what ConfigView's constructor used to do. It is purely derived from the
+     * layout -- no allocation is involved -- so running it this early, before the first
+     * confirmConfigSpace(), is safe. What is NOT safe to move earlier is ConfigView's
+     * mView: that caches mData.data() from the MemoryBlock and so must stay after the
+     * confirmConfigSpace() that allocates it.
+     */
+    void initConfigColdBlock()
+    {
+      mConfigLayout = mToolBox->mLayouts.getConfigSpaceLayout();
+
+      const auto localSizes = mConfigLayout.getLocalSizes();
+      const size_t nGhosts = mConfigLayout.getNGhosts();
+
+      mConfigMemorySizes = mConfigLayout.getSizesInMemory();
+      for (size_t d = 0; d < NDim; ++d) {
+        mConfigMemorySizes[d] += nGhosts + nGhosts; // add padding to the local sizes
+        mConfigLocalSlicing[d] = std::make_pair(nGhosts, nGhosts + localSizes[d]);
+      }
+    }
+
     device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
     std::string mName;
     bool mAllocated;
@@ -292,6 +352,12 @@ namespace TempLat
 
     MemoryLayoutState mLayoutState;
     GhostStateKeeper mGhostStateKeeper;
+
+    // The config-scoped cold block -- see configLayout() above for why the scoping is
+    // load-bearing and must not be shared with FourierView.
+    LayoutStruct<NDim> mConfigLayout;
+    device::IdxArray<NDim> mConfigMemorySizes;
+    device::array<std::pair<device::Idx, device::Idx>, NDim> mConfigLocalSlicing;
   };
 
 } // namespace TempLat

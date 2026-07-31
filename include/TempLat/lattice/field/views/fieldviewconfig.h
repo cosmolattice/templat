@@ -43,24 +43,19 @@ namespace TempLat
     ConfigView(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar)
         : AbstractField<T, NDim>(name, toolBox, pLatPar), mDisableFFTBlocking(false)
     {
-      if (toolBox != nullptr)
-        mLayout = mToolBox->mLayouts.getConfigSpaceLayout();
-      else
+      if (toolBox == nullptr)
         throw FieldViewConfigMissingToolBox("A FieldViewConfig must be constructed with a valid MemoryToolBox.");
+
+      // The layout, the padded memory sizes and the local slicing now live in the
+      // MemoryManager, which derived them from the same toolbox in its own constructor a
+      // moment ago -- see MemoryManager::configLayout().
 
       mManager->setGhostsAreStale();
       mManager->confirmConfigSpace(); // allocation happens here
 
-      const auto localSizes = mLayout.getLocalSizes();
-      const size_t nGhosts = mLayout.getNGhosts();
-
-      memorySizes = mLayout.getSizesInMemory();
-      for (size_t d = 0; d < NDim; ++d) {
-        memorySizes[d] += nGhosts + nGhosts; // add padding to the local sizes
-        localSlicing[d] = std::make_pair(nGhosts, nGhosts + localSizes[d]);
-      }
-
-      mView = mManager->getNDView(memorySizes);
+      // Order is load-bearing: mView caches mData.data() out of the MemoryBlock, and
+      // confirmConfigSpace() above is what allocates it. Do not hoist this.
+      mView = mManager->getNDView(mManager->configMemorySizes());
     }
 
     auto getView() const { return mView; }
@@ -75,15 +70,18 @@ namespace TempLat
       {
         device::apply([&](auto &&...args) { mView(args...) = DoEval::eval(g, args...); }, idx);
       };
-      device::iteration::foreach ("ConfigViewAssign", mLayout, functor);
+      device::iteration::foreach ("ConfigViewAssign", mManager->configLayout(), functor);
 
       PostGet::apply(g);
 
       mManager->setGhostsAreStale();
     }
 
-    inline auto getLocalNDHostView() const { return mManager->getNDHostSubView(memorySizes, localSlicing); }
-    inline auto getFullNDHostView() const { return mManager->getNDHostView(memorySizes); }
+    inline auto getLocalNDHostView() const
+    {
+      return mManager->getNDHostSubView(mManager->configMemorySizes(), mManager->configLocalSlicing());
+    }
+    inline auto getFullNDHostView() const { return mManager->getNDHostView(mManager->configMemorySizes()); }
     inline auto getRawHostView() const { return mManager->getRawHostView(); }
 
     template <typename R> void operator=(R &&g) { this->assign(std::forward<R>(g)); }
@@ -117,7 +115,7 @@ namespace TempLat
       }
     }
 
-    const auto &getLayout() const { return mLayout; }
+    const LayoutStruct<NDim> &getLayout() const { return mManager->configLayout(); }
 
     void updateGhosts() const { this->mManager->updateGhosts(); }
 
@@ -141,7 +139,7 @@ namespace TempLat
       /* likewise, make sure we are in configuration space (here the FFT may be fired!). */
       mManager->confirmConfigSpace();
 
-      ConfirmSpace::apply(g, mLayout, SpaceStateType::Configuration);
+      ConfirmSpace::apply(g, mManager->configLayout(), SpaceStateType::Configuration);
 
       GhostsHunter::apply(g);
       mManager->flagHostMirrorOutdated();
@@ -150,20 +148,22 @@ namespace TempLat
     std::string to_string() const { return mManager->getName() + "(x)"; }
 
   private:
-    LayoutStruct<NDim> mLayout;
-
     // mView is the ONLY member the device kernel reads: eval() above is `return
     // mView(idx...)` and nothing else. Everything else here is host-side bookkeeping that
     // every expression node nevertheless deep-copies, because nodes store their operands by
     // value with the deduced type. mRawView (written in the ctor, never read) and mHostView
     // (declared, never even written) used to sit here and cost 80 B of every Field for
     // nothing -- getRawHostView()/getFullNDHostView() go through mManager->, not through
-    // them.
+    // them. mLayout (288 B), memorySizes (24 B) and localSlicing (48 B) followed them into
+    // MemoryManager::configLayout() and friends: one copy per field instead of one per copy
+    // of every field.
     device::memory::NDViewUnmanaged<T, NDim> mView;
 
-    device::IdxArray<NDim> memorySizes;
-    device::array<std::pair<device::Idx, device::Idx>, NDim> localSlicing;
-
+    // Stays here on purpose, and it is the one member that must. It is genuinely per-object
+    // mutable state: measuringtools/toolwithownmemory.h sets it on a Field *copy* that shares
+    // a manager with a persistent Field, so today the persistent one keeps it false while the
+    // copy has it true. In the shared manager it would latch for both and silently weaken the
+    // guard in confirmSpace() above. It is 8 bytes.
     bool mDisableFFTBlocking;
   };
 } // namespace TempLat
