@@ -35,6 +35,16 @@ namespace TempLat
     {
     }
 
+    /** @brief The toolbox this manager was built from.
+     *
+     * Returned by const reference so callers on the field side can reach the layouts
+     * without copying the host_ptr (a copy is an atomic increment). AbstractField no
+     * longer keeps its own toolbox handle: the manager already owns one, and a second
+     * reference count in every field meant one more atomic pair per expression-node
+     * copy. See cooling_bench/LEAF_DESIGN.md.
+     */
+    const device::memory::host_ptr<MemoryToolBox<NDim>> &getToolBox() const { return mToolBox; }
+
     device::Idx allocate()
     {
       if (mAllocated) return 0;

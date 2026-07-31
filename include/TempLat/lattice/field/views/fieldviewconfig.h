@@ -38,13 +38,13 @@ namespace TempLat
     static constexpr size_t NDim = _NDim;
 
     using AbstractField<T, NDim>::mManager;
-    using AbstractField<T, NDim>::mToolBox;
+    using AbstractField<T, NDim>::toolBox;
 
     ConfigView(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar)
         : AbstractField<T, NDim>(name, toolBox, pLatPar), mDisableFFTBlocking(false)
     {
       if (toolBox != nullptr)
-        mLayout = mToolBox->mLayouts.getConfigSpaceLayout();
+        mLayout = toolBox->mLayouts.getConfigSpaceLayout();
       else
         throw FieldViewConfigMissingToolBox("A FieldViewConfig must be constructed with a valid MemoryToolBox.");
 
