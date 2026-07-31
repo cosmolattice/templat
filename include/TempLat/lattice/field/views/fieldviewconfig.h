@@ -61,7 +61,6 @@ namespace TempLat
       }
 
       mView = mManager->getNDView(memorySizes);
-      mRawView = mManager->getRawView();
     }
 
     auto getView() const { return mView; }
@@ -153,9 +152,14 @@ namespace TempLat
   private:
     LayoutStruct<NDim> mLayout;
 
+    // mView is the ONLY member the device kernel reads: eval() above is `return
+    // mView(idx...)` and nothing else. Everything else here is host-side bookkeeping that
+    // every expression node nevertheless deep-copies, because nodes store their operands by
+    // value with the deduced type. mRawView (written in the ctor, never read) and mHostView
+    // (declared, never even written) used to sit here and cost 80 B of every Field for
+    // nothing -- getRawHostView()/getFullNDHostView() go through mManager->, not through
+    // them.
     device::memory::NDViewUnmanaged<T, NDim> mView;
-    device::memory::NDViewUnmanaged<T, 1> mRawView;
-    device::memory::NDViewUnmanagedHost<T, NDim> mHostView;
 
     device::IdxArray<NDim> memorySizes;
     device::array<std::pair<device::Idx, device::Idx>, NDim> localSlicing;
