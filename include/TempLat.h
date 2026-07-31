@@ -434,6 +434,7 @@
 // ---------------------------------------------------------------------------
 #include "TempLat/lattice/IO/HDF5/fileloaderhdf5.h"
 #include "TempLat/lattice/IO/HDF5/filesaverhdf5.h"
+#include "TempLat/lattice/IO/HDF5/helpers/blockgeometry.h"
 #include "TempLat/lattice/IO/HDF5/helpers/hdf5attribute.h"
 #include "TempLat/lattice/IO/HDF5/helpers/hdf5dataset.h"
 #include "TempLat/lattice/IO/HDF5/helpers/hdf5file.h"
