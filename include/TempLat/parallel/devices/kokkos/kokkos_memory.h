@@ -93,7 +93,30 @@ namespace TempLat::device_kokkos::memory
 
     bool contiguous = src.span_is_contiguous() && dest.span_is_contiguous();
     if (contiguous) {
-      Kokkos::deep_copy(dest, src);
+      // Stream-ordered copy instead of a fenced one.
+      //
+      // The no-instance Kokkos::deep_copy overload wraps the copy in two DEVICE-WIDE
+      // Kokkos::fence() calls (Kokkos 5.1.1, Kokkos_CopyViews.hpp:1316-1325 for the
+      // byte-wise path, 1327-1331 for the view_copy fallback). Ghost exchange calls
+      // this ~400x per MC sweep -- two of the six face copies per component per
+      // parity pass land here, the ones whose slab happens to be contiguous -- which
+      // measured as ~800 cudaDeviceSynchronize/sweep and a large part of the ~14 ms
+      // volume-independent floor in the sweep cost.
+      //
+      // The instance overload does not fence on either path for our case: the
+      // byte-wise path (2517-2521) just enqueues DeepCopy on the instance, and the
+      // fallback takes Impl::view_copy(exec_space, ...) because Cuda can access
+      // CudaSpace on both sides.
+      //
+      // Ordering w.r.t. the sweep kernels holds because TempLat only ever uses the
+      // default execution space instance, i.e. one CUDA stream -- the non-contiguous
+      // branch below is a bare parallel_for and has always depended on exactly this.
+      // Callers needing host- or MPI-visible completion must fence themselves, and
+      // the ghost pack/unpack already does (ghostupdater.h:321,337,446,465); host
+      // reads go through copyDeviceToHost, whose deep_copy fences on its own.
+      //
+      // Revisit if a second execution space instance / stream is ever introduced.
+      Kokkos::deep_copy(typename View1::execution_space(), dest, src);
     } else {
       // If not, we need to do a manual copy
       device::array<ptrdiff_t, dim> localSizes;
