@@ -56,6 +56,14 @@ jobs:
       # transport, which fails in confusing ways rather than falling back.
       options: --shm-size=2g
 
+    # Required. Inside a container the runner cannot assume bash exists, so the
+    # default shell is `sh -e {0}` rather than the `bash -e {0}` used for jobs on
+    # the runner itself. Every step below uses `set -o pipefail` and `[[ ]]`,
+    # which dash rejects outright -- without this the whole job dies on line 1.
+    defaults:
+      run:
+        shell: bash
+
     steps:
       # Deliberately not actions/checkout: CMake build trees are not
       # relocatable, so the build has to happen at the same absolute paths the
