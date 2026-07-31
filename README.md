@@ -2,6 +2,7 @@
 
 [![TempLat Logo](https://raw.githubusercontent.com/cosmolattice/templat/refs/heads/main/docs/logo/logo_red_nobg.svg)](https://cosmolattice.github.io/templat/index.html)
 
+[![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/satfra/58c0970a85e0d323a6a8b4afba06f93a/raw/templat-tests.json)](https://github.com/cosmolattice/templat/actions/workflows/ci.yml)
 [![Static Badge](https://img.shields.io/badge/website-grey?link=https%3A%2F%2Fcosmolattice.github.io%2Ftemplat%2Findex.html)](https://cosmolattice.github.io/templat/index.html)
 [![Static Badge](https://img.shields.io/badge/docs-blue?link=https%3A%2F%2Fcosmolattice.github.io%2Ftemplat%2Fvocabulary.html)](https://cosmolattice.github.io/templat/vocabulary.html)
 

@@ -11,6 +11,13 @@ name: Tests
 # ghcr.io/cosmolattice/templat-ci is still set to Public.
 on:
   pull_request:
+  # Also on merges to main, where this workflow does two things in order:
+  # refresh the images, then test against what it just built. The refresh is
+  # ci-image.yml invoked as a reusable workflow, so `needs:` guarantees the
+  # ordering -- if both merely triggered on push they would race, and the tests
+  # would run against the previous image.
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -30,7 +37,21 @@ env:
   SHARDS: 2
 
 jobs:
+  # Step 1 of a merge to main. Skipped entirely on pull requests, which must test
+  # against the published image rather than rebuild it.
+  image:
+    name: Refresh images
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/ci-image.yml
+
+  # Step 2. `!cancelled()` rather than `always()` so a cancelled run stops here;
+  # `needs.image.result` is 'skipped' on pull requests, which must still proceed.
   ctest:
+    needs: [image]
+    if: ${{ !cancelled() && needs.image.result != 'failure' }}
     name: ${{ matrix.config }} ${{ matrix.shard }}/2
     runs-on: ubuntu-latest
     # Measured: a typical PR is ~3 min (serial) / ~6 min (mpi), almost all of it
@@ -130,10 +151,44 @@ jobs:
         id: ctest
         continue-on-error: true
         run: |
-          set -euo pipefail
+          # No -e: ctest's exit code is wanted, not fatal. PIPESTATUS preserves it
+          # past the tee.
+          set -uo pipefail
           cd /opt/templat/build
           ctest -I "${{ matrix.shard }},,${SHARDS}" \
-                --output-on-failure --no-tests=error -j "${{ matrix.ctest_jobs }}"
+                --output-on-failure --no-tests=error -j "${{ matrix.ctest_jobs }}" \
+            2>&1 | tee /tmp/ctest.log
+          exit "${PIPESTATUS[0]}"
+
+      # Separate from the step above and always(): if Build failed, ctest never
+      # ran, and the summary job still needs to hear about this shard rather than
+      # silently averaging it away.
+      - name: Record shard result
+        if: always()
+        run: |
+          set -uo pipefail
+          # ctest's tail line: "99% tests passed, 1 tests failed out of 244"
+          counts=$(grep -Eo '[0-9]+ tests failed out of [0-9]+' /tmp/ctest.log 2>/dev/null | tail -1)
+          if [[ -n "${counts}" ]]; then
+            failed=${counts%% *}
+            total=${counts##* }
+          else
+            failed=unknown
+            total=unknown
+          fi
+          mkdir -p /tmp/result
+          printf '%s %s %s %s\n' "${{ matrix.config }}" "${{ matrix.shard }}" \
+            "${failed}" "${total}" \
+            > "/tmp/result/result-${{ matrix.config }}-${{ matrix.shard }}.txt"
+          cat "/tmp/result/result-${{ matrix.config }}-${{ matrix.shard }}.txt"
+
+      - name: Upload shard result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: result-${{ matrix.config }}-${{ matrix.shard }}
+          path: /tmp/result/
+          retention-days: 14
 
       - name: Summarise
         if: always()
@@ -164,3 +219,85 @@ jobs:
           path: /opt/templat/build/Testing/Temporary/
           if-no-files-found: warn
           retention-days: 14
+
+  # Fans the sharded results back in. Runs on the runner rather than in a
+  # container -- it only reads text files.
+  summary:
+    name: Test summary
+    needs: ctest
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      # continue-on-error: if the image refresh failed the ctest jobs never ran,
+      # so there is nothing to download. The aggregation below reports that as
+      # "incomplete" rather than dying here.
+      - name: Collect shard results
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: result-*
+          path: results
+          merge-multiple: true
+
+      - name: Aggregate
+        id: agg
+        run: |
+          set -uo pipefail
+          declare -A cfg_total cfg_failed
+          total=0; failed=0; missing=0
+
+          {
+            echo "## Test summary"
+            echo
+            echo "| config | shard | passed | total |"
+            echo "| --- | --- | --- | --- |"
+            for f in results/result-*.txt; do
+              [[ -e "${f}" ]] || continue
+              read -r cfg shard fl tt < "${f}"
+              if [[ "${fl}" == "unknown" ]]; then
+                echo "| \`${cfg}\` | ${shard} | — | did not run |"
+                missing=$((missing + 1))
+              else
+                echo "| \`${cfg}\` | ${shard} | $((tt - fl)) | ${tt} |"
+                total=$((total + tt)); failed=$((failed + fl))
+                cfg_total[${cfg}]=$(( ${cfg_total[${cfg}]:-0} + tt ))
+                cfg_failed[${cfg}]=$(( ${cfg_failed[${cfg}]:-0} + fl ))
+              fi
+            done
+            echo
+            for c in "${!cfg_total[@]}"; do
+              echo "- **${c}**: $(( cfg_total[${c}] - cfg_failed[${c}] ))/${cfg_total[${c}]} passing"
+            done
+            echo
+            echo "_Each test runs once per config, so the 244-test suite is counted twice._"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          passed=$((total - failed))
+          if (( missing > 0 || total == 0 )); then
+            message="incomplete"; color="red"
+          elif (( failed == 0 )); then
+            message="${passed}/${total} passing"; color="brightgreen"
+          else
+            message="${passed}/${total} passing"; color="red"
+          fi
+          {
+            echo "message=${message}"
+            echo "color=${color}"
+            echo "failed=${failed}"
+          } >> "$GITHUB_OUTPUT"
+          echo "badge: ${message} (${color})"
+
+      # Only on push to main: pull requests -- especially from forks -- cannot
+      # read secrets, and a badge tracking an unmerged branch would be a lie.
+      # Skipped silently until the repo variable is set, so this is safe to merge
+      # before the gist exists.
+      - name: Update tests badge
+        if: always() && github.event_name == 'push' && vars.TESTS_BADGE_GIST_ID != ''
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ vars.TESTS_BADGE_GIST_ID }}
+          filename: templat-tests.json
+          label: tests
+          message: ${{ steps.agg.outputs.message }}
+          color: ${{ steps.agg.outputs.color }}
