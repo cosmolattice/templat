@@ -16,6 +16,11 @@
 
 #include "TempLat/lattice/algebra/helpers/getderiv.h"
 
+#ifdef TEMPLAT_FIELD_COPY_COUNTER
+#include "TempLat/parallel/device.h"
+#include <atomic>
+#endif
+
 namespace TempLat
 {
 
@@ -38,6 +43,37 @@ namespace TempLat
         : mToolBox(toolBox), mManager(mToolBox, name), latPar(pLatPar)
     {
     }
+
+#ifdef TEMPLAT_FIELD_COPY_COUNTER
+    /** @brief Measurement instrument -- OFF unless -DTEMPLAT_FIELD_COPY_COUNTER.
+     *
+     * Expression-template nodes store their operands by value, so building one expression
+     * deep-copies every leaf once per level of tree depth. That multiplier had only ever
+     * been inferred from timing; this counts it.
+     *
+     * AbstractField is a subobject of BOTH views of a Field (ConfigView's base and the
+     * embedded FourierView's base), so ONE Field copy raises this by TWO.
+     *
+     * The atomic RMW costs real time, so a binary built with this macro must not be used
+     * for timings -- build a separate, clean one for those. With the macro undefined this
+     * block disappears entirely and the build is unchanged.
+     */
+    static inline std::atomic<long> sCopyCount{0};
+
+    DEVICE_INLINE_FUNCTION AbstractField(const AbstractField &o)
+        : mToolBox(o.mToolBox), mManager(o.mManager), latPar(o.latPar)
+    {
+      // The counter is host state, but the copy constructor must stay callable from
+      // __host__ __device__ context: nvcc instantiates it wherever the implicit one was
+      // reachable before.
+      KOKKOS_IF_ON_HOST((sCopyCount.fetch_add(1, std::memory_order_relaxed);))
+    }
+
+    // Declaring a copy constructor suppresses the implicit move constructor, which would
+    // silently route every move through the (now counting, and more expensive) copy. Put it
+    // back explicitly so the instrumented build moves exactly where the clean build does.
+    AbstractField(AbstractField &&) = default;
+#endif
 
     inline void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {

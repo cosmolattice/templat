@@ -161,15 +161,16 @@ namespace TempLat
       auto layout = mToolBox->mLayouts.getFourierSpaceLayout();
       memorySizes = layout.getSizesInMemory();
       mView = mManager->template getNDView<complex<T>>(memorySizes);
-      mRawView = mManager->template getRawView<complex<T>>();
     }
 
+    // Same story as ConfigView, and it costs twice over: every Field embeds one of these,
+    // AND assign() above captures [=, *this], so the dead members were also in the kernel
+    // argument capture of every Fourier-space assignment. mRawView (written, never read),
+    // mHostView and localSlicing (declared, never even written) were 128 B of every Field.
+    // memorySizes IS live, in getLocalNDHostView/getFullNDHostView above.
     device::memory::NDViewUnmanaged<complex<T>, NDim> mView;
-    device::memory::NDViewUnmanaged<complex<T>, 1> mRawView;
-    device::memory::NDViewUnmanagedHost<complex<T>, NDim> mHostView;
 
     device::IdxArray<NDim> memorySizes;
-    device::array<device::pair<device::Idx, device::Idx>, NDim> localSlicing;
   };
 } // namespace TempLat
 

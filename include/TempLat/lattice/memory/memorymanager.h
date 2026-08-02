@@ -59,14 +59,9 @@ namespace TempLat
       return mBlock.template getNDHostView<R>(localSizes);
     }
 
-    template <typename R = T>
-    auto getNDSubView(const device::IdxArray<NDim> &localSizes,
-                      const device::array<std::pair<device::Idx, device::Idx>, NDim> &slices) const
-    {
-      auto view = mBlock.template getNDView<R>(localSizes);
-      auto subView = device::apply([&](const auto &...args) { return device::memory::subview(view, args...); }, slices);
-      return subView;
-    }
+    // getNDSubView (the device-side twin of getNDHostSubView below) is gone: it had no
+    // callers anywhere in templat, CosmoInterface or MCInterface. Its host counterpart is
+    // live -- ConfigView::getLocalNDHostView uses it.
     template <typename R = T>
     auto getNDHostSubView(const device::IdxArray<NDim> &localSizes,
                           const device::array<std::pair<device::Idx, device::Idx>, NDim> &slices) const
