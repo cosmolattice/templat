@@ -1,0 +1,13 @@
+# The CI images clone TempLat from GitHub rather than COPYing the build context
+# (see containers/ci/README.md), so nothing here is actually needed inside an
+# image. Excluding the bulky directories just keeps the context transfer fast.
+build*/
+.git/
+.cache/
+.idea/
+.venv/
+docs/
+external/
+*.DS_Store
+*.swp
+*.kate-swp

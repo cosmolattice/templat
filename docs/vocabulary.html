@@ -474,7 +474,7 @@
   <pre class="snip">ConstructSymTraceless(t11, t12, t13, t22, t23, t33)</pre>
   <p>Builds a symmetric $3\times3$ expression whose trace is subtracted on evaluation, so the result is traceless by construction.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SymTraceless">SymTraceless</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelesswrapper.h#L127">symtracelesswrapper.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelesswrapper.h#L135">symtracelesswrapper.h</a></p>
 </article>
 <article class="card vocab" id="op-MakeVector" data-name="makevector" data-tags="Collection">
   <h3><a href="#op-MakeVector">MakeVector</a></h3>
@@ -527,10 +527,10 @@
 
           <div class="chips" id="vocabTags" role="group" aria-label="Filter by participating type">
             <!-- GENERATED: TAGS -->
-<button type="button" class="chip" id="vocabClear" data-tag="">All <span class="n">92</span></button>
+<button type="button" class="chip" id="vocabClear" data-tag="">All <span class="n">93</span></button>
 <button type="button" class="chip" data-tag="Field" aria-pressed="false" title="Real scalar fields and generic scalar-valued expressions">Field <span class="n">44</span></button>
 <button type="button" class="chip" data-tag="ComplexField" aria-pressed="false" title="Complex fields, and U1Field which is an alias of them">ComplexField <span class="n">29</span></button>
-<button type="button" class="chip" data-tag="SU2Field" aria-pressed="false" title="SU(2) group elements and su(2) Lie-algebra elements">SU2Field <span class="n">27</span></button>
+<button type="button" class="chip" data-tag="SU2Field" aria-pressed="false" title="SU(2) group elements and su(2) Lie-algebra elements">SU2Field <span class="n">28</span></button>
 <button type="button" class="chip" data-tag="SU2Doublet" aria-pressed="false" title="SU(2) (Higgs) doublets">SU2Doublet <span class="n">9</span></button>
 <button type="button" class="chip" data-tag="Matrix3x3" aria-pressed="false" title="General 3x3 matrix expressions">Matrix3x3 <span class="n">2</span></button>
 <button type="button" class="chip" data-tag="Sym3x3" aria-pressed="false" title="Symmetric 3x3 matrix expressions">Sym3x3 <span class="n">2</span></button>
@@ -634,7 +634,7 @@ arg(r, t)</pre>
   <pre class="snip">average(expr) average(expr, space)</pre>
   <p>Average of an expression over the whole lattice and across all MPI ranks. Defaults to configuration or Fourier space according to the operand.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/measuringtools/averager.h#L145">averager.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/measuringtools/averager.h#L147">averager.h</a></p>
 </article>
 <article class="card vocab" id="op-B4NA" data-name="b4na" data-tags="SU2Field ComplexField">
   <h3><a href="#op-B4NA">B4NA</a></h3>
@@ -683,7 +683,7 @@ arg(r, t)</pre>
   <pre class="snip">CenteredDerivativeO4(t)</pre>
   <p>The ungauged $O(dx^4)$ centred derivative.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Field">SU2Field</button><button type="button" class="tag" data-tag="ComplexField">ComplexField</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/gaugealgebra/centeredcovariantderivativeo4.h#L55">centeredcovariantderivativeo4.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/gaugealgebra/centeredcovariantderivativeo4.h#L58">centeredcovariantderivativeo4.h</a></p>
 </article>
 <article class="card vocab" id="op-commutator" data-name="commutator" data-tags="SU2Field">
   <h3><a href="#op-commutator">commutator</a></h3>
@@ -697,7 +697,7 @@ arg(r, t)</pre>
   <pre class="snip">complexfieldaverage(instance, Configuration)</pre>
   <p>Lattice average of a complex expression, returning a complex result.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="ComplexField">ComplexField</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfieldaverager.h#L157">complexfieldaverager.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfieldaverager.h#L159">complexfieldaverager.h</a></p>
 </article>
 <article class="card vocab" id="op-complexPhase" data-name="complexphase" data-tags="ComplexField">
   <h3><a href="#op-complexPhase">complexPhase</a></h3>
@@ -781,7 +781,7 @@ arg(r, t)</pre>
   <pre class="snip">expinv(r)</pre>
   <p>Inverse of the SU(2) exponential map — the logarithm, taking a group element back to the algebra.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2expmapinv.h#L96">su2expmapinv.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2expmapinv.h#L95">su2expmapinv.h</a></p>
 </article>
 <article class="card vocab" id="op-fieldStrength" data-name="fieldstrength" data-tags="SU2Field ComplexField">
   <h3><a href="#op-fieldStrength">fieldStrength</a></h3>
@@ -1000,7 +1000,7 @@ magneticFieldCtr(As)</pre>
   <pre class="snip">pow&lt;N&gt;(x) pow(x, y)</pre>
   <p>Raises an expression to a power. $x^N$ with a compile-time exponent unrolls into repeated multiplication; the two-argument form is general. $N=0$ folds to OneType and $N=1$ to the operand itself, at compile time.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Collection">Collection</button><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listpower.h#L42">listpower.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/power.h#L99">power.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listpower.h#L42">listpower.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/power.h#L107">power.h</a></p>
 </article>
 <article class="card vocab" id="op-projectRadially" data-name="projectradially" data-tags="Field">
   <h3><a href="#op-projectRadially">projectRadially</a></h3>
@@ -1114,7 +1114,7 @@ projectRadially(instance, false)</pre>
   <pre class="snip">su2average(instance, Configuration)</pre>
   <p>Lattice average of an SU(2)-valued expression, aware of cached link operations.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2averager.h#L148">su2averager.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2averager.h#L151">su2averager.h</a></p>
 </article>
 <article class="card vocab" id="op-su2dotter" data-name="su2dotter" data-tags="SU2Field">
   <h3><a href="#op-su2dotter">su2dotter</a></h3>
@@ -1128,7 +1128,7 @@ projectRadially(instance, false)</pre>
   <pre class="snip">su2doubletaverage(instance, Configuration)</pre>
   <p>Lattice average of an SU(2) doublet expression.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Doublet">SU2Doublet</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doubletaverager.h#L150">su2doubletaverager.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doubletaverager.h#L152">su2doubletaverager.h</a></p>
 </article>
 <article class="card vocab" id="op-SU2GroupWrap" data-name="su2groupwrap" data-tags="SU2Field">
   <h3><a href="#op-SU2GroupWrap">SU2GroupWrap</a></h3>
@@ -1180,12 +1180,19 @@ projectRadially(instance, false)</pre>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
   <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2trace.h#L21">su2trace.h</a> · <code>ctest -R test-su2trace</code></p>
 </article>
+<article class="card vocab" id="op-traceDeficit" data-name="tracedeficit" data-tags="SU2Field">
+  <h3><a href="#op-traceDeficit">traceDeficit</a></h3>
+  <pre class="snip">traceDeficit(U)</pre>
+  <p>Wilson trace deficit $2 - \mathrm{tr}\,U$ of an SU(2) element, evaluated cancellation-free as $2|c|^2/(1+c_0)$ near the identity. Prefer this over `2 - trace(U)` wherever the result is scaled by a large factor, e.g. the plaquette magnetic energy.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2tracedeficit.h#L90">su2tracedeficit.h</a></p>
+</article>
 <article class="card vocab" id="op-wallAverager" data-name="wallaverager" data-tags="Field">
   <h3><a href="#op-wallAverager">wallAverager</a></h3>
   <pre class="snip">wallAverager(instance, Configuration)</pre>
   <p>Averages over the first $d-1$ coordinates, leaving a profile along the last one.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/measuringtools/wallaverager.h#L163">wallaverager.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/measuringtools/wallaverager.h#L165">wallaverager.h</a></p>
 </article>
 <article class="card vocab" id="op-WaveNumber" data-name="wavenumber" data-tags="Fourier">
   <h3><a href="#op-WaveNumber">WaveNumber</a></h3>
