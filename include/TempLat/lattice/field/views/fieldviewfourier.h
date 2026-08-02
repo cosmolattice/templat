@@ -36,13 +36,13 @@ namespace TempLat
     static constexpr size_t NDim = _NDim;
 
     using AbstractField<T, NDim>::mManager;
-    using AbstractField<T, NDim>::mToolBox;
+    using AbstractField<T, NDim>::toolBox;
 
     template <typename R> void operator=(R &&g) { this->assign(std::forward<R>(g)); }
 
     template <typename R> void assign(R &&g)
     {
-      const auto layout = mToolBox->mLayouts.getFourierSpaceLayout();
+      const auto layout = toolBox()->mLayouts.getFourierSpaceLayout();
       onBeforeAssignment(g);
 
       PreGet::apply(g);
@@ -63,7 +63,7 @@ namespace TempLat
       }
     void assign(R &&g)
     {
-      const auto layout = mToolBox->mLayouts.getFourierSpaceLayout();
+      const auto layout = toolBox()->mLayouts.getFourierSpaceLayout();
       onBeforeAssignment(g);
 
       PreGet::apply(g);
@@ -94,7 +94,7 @@ namespace TempLat
     {
       /* likewise, make sure we are in configuration space (here the FFT may be fired!). */
       mManager->confirmFourierSpace();
-      ConfirmSpace::apply(g, mToolBox->mLayouts.getFourierSpaceLayout(), SpaceStateType::Fourier);
+      ConfirmSpace::apply(g, toolBox()->mLayouts.getFourierSpaceLayout(), SpaceStateType::Fourier);
       GhostsHunter::apply(g);
       mManager->flagHostMirrorOutdated();
     }
@@ -131,7 +131,7 @@ namespace TempLat
 
     std::string toString() const { return mManager->getName() + "(k)"; }
 
-    const auto &getLayout() const { return mToolBox->mLayouts.getFourierSpaceLayout(); }
+    const auto &getLayout() const { return toolBox()->mLayouts.getFourierSpaceLayout(); }
 
     // MPI aware setting of value. Use exceptionally (remove zero mode for example)
 
@@ -141,7 +141,7 @@ namespace TempLat
       device::IdxArray<NDim> global_coord{{}};
       device::IdxArray<NDim> mem_pos{{}};
 
-      const auto &layout = mToolBox->mLayouts.getFourierSpaceLayout();
+      const auto &layout = toolBox()->mLayouts.getFourierSpaceLayout();
       const bool owned = device::apply(
           [&](const auto &...idx) { return layout.putMemoryIndexFromSpatialLocationInto(mem_pos, idx...); },
           global_coord);
@@ -157,8 +157,8 @@ namespace TempLat
   private:
     FourierView(const AbstractField<T, NDim> &f) : AbstractField<T, NDim>(f)
     {
-      if (mToolBox == nullptr) return;
-      auto layout = mToolBox->mLayouts.getFourierSpaceLayout();
+      if (toolBox() == nullptr) return;
+      auto layout = toolBox()->mLayouts.getFourierSpaceLayout();
       memorySizes = layout.getSizesInMemory();
       mView = mManager->template getNDView<complex<T>>(memorySizes);
     }

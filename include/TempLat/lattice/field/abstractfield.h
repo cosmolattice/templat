@@ -40,7 +40,7 @@ namespace TempLat
     static constexpr size_t NDim = _NDim;
 
     AbstractField(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar)
-        : mToolBox(toolBox), mManager(mToolBox, name), latPar(pLatPar)
+        : mManager(toolBox, name), latPar(pLatPar)
     {
     }
 
@@ -60,8 +60,9 @@ namespace TempLat
      */
     static inline std::atomic<long> sCopyCount{0};
 
-    DEVICE_INLINE_FUNCTION AbstractField(const AbstractField &o)
-        : mToolBox(o.mToolBox), mManager(o.mManager), latPar(o.latPar)
+    // No mToolBox here: this branch reaches the toolbox through the manager, so the
+    // member is gone. Keep the two init lists in step when this merges either way.
+    DEVICE_INLINE_FUNCTION AbstractField(const AbstractField &o) : mManager(o.mManager), latPar(o.latPar)
     {
       // The counter is host state, but the copy constructor must stay callable from
       // __host__ __device__ context: nvcc instantiates it wherever the implicit one was
@@ -88,7 +89,7 @@ namespace TempLat
       }
     }
 
-    device::memory::host_ptr<MemoryToolBox<NDim>> getToolBox() const { return mToolBox; }
+    device::memory::host_ptr<MemoryToolBox<NDim>> getToolBox() const { return mManager->getToolBox(); }
 
     device::Idx confirmGhostsUpToDate() const { return this->mManager->confirmGhostsUpToDate(); }
 
@@ -126,7 +127,16 @@ namespace TempLat
   protected:
     /* Put all member variables and private methods here. These may change arbitrarily. */
 
-    device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
+    /** @brief The toolbox, without copying a reference count.
+     *
+     * Replaces the former mToolBox member: the manager already holds the toolbox
+     * (memorymanager.h), so a field-side handle was a second reference count paid on
+     * every copy of a field -- and fields are copied by value into every node of every
+     * expression template. Use this in field internals; getToolBox() above still hands
+     * out an owning copy for external callers.
+     */
+    const device::memory::host_ptr<MemoryToolBox<NDim>> &toolBox() const { return mManager->getToolBox(); }
+
     device::memory::host_ptr<MemoryManager<T, NDim>> mManager;
 
     const LatticeParameters<T> latPar; // Information about the lattice (dx, kir...)
