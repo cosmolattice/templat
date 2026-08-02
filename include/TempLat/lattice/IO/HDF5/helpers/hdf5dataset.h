@@ -62,7 +62,9 @@ namespace TempLat
         c.size();
         c[0];
       }
-    void writeSlices(std::vector<T> data, const C &_subdims, const C &_offsets, bool doIWrite = true)
+    // The buffer is taken by reference: FileSaverHDF5::saveBlock hands over a whole staged block,
+    // which is bounded only by its staging budget, and a by-value parameter would copy all of it.
+    void writeSlices(const std::vector<T> &data, const C &_subdims, const C &_offsets, bool doIWrite = true)
     {
       if (_subdims.size() != _offsets.size())
         throw std::runtime_error("In HDF5Dataset::writeSlices, subdims and offsets must have the same size");
