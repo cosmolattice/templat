@@ -18,7 +18,10 @@ namespace TempLat
   template <size_t NDim> void TripleStateLayoutsTester<NDim>::Test(TDDAssertion &tdd)
   {
     constexpr device::Idx nGhost = 10;
-    device::IdxArray<4> nGrid{256, 256, 256, 256};
+    /* Keep this small. The assertion below is pure layout arithmetic and does not care about the
+     * grid size, but constructing FFTLibrarySelector makes the MPI backend plan for the grid for
+     * real: at 256^4 that is ~8.6 GB per rank, which OOM-kills the test under mpiexec. */
+    device::IdxArray<4> nGrid{32, 32, 32, 32};
     auto group = FFTMPIDomainSplit<4>::makeMPIGroup(MPICommReference(), nGrid);
     FFTLibrarySelector<4> theLibrary(group, nGrid);
 

@@ -1,0 +1,156 @@
+name: Refresh CI images
+
+# The pre-built images that ci.yml runs pull requests inside. Each one carries a
+# TempLat worktree and a fully populated CMake build tree under /opt/templat, so
+# a PR only has to do an incremental `make` rather than a cold build of all 244
+# test executables. See containers/ci/README.md.
+#
+# This is the one workflow that does *not* run on pull requests: it is what keeps
+# the images that PR jobs consume up to date.
+#
+# On merges to main it is invoked by ci.yml via workflow_call rather than by its
+# own push trigger, so that the tests there run *after* the refresh and against
+# the image they just produced. Triggering on push here as well would race it.
+on:
+  workflow_call:
+    inputs:
+      full:
+        description: 'Rebuild from scratch instead of incrementally'
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    # Monday 03:00 UTC. Deliberately a *full* rebuild: incremental refreshes
+    # append a Docker layer each time, and this is what bounds that growth (and
+    # picks up base-image security updates).
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      full:
+        description: 'Rebuild from scratch instead of incrementally'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+# Not cancel-in-progress: a superseded image refresh is harmless, but cancelling
+# one midway is a good way to leave a half-pushed tag behind.
+concurrency:
+  group: ci-image-${{ github.ref }}
+
+env:
+  IMAGE: ghcr.io/cosmolattice/templat-ci
+
+jobs:
+  refresh:
+    name: ${{ matrix.config }}
+    runs-on: ubuntu-latest
+    # A from-scratch mpi build projects to ~15-25 min on a 4-vCPU runner. This is
+    # slack for a bad day (a cold apt mirror, a slow ParaFaFT clone), not an
+    # expectation.
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [serial, mpi]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so the push-range diff below can be computed.
+          fetch-depth: 0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # After Buildx setup, so that the `imagetools inspect` probe below has a
+      # builder to resolve the registry through.
+      - name: Decide rebuild mode
+        id: mode
+        run: |
+          set -euo pipefail
+          mode=incremental
+          why=
+
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            mode=full; why="scheduled full rebuild, bounds Docker layer growth"
+          elif [[ "${{ inputs.full }}" == "true" ]]; then
+            mode=full; why="requested via workflow_dispatch"
+          elif ! docker buildx imagetools inspect "${IMAGE}:${{ matrix.config }}" >/dev/null 2>&1; then
+            mode=full; why="no ${{ matrix.config }} image published yet"
+          else
+            # An incremental refresh reuses the baked apt layer and the existing
+            # CMake cache, so anything that changes the build configuration
+            # itself has to go the long way round.
+            before='${{ github.event.before }}'
+            if [[ -z "${before}" || "${before}" =~ ^0+$ ]] || ! git cat-file -e "${before}^{commit}" 2>/dev/null; then
+              changed="$(git diff --name-only HEAD^ HEAD 2>/dev/null || true)"
+            else
+              changed="$(git diff --name-only "${before}" HEAD)"
+            fi
+            if grep -Eq '^(CMakeLists\.txt|cmake/|tests/CMakeLists\.txt|containers/ci/)' <<<"${changed}"; then
+              mode=full; why="build configuration changed"
+            fi
+          fi
+
+          echo "mode=${mode}" >> "$GITHUB_OUTPUT"
+          echo "\`${{ matrix.config }}\`: **${mode}** rebuild${why:+ (${why})}" >> "$GITHUB_STEP_SUMMARY"
+
+      # continue-on-error, with the full rebuild below as the fallback: if the
+      # incremental path breaks (a cmake re-configure that the existing cache
+      # cannot absorb, say), we want a working image out of this run rather than
+      # a stale tag that quietly slows every PR down until the next cron.
+      - name: Refresh incrementally
+        id: incremental
+        if: steps.mode.outputs.mode == 'incremental'
+        continue-on-error: true
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: containers/ci/templat-ci-update.Dockerfile
+          push: true
+          provenance: false
+          build-args: |
+            base=${{ env.IMAGE }}:${{ matrix.config }}
+            branch=${{ github.ref_name }}
+            ref=${{ github.sha }}
+            threads=4
+          tags: |
+            ${{ env.IMAGE }}:${{ matrix.config }}
+            ${{ env.IMAGE }}:${{ matrix.config }}-${{ github.sha }}
+
+      - name: Rebuild from scratch
+        if: steps.mode.outputs.mode == 'full' || steps.incremental.outcome == 'failure'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: containers/ci/templat-ci-base.Dockerfile
+          push: true
+          provenance: false
+          build-args: |
+            config=${{ matrix.config }}
+            ref=${{ github.sha }}
+            threads=4
+          tags: |
+            ${{ env.IMAGE }}:${{ matrix.config }}
+            ${{ env.IMAGE }}:${{ matrix.config }}-${{ github.sha }}
+
+      - name: Report
+        if: always()
+        run: |
+          {
+            echo "Published \`${IMAGE}:${{ matrix.config }}\` (also tagged \`${{ matrix.config }}-${GITHUB_SHA}\`)."
+            if [[ "${{ steps.incremental.outcome }}" == "failure" ]]; then
+              echo
+              echo "> Incremental refresh failed; fell back to a full rebuild."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

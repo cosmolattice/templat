@@ -1,0 +1,303 @@
+name: Tests
+
+# Runs the ctest suite on pull requests, inside the pre-built images published by
+# ci-image.yml. Those images already contain a TempLat worktree and a populated
+# CMake build tree under /opt/templat, so a PR does an incremental `make` instead
+# of a cold build of all 244 test executables. Measured: a typical PR spends ~6 s
+# on `make`, against ~11 min (serial) / ~14 min (mpi) for the cold build.
+#
+# The images are public packages, so no registry login is needed here and pull
+# requests from forks work unchanged. If the pull step ever 401s, check that
+# ghcr.io/cosmolattice/templat-ci is still set to Public.
+on:
+  pull_request:
+  # Also on merges to main, where this workflow does two things in order:
+  # refresh the images, then test against what it just built. The refresh is
+  # ci-image.yml invoked as a reusable workflow, so `needs:` guarantees the
+  # ordering -- if both merely triggered on push they would race, and the tests
+  # would run against the previous image.
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: ghcr.io/cosmolattice/templat-ci
+  # Must match the length of the `shard` matrix dimension below. Two is
+  # comfortable: measured worst case (a core header changes, so a shard rebuilds
+  # everything it owns) is ~7 min per shard for mpi. Raise it if the suite grows
+  # -- but each shard pays a ~1.5 min image pull, so more is not free.
+  SHARDS: 2
+
+jobs:
+  # Step 1 of a merge to main. Skipped entirely on pull requests, which must test
+  # against the published image rather than rebuild it.
+  image:
+    name: Refresh images
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/ci-image.yml
+
+  # Step 2. `!cancelled()` rather than `always()` so a cancelled run stops here;
+  # `needs.image.result` is 'skipped' on pull requests, which must still proceed.
+  ctest:
+    needs: [image]
+    if: ${{ !cancelled() && needs.image.result != 'failure' }}
+    name: ${{ matrix.config }} ${{ matrix.shard }}/2
+    runs-on: ubuntu-latest
+    # Measured: a typical PR is ~3 min (serial) / ~6 min (mpi), almost all of it
+    # image pull. The ceiling is a change to a core header such as
+    # util/tdd/tdd.h, which forces a shard to rebuild every target it owns:
+    # ~6 min serial, ~9 min mpi. The timeout is slack, not an expectation.
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [serial, mpi]
+        shard: [1, 2]
+        include:
+          # ctest runs tests concurrently, but each mpi test is already 4 ranks
+          # on a 4-vCPU runner, so it must stay serial there.
+          - config: serial
+            ctest_jobs: 4
+          - config: mpi
+            ctest_jobs: 1
+    container:
+      image: ghcr.io/cosmolattice/templat-ci:${{ matrix.config }}
+      # Docker's default 64 MB /dev/shm is too small for OpenMPI's shared-memory
+      # transport, which fails in confusing ways rather than falling back.
+      options: --shm-size=2g
+
+    # Required. Inside a container the runner cannot assume bash exists, so the
+    # default shell is `sh -e {0}` rather than the `bash -e {0}` used for jobs on
+    # the runner itself. Every step below uses `set -o pipefail` and `[[ ]]`,
+    # which dash rejects outright -- without this the whole job dies on line 1.
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Deliberately not actions/checkout: CMake build trees are not
+      # relocatable, so the build has to happen at the same absolute paths the
+      # image was built at, not in $GITHUB_WORKSPACE. Moving the baked worktree
+      # to the PR commit is what makes the incremental build possible -- git
+      # rewrites only files whose content actually differs, so unchanged headers
+      # keep their mtimes and make correctly leaves their dependents alone.
+      - name: Check out the PR into the pre-built tree
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          cd /opt/templat/src
+          if [[ -n "${PR_NUMBER:-}" ]]; then
+            # Both refs are hosted by the base repo, so this resolves for fork
+            # pull requests too. Prefer /merge, which is the test-merge with the
+            # base branch -- but GitHub only publishes it while the PR is open
+            # *and* mergeable, so fall back to the branch tip rather than dying
+            # with "couldn't find remote ref" on a conflicted PR.
+            if ! git fetch --no-tags --force origin "+refs/pull/${PR_NUMBER}/merge:refs/ci/target"; then
+              echo "::warning::refs/pull/${PR_NUMBER}/merge is unavailable (conflicts with the base branch?) — testing the PR head instead."
+              git fetch --no-tags --force origin "+refs/pull/${PR_NUMBER}/head:refs/ci/target"
+            fi
+          else
+            git fetch --no-tags --force origin "+${{ github.ref_name }}:refs/ci/target"
+          fi
+          git checkout --force refs/ci/target
+          git clean -xdff
+          git --no-pager log -1 --format='Testing %h %s'
+
+      # Cheap, but not skippable: tests/CMakeLists.txt discovers tests with
+      # file(GLOB_RECURSE ...), so tests the PR adds or deletes only appear after
+      # a re-configure. No -D flags -- the baked CMake cache already holds them.
+      - name: Re-configure
+        run: cmake -S /opt/templat/src -B /opt/templat/build
+
+      - name: Select this shard's targets
+        run: |
+          set -euo pipefail
+          cd /opt/templat/build
+          ctest -N -I "${{ matrix.shard }},,${SHARDS}" \
+            | sed -n 's/^ *Test *#[0-9]\+: //p' > /tmp/targets.txt
+          count=$(wc -l < /tmp/targets.txt)
+          echo "Shard ${{ matrix.shard }}/${SHARDS}: ${count} tests"
+          test "${count}" -gt 0
+
+      # tests/CMakeLists.txt registers every test as
+      # `bash -c "make <target> && <run it>"`, so whatever is left to compile
+      # gets compiled *inside* ctest, one target at a time. Building the shard's
+      # targets in parallel up front is what keeps a core-header change from
+      # serialising into a very long ctest run.
+      - name: Build
+        run: |
+          set -euo pipefail
+          cd /opt/templat/build
+          make -j"$(nproc)" $(tr '\n' ' ' < /tmp/targets.txt)
+
+      # Non-blocking for now. Measured on main at the time of writing: 243/244
+      # pass in both configs, the sole failure being test-templat (TempLat.h does
+      # not include su2algebra/su2tracedeficit.h). Once that is fixed there is
+      # nothing left to exclude, and this should become a blocking check --
+      # drop `continue-on-error` then.
+      - name: Run ctest
+        id: ctest
+        continue-on-error: true
+        run: |
+          # No -e: ctest's exit code is wanted, not fatal. PIPESTATUS preserves it
+          # past the tee.
+          set -uo pipefail
+          cd /opt/templat/build
+          ctest -I "${{ matrix.shard }},,${SHARDS}" \
+                --output-on-failure --no-tests=error -j "${{ matrix.ctest_jobs }}" \
+            2>&1 | tee /tmp/ctest.log
+          exit "${PIPESTATUS[0]}"
+
+      # Separate from the step above and always(): if Build failed, ctest never
+      # ran, and the summary job still needs to hear about this shard rather than
+      # silently averaging it away.
+      - name: Record shard result
+        if: always()
+        run: |
+          set -uo pipefail
+          # ctest's tail line: "99% tests passed, 1 tests failed out of 244"
+          counts=$(grep -Eo '[0-9]+ tests failed out of [0-9]+' /tmp/ctest.log 2>/dev/null | tail -1)
+          if [[ -n "${counts}" ]]; then
+            failed=${counts%% *}
+            total=${counts##* }
+          else
+            failed=unknown
+            total=unknown
+          fi
+          mkdir -p /tmp/result
+          printf '%s %s %s %s\n' "${{ matrix.config }}" "${{ matrix.shard }}" \
+            "${failed}" "${total}" \
+            > "/tmp/result/result-${{ matrix.config }}-${{ matrix.shard }}.txt"
+          cat "/tmp/result/result-${{ matrix.config }}-${{ matrix.shard }}.txt"
+
+      - name: Upload shard result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: result-${{ matrix.config }}-${{ matrix.shard }}
+          path: /tmp/result/
+          retention-days: 14
+
+      - name: Summarise
+        if: always()
+        run: |
+          failed=/opt/templat/build/Testing/Temporary/LastTestsFailed.log
+          {
+            echo "### ${{ matrix.config }} shard ${{ matrix.shard }}/${SHARDS}"
+            if [[ "${{ steps.ctest.outcome }}" == "success" ]]; then
+              echo "All $(wc -l < /tmp/targets.txt) tests passed."
+            else
+              echo "Failed (non-blocking) — full output in the \`ctest-*\` artifact:"
+              echo '```'
+              # ctest writes one "<index>:<name>" line per failure here.
+              if [[ -s "${failed}" ]]; then
+                cut -d: -f2- "${failed}" | head -50
+              else
+                echo "no failure list written — see the ctest step output"
+              fi
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload ctest logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctest-${{ matrix.config }}-shard${{ matrix.shard }}
+          path: /opt/templat/build/Testing/Temporary/
+          if-no-files-found: warn
+          retention-days: 14
+
+  # Fans the sharded results back in. Runs on the runner rather than in a
+  # container -- it only reads text files.
+  summary:
+    name: Test summary
+    needs: ctest
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      # continue-on-error: if the image refresh failed the ctest jobs never ran,
+      # so there is nothing to download. The aggregation below reports that as
+      # "incomplete" rather than dying here.
+      - name: Collect shard results
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: result-*
+          path: results
+          merge-multiple: true
+
+      - name: Aggregate
+        id: agg
+        run: |
+          set -uo pipefail
+          declare -A cfg_total cfg_failed
+          total=0; failed=0; missing=0
+
+          {
+            echo "## Test summary"
+            echo
+            echo "| config | shard | passed | total |"
+            echo "| --- | --- | --- | --- |"
+            for f in results/result-*.txt; do
+              [[ -e "${f}" ]] || continue
+              read -r cfg shard fl tt < "${f}"
+              if [[ "${fl}" == "unknown" ]]; then
+                echo "| \`${cfg}\` | ${shard} | — | did not run |"
+                missing=$((missing + 1))
+              else
+                echo "| \`${cfg}\` | ${shard} | $((tt - fl)) | ${tt} |"
+                total=$((total + tt)); failed=$((failed + fl))
+                cfg_total[${cfg}]=$(( ${cfg_total[${cfg}]:-0} + tt ))
+                cfg_failed[${cfg}]=$(( ${cfg_failed[${cfg}]:-0} + fl ))
+              fi
+            done
+            echo
+            for c in "${!cfg_total[@]}"; do
+              echo "- **${c}**: $(( cfg_total[${c}] - cfg_failed[${c}] ))/${cfg_total[${c}]} passing"
+            done
+            echo
+            echo "_Each test runs once per config, so the 244-test suite is counted twice._"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          passed=$((total - failed))
+          if (( missing > 0 || total == 0 )); then
+            message="incomplete"; color="red"
+          elif (( failed == 0 )); then
+            message="${passed}/${total} passing"; color="brightgreen"
+          else
+            message="${passed}/${total} passing"; color="red"
+          fi
+          {
+            echo "message=${message}"
+            echo "color=${color}"
+            echo "failed=${failed}"
+          } >> "$GITHUB_OUTPUT"
+          echo "badge: ${message} (${color})"
+
+      # Only on push to main: pull requests -- especially from forks -- cannot
+      # read secrets, and a badge tracking an unmerged branch would be a lie.
+      # Skipped silently until the repo variable is set, so this is safe to merge
+      # before the gist exists.
+      - name: Update tests badge
+        if: always() && github.event_name == 'push' && vars.TESTS_BADGE_GIST_ID != ''
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ vars.TESTS_BADGE_GIST_ID }}
+          filename: templat-tests.json
+          label: tests
+          message: ${{ steps.agg.outputs.message }}
+          color: ${{ steps.agg.outputs.color }}
