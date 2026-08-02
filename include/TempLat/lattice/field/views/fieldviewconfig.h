@@ -153,7 +153,6 @@ namespace TempLat
       }
 
       mView = mManager->getNDView(memorySizes);
-      mRawView = mManager->getRawView();
     }
 
     LayoutStruct<NDim> mLayout;
