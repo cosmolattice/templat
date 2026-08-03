@@ -7,6 +7,7 @@
 
 // File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
 
+#include "TempLat/lattice/ghostcells/boundaryconditions.h"
 #include "TempLat/lattice/ghostcells/ghoststatekeeper.h"
 #include "TempLat/lattice/memory/memoryblock.h"
 #include "TempLat/lattice/memory/memorylayoutstate.h"
@@ -31,9 +32,23 @@ namespace TempLat
   public:
     // Put public methods here. These should change very little over time.
     MemoryManager(device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, std::string name = "")
-        : mToolBox(toolBox), mName(name), mAllocated(false)
+        : mToolBox(toolBox), mName(name), mAllocated(false), mBCSpec(allPeriodic<NDim>())
     {
     }
+
+    void setBCSpec(BCSpec<NDim> bc) { mBCSpec = bc; }
+
+    const BCSpec<NDim> &getBCSpec() const { return mBCSpec; }
+
+    /** @brief The toolbox this manager was built from.
+     *
+     * Returned by const reference so callers on the field side can reach the layouts
+     * without copying the host_ptr (a copy is an atomic increment). AbstractField no
+     * longer keeps its own toolbox handle: the manager already owns one, and a second
+     * reference count in every field meant one more atomic pair per expression-node
+     * copy. See cooling_bench/LEAF_DESIGN.md.
+     */
+    const device::memory::host_ptr<MemoryToolBox<NDim>> &getToolBox() const { return mToolBox; }
 
     device::Idx allocate()
     {
@@ -54,14 +69,9 @@ namespace TempLat
       return mBlock.template getNDHostView<R>(localSizes);
     }
 
-    template <typename R = T>
-    auto getNDSubView(const device::IdxArray<NDim> &localSizes,
-                      const device::array<std::pair<device::Idx, device::Idx>, NDim> &slices) const
-    {
-      auto view = mBlock.template getNDView<R>(localSizes);
-      auto subView = device::apply([&](const auto &...args) { return device::memory::subview(view, args...); }, slices);
-      return subView;
-    }
+    // getNDSubView (the device-side twin of getNDHostSubView below) is gone: it had no
+    // callers anywhere in templat, CosmoInterface or MCInterface. Its host counterpart is
+    // live -- ConfigView::getLocalNDHostView uses it.
     template <typename R = T>
     auto getNDHostSubView(const device::IdxArray<NDim> &localSizes,
                           const device::array<std::pair<device::Idx, device::Idx>, NDim> &slices) const
@@ -190,7 +200,7 @@ namespace TempLat
       if (mGhostStateKeeper.isStale()) {
         if (mToolBox->verbosity.ghostConfirmationSteps) sayMPI << "Need to update ghost cells.\n";
         ++result;
-        mToolBox->mGhostUpdater.update(mBlock);
+        mToolBox->mGhostUpdater.update(mBlock, mBCSpec);
         mGhostStateKeeper.setUpToDate();
       }
       if (mToolBox->verbosity.ghostConfirmationSteps)
@@ -203,7 +213,7 @@ namespace TempLat
 
     void updateGhosts()
     {
-      mToolBox->mGhostUpdater.update(mBlock);
+      mToolBox->mGhostUpdater.update(mBlock, mBCSpec);
       mBlock.flagHostMirrorOutdated();
     }
 
@@ -216,17 +226,23 @@ namespace TempLat
       device::Idx result = 0;
       if (mgrs.empty()) return result;
       auto toolBox = mgrs[0]->mToolBox;
+      const BCSpec<NDim> bcSpec = mgrs[0]->mBCSpec;
       std::vector<MemoryBlock<T, NDim> *> stale;
       stale.reserve(mgrs.size());
       for (auto *m : mgrs) {
         if (m->mToolBox.get() != toolBox.get())
           throw MemoryManagerAccessOutOfBounds("confirmGhostsUpToDateBatch: managers do not share a MemoryToolBox.");
+        if (m->mBCSpec != bcSpec)
+          throw MemoryManagerAccessOutOfBounds("confirmGhostsUpToDateBatch: components do not share a BCSpec. "
+                                               "All components of a multi-component field must carry the same "
+                                               "boundary condition.");
         result += m->confirmConfigSpace();
         if (m->mGhostStateKeeper.isStale()) stale.push_back(&m->mBlock);
       }
       if (!stale.empty()) {
         ++result;
-        toolBox->mGhostUpdater.updateBatch(std::span<MemoryBlock<T, NDim> *const>(stale.data(), stale.size()));
+        toolBox->mGhostUpdater.updateBatch(std::span<MemoryBlock<T, NDim> *const>(stale.data(), stale.size()),
+                                           bcSpec);
         for (auto *m : mgrs)
           m->mGhostStateKeeper.setUpToDate();
       }
@@ -242,14 +258,20 @@ namespace TempLat
     {
       if (mgrs.empty()) return;
       auto toolBox = mgrs[0]->mToolBox;
+      const BCSpec<NDim> bcSpec = mgrs[0]->mBCSpec;
       std::vector<MemoryBlock<T, NDim> *> blocks;
       blocks.reserve(mgrs.size());
       for (auto *m : mgrs) {
         if (m->mToolBox.get() != toolBox.get())
           throw MemoryManagerAccessOutOfBounds("updateGhostsBatch: managers do not share a MemoryToolBox.");
+        if (m->mBCSpec != bcSpec)
+          throw MemoryManagerAccessOutOfBounds("updateGhostsBatch: components do not share a BCSpec. "
+                                               "All components of a multi-component field must carry the same "
+                                               "boundary condition.");
         blocks.push_back(&m->mBlock);
       }
-      toolBox->mGhostUpdater.updateBatch(std::span<MemoryBlock<T, NDim> *const>(blocks.data(), blocks.size()));
+      toolBox->mGhostUpdater.updateBatch(std::span<MemoryBlock<T, NDim> *const>(blocks.data(), blocks.size()),
+                                         bcSpec);
       for (auto *m : mgrs)
         m->mBlock.flagHostMirrorOutdated();
     }
@@ -297,6 +319,7 @@ namespace TempLat
 
     MemoryLayoutState mLayoutState;
     GhostStateKeeper mGhostStateKeeper;
+    BCSpec<NDim> mBCSpec;
   };
 
 } // namespace TempLat

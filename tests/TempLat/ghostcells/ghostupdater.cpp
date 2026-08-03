@@ -13,6 +13,11 @@
 #include "TempLat/fft/fftmpidomainsplit.h"
 #include "TempLat/lattice/memory/triplestatelayouts.h"
 #include "TempLat/lattice/algebra/operators/power.h"
+#include "TempLat/lattice/field/field.h"
+#include "TempLat/lattice/algebra/coordinates/spatialcoordinate.h"
+#include "TempLat/util/ndloop.h"
+
+#include "bctesthelpers.h"
 
 #include <sstream>
 #include <iomanip>
@@ -241,6 +246,35 @@ namespace TempLat
     }
   }
 
+  /** @brief BC-aware ghost-fill tester.
+   *
+   * For a Field<double, NDim> built with a chosen per-dim BCSpec, sets every cell to
+   * (global_x[bcDim] + 1). The "+1" keeps owned values in [1, nGrid] (strictly positive), so
+   * Dirichlet's zero-fill is visible against interior values, and every other BC's expected
+   * value is distinct from every other BC's expected value. Then calls updateGhosts() and
+   * checks the low- and high-ghost slabs along bcDim. Each rank verifies its own slab —
+   * boundary ranks see the BC transform, interior ranks see the ordinary periodic exchange.
+   */
+  template <size_t NDim> struct BCFillTester {
+    static void Test(TDDAssertion &tdd);
+  };
+
+  template <size_t NDim> void BCFillTester<NDim>::Test(TDDAssertion &tdd)
+  {
+    constexpr ptrdiff_t nGrid = 8;
+    constexpr ptrdiff_t nGhost = 1;
+    auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, nGhost);
+    toolBox->unsetVerbose();
+
+    for (size_t bcDim = 0; bcDim < NDim; ++bcDim) {
+      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Antiperiodic, nGrid, nGhost));
+      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Dirichlet,    nGrid, nGhost));
+      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Neumann,      nGrid, nGhost));
+      // Periodic regression: new BC plumbing must not change existing all-periodic behavior.
+      tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Periodic,     nGrid, nGhost));
+    }
+  }
+
 } // namespace TempLat
 
 namespace
@@ -251,4 +285,7 @@ namespace
   TempLat::TDDContainer<TempLat::GhostUpdaterTester<4>> test4;
   TempLat::TDDContainer<TempLat::GhostUpdaterTester<5>> test5;
   TempLat::TDDContainer<TempLat::GhostUpdaterTester<6>> test6;
+
+  TempLat::TDDContainer<TempLat::BCFillTester<2>> bcTest2;
+  TempLat::TDDContainer<TempLat::BCFillTester<3>> bcTest3;
 } // namespace

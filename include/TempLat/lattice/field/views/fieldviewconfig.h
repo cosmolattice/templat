@@ -38,30 +38,12 @@ namespace TempLat
     static constexpr size_t NDim = _NDim;
 
     using AbstractField<T, NDim>::mManager;
-    using AbstractField<T, NDim>::mToolBox;
+    using AbstractField<T, NDim>::toolBox;
 
     ConfigView(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar)
         : AbstractField<T, NDim>(name, toolBox, pLatPar), mDisableFFTBlocking(false)
     {
-      if (toolBox != nullptr)
-        mLayout = mToolBox->mLayouts.getConfigSpaceLayout();
-      else
-        throw FieldViewConfigMissingToolBox("A FieldViewConfig must be constructed with a valid MemoryToolBox.");
-
-      mManager->setGhostsAreStale();
-      mManager->confirmConfigSpace(); // allocation happens here
-
-      const auto localSizes = mLayout.getLocalSizes();
-      const size_t nGhosts = mLayout.getNGhosts();
-
-      memorySizes = mLayout.getSizesInMemory();
-      for (size_t d = 0; d < NDim; ++d) {
-        memorySizes[d] += nGhosts + nGhosts; // add padding to the local sizes
-        localSlicing[d] = std::make_pair(nGhosts, nGhosts + localSizes[d]);
-      }
-
-      mView = mManager->getNDView(memorySizes);
-      mRawView = mManager->getRawView();
+      initFromToolBox(toolBox);
     }
 
     auto getView() const { return mView; }
@@ -151,11 +133,38 @@ namespace TempLat
     std::string to_string() const { return mManager->getName() + "(x)"; }
 
   private:
+    void initFromToolBox(device::memory::host_ptr<MemoryToolBox<NDim>> toolBox)
+    {
+      if (toolBox != nullptr)
+        mLayout = toolBox->mLayouts.getConfigSpaceLayout();
+      else
+        throw FieldViewConfigMissingToolBox("A FieldViewConfig must be constructed with a valid MemoryToolBox.");
+
+      mManager->setGhostsAreStale();
+      mManager->confirmConfigSpace(); // allocation happens here
+
+      const auto localSizes = mLayout.getLocalSizes();
+      const size_t nGhosts = mLayout.getNGhosts();
+
+      memorySizes = mLayout.getSizesInMemory();
+      for (size_t d = 0; d < NDim; ++d) {
+        memorySizes[d] += nGhosts + nGhosts; // add padding to the local sizes
+        localSlicing[d] = std::make_pair(nGhosts, nGhosts + localSizes[d]);
+      }
+
+      mView = mManager->getNDView(memorySizes);
+    }
+
     LayoutStruct<NDim> mLayout;
 
+    // mView is the ONLY member the device kernel reads: eval() above is `return
+    // mView(idx...)` and nothing else. Everything else here is host-side bookkeeping that
+    // every expression node nevertheless deep-copies, because nodes store their operands by
+    // value with the deduced type. mRawView (written in the ctor, never read) and mHostView
+    // (declared, never even written) used to sit here and cost 80 B of every Field for
+    // nothing -- getRawHostView()/getFullNDHostView() go through mManager->, not through
+    // them.
     device::memory::NDViewUnmanaged<T, NDim> mView;
-    device::memory::NDViewUnmanaged<T, 1> mRawView;
-    device::memory::NDViewUnmanagedHost<T, NDim> mHostView;
 
     device::IdxArray<NDim> memorySizes;
     device::array<std::pair<device::Idx, device::Idx>, NDim> localSlicing;

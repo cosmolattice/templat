@@ -135,6 +135,8 @@ namespace TempLat
     static constexpr size_t SHIFTIND = 0;
     static constexpr size_t size = 2;
 
+    device::memory::host_ptr<MemoryToolBox<NDim>> getToolBox() const { return mToolBox; }
+
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
     Field<T, NDim> mR;

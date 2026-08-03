@@ -70,6 +70,42 @@ namespace TempLat
     tdd.verify(evenCount > 0);
     tdd.verify(oddCount > 0);
 
+    // ---- reduce overload 7: CheckerboardLayout bounds, device-resident result ----
+    //
+    // Same bounds, same functor, same Sum reducer as the two reduces above -- only the
+    // destination differs. This is the overload MCInterface's batched acceptance-count
+    // path rests on, and the reason it is worth having: a rank-0 View destination is
+    // device-accessible, so Kokkos skips both the outer fence and the copy-back
+    // (parallel_reduce_needs_fence is false for a view-like argument), which is exactly
+    // what a host scalar destination cannot do.
+    //
+    // subview() returns a prvalue, which overload 6 (`T &result`) cannot bind, so
+    // overload 7 (`View view`, by value) is the only candidate. Storing the subview in
+    // a named local first would re-select overload 6 and silently restore the fence.
+    //
+    // No pre-zeroing: parallel_reduce overwrites its destination starting from the
+    // reducer identity rather than accumulating into it.
+    auto viewCounts = device::memory::NDView<device::Idx, 1>("cbReduceView", 2);
+
+    device::iteration::reduce(
+        "CountEvenIntoView", even,
+        DEVICE_LAMBDA(const device::IdxArray<NDim> &fullIdx, device::Idx &update) { update += 1; },
+        device::memory::subview(viewCounts, 0));
+    device::iteration::reduce(
+        "CountOddIntoView", odd,
+        DEVICE_LAMBDA(const device::IdxArray<NDim> &fullIdx, device::Idx &update) { update += 1; },
+        device::memory::subview(viewCounts, 1));
+
+    // One transfer for both parities -- the batching the device-resident destination buys.
+    std::vector<device::Idx> hostViewCounts(2, -1);
+    device::memory::copyDeviceToHost(viewCounts, hostViewCounts.data());
+
+    say << "3D untransposed, reduce overload 7: evenCount=" << hostViewCounts[0]
+        << " oddCount=" << hostViewCounts[1] << "\n";
+
+    tdd.verify(hostViewCounts[0] == evenCount);
+    tdd.verify(hostViewCounts[1] == oddCount);
+
     // Verify parity correctness using a 1D device view
     auto sizesInMem = layout.getSizesInMemory();
     device::Idx flatSize = 1;

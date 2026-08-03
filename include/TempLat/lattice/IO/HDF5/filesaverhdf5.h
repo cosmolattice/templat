@@ -9,6 +9,7 @@
 
 #ifdef HAVE_HDF5
 
+#include <algorithm>
 #include <cstring>
 #include <sstream>
 #include <vector>
@@ -26,10 +27,12 @@
 #include "TempLat/parallel/device_iteration.h"
 
 #include "TempLat/lattice/IO/HDF5/helpers/hdf5file.h"
+#include "TempLat/lattice/IO/HDF5/helpers/blockgeometry.h"
 
 namespace TempLat
 {
   MakeException(StringIsTooLong);
+  MakeException(InvalidSparseLimits);
 
   /** @brief A class which implements saving in pure HDF5.
    *
@@ -66,9 +69,20 @@ namespace TempLat
         mdown[i] = down[i];
         mup[i] = up[i];
         mstep[i] = step[i];
-        sparsesizes[i] = (mup[i] - mdown[i]) / mstep[i];
+        // Validation lives in save(), which is the first point that knows the lattice size -- but
+        // a step of zero has to be sidestepped here, since it would divide by zero on the way.
+        sparsesizes[i] = (mstep[i] >= 1) ? (mup[i] - mdown[i]) / mstep[i] : 0;
       }
     }
+
+    /** @brief Cap on the buffer saveBlock stages a field into, per rank, before writing it.
+     *
+     *  saveBlock chunks the slowest dimension so that neither the device buffer nor its host copy
+     *  exceeds this. Lower it if checkpointing a large local subdomain runs the device out of
+     *  memory; raise it to trade memory for fewer, larger writes. The default is 256 MiB, well
+     *  above any one field of a production lattice (2 MiB per rank per dataset at 64^3 doubles).
+     */
+    void setStagingBudgetBytes(size_t bytes) { mStagingBudgetBytes = bytes; }
 
     void save(ParameterParser &r)
     { // Conceptually, may be better as attributes? But nightmare to save vector of strings, did nt manage to do it in a
@@ -137,8 +151,9 @@ namespace TempLat
       GhostsHunter::apply(r);
       if (!sparsesave)
         sparsesizes.assign(r.getToolBox()->mNGridPointsVec.begin(), r.getToolBox()->mNGridPointsVec.end());
+      checkSparseLimits(r.getToolBox()->mNGridPointsVec, std::decay_t<decltype(*r.getToolBox())>::NDim);
       mDataset = mFile.createDataset<vType>(GetString::get(r), sparsesizes);
-      saveDim(r, 0, {});
+      saveBlock(r);
       mDataset.close();
     }
 
@@ -149,8 +164,9 @@ namespace TempLat
       GhostsHunter::apply(r);
       if (!sparsesave)
         sparsesizes.assign(r.getToolBox()->mNGridPointsVec.begin(), r.getToolBox()->mNGridPointsVec.end());
+      checkSparseLimits(r.getToolBox()->mNGridPointsVec, std::decay_t<decltype(*r.getToolBox())>::NDim);
       mDataset = mFile.createOrOpenGroup(name).createDataset<vType>(PrettyToString::get(t, 10), sparsesizes);
-      saveDim(r, 0, {});
+      saveBlock(r);
       mDataset.close();
     }
 
@@ -181,6 +197,30 @@ namespace TempLat
                                 H5P_DEFAULT, H5P_DEFAULT);
 
       H5Dwrite(dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &value);
+
+      H5Dclose(dataset);
+      H5Sclose(dataspace);
+    }
+
+    /**
+     * @brief Save a uint64_t scalar to a named dataset
+     * @param value The value to save
+     * @param name Dataset name
+     *
+     * Rank-independent counterpart to savePerRank: every rank writes the same
+     * value to a single-element dataset. Used for replicated checkpoint state
+     * (RNG generation counters, aggregated acceptance totals) so that a
+     * checkpoint can be reloaded under any MPI decomposition.
+     */
+    void saveScalarU64(uint64_t value, const std::string &name)
+    {
+      std::string fullName = "/" + name;
+      hsize_t dims[1] = {1};
+      auto dataspace = H5Screate_simple(1, dims, nullptr);
+      auto dataset = H5Dcreate2(mFile.getHandle(), fullName.c_str(), H5T_NATIVE_UINT64, dataspace, H5P_DEFAULT,
+                                H5P_DEFAULT, H5P_DEFAULT);
+
+      H5Dwrite(dataset, H5T_NATIVE_UINT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, &value);
 
       H5Dclose(dataset);
       H5Sclose(dataspace);
@@ -381,120 +421,138 @@ namespace TempLat
 
     HDF5Group createOrOpenGroup(const std::string &name) { return mFile.createOrOpenGroup(name); }
 
-    // To save our fields, we use the fact that the last dimension is not parallelised.
-    // We iterate over the first N-1 dimensions, and for each of these we save the whole
-    // last dimension to file.
-    template <typename R> void saveDim(R r, int dim, std::vector<device::Idx> coords)
+    /** @brief Save the block of the dataset this rank owns, with ONE H5Dwrite per chunk.
+     *
+     *  The coordinates a rank contributes map to consecutive dataset indices in every dimension
+     *  (see blockgeometry.h), so its whole contribution is a single stride-1 hyperslab. We stage
+     *  it into one contiguous buffer and hand that to HDF5 in one call, instead of walking the
+     *  first NDim-1 dimensions and writing one rod at a time: a 64^3 snapshot with 19 datasets
+     *  used to cost 19*64*64 = 77824 independent 512-byte MPI-IO writes.
+     *
+     *  Public because nvcc's extended-lambda restrictions do not allow the DEVICE_LAMBDA below to
+     *  live in a private member function.
+     */
+    template <typename R> void saveBlock(R r)
     {
       auto toolBox = r.getToolBox();
       constexpr size_t NDim = std::decay_t<decltype(*toolBox)>::NDim;
+      using vType = typename GetGetReturnType<R>::type;
 
-      auto starts = toolBox->mLayouts.getConfigSpaceStarts(); // Local mpi offset.
-      auto sizes = toolBox->mLayouts.getConfigSpaceSizes();   // Local mpi sizes.
-
-      auto inicoord = sparsesave ? mdown[dim] : 0;
-      // Bugfix: non-sparse endcoord must be the GLOBAL grid size. The recursion
-      // below skips coords where `starts[dim]+i >= endcoord`; `starts[dim]+i` is
-      // a global coordinate while `sizes[dim]` is the LOCAL MPI size, so every
-      // rank with starts[dim]>0 skipped its whole range and wrote nothing.
-      auto endcoord = sparsesave ? mup[dim] : (device::Idx)toolBox->mNGridPointsVec[dim];
-      auto stepcoord = sparsesave ? mstep[dim] : 1;
+      const auto geo = computeSaveBlockGeometry<NDim>(toolBox->mLayouts.getConfigSpaceStarts(), // Local mpi offset.
+                                                      toolBox->mLayouts.getConfigSpaceSizes(),  // Local mpi sizes.
+                                                      toolBox->mNGridPointsVec, sparsesave, mdown, mup, mstep,
+                                                      sparsesizes);
+      // Nothing of this rank's subdomain is inside the saved window. The transfer mode is
+      // H5FD_MPIO_INDEPENDENT, so skipping the write entirely is legal -- and is exactly what the
+      // old recursion did, by never reaching writeSlices.
+      if (geo.isEmpty()) return;
 
       const auto mLayout = toolBox->mLayouts.getConfigSpaceLayout();
 
-      if ((size_t)dim == toolBox->NDim - 1) // Last dimension, saved as a full rod.
-      {
-        // look at initial index of the last dimension. The next nGrid[last dimension] points are stored continuously.
-        coords.emplace_back(inicoord);
+      // Where the first saved coordinate of each dimension lives in local memory. The mapping is
+      // coord - localStart + nGhosts, affine with slope 1, so the i-th sample along dimension d
+      // sits at memFirst[d] + i * step[d].
+      device::IdxArray<NDim> memFirst = geo.first;
+      device::apply([&](auto... idx) { mLayout.putMemoryIndexFromSpatialLocationInto(memFirst, idx...); }, memFirst);
 
-        // for hdf5, tell it we want to store a sub array of size (1,1,1...,nGrid[last dimension]).
-        std::vector<hsize_t> subdims(NDim, 1);
-        subdims.back() = (endcoord - inicoord);
+      // Row-major strides of the staging buffer, matching the C ordering H5Screate_simple assumes.
+      // Only the dimension-0 extent is chunked below, and no stride depends on it.
+      device::IdxArray<NDim> bstride{};
+      bstride[NDim - 1] = 1;
+      for (size_t d = NDim - 1; d > 0; --d)
+        bstride[d - 1] = bstride[d] * geo.count[d];
+      const device::Idx sliceElems = (NDim > 1) ? bstride[0] : 1;
 
-        // at position (i,j,k,...,0) in the global lattice file.
-        std::vector<hsize_t> offsets;
-        for (size_t i = 0; i < coords.size(); ++i)
-          offsets.emplace_back((coords[i] - mdown[i]) / mstep[i]);
-        offsets.back() = 0;
+      // Chunk dimension 0 so that peak staging memory stays bounded: one field's worth on device
+      // plus one on host, on top of everything already resident, is an OOM waiting to happen at
+      // production volumes. Every chunk is still one contiguous index box, so the file cannot tell
+      // how many there were. At 64^3 doubles the loop body runs exactly once.
+      const device::Idx maxSlices =
+          std::max<device::Idx>(1, (device::Idx)(mStagingBudgetBytes / std::max<size_t>(1, sliceElems * sizeof(vType))));
 
-        using vType = typename GetGetReturnType<R>::type;
+      const device::IdxArray<NDim> starts{}; // foreach's third argument is an EXTENT, not a stop.
+      const device::IdxArray<NDim> stepMem = geo.step;
 
-        // We have the coordinate, now we need to convert this to an index in local memory. Let's buffer the coords in a
-        // device array to use with putMemoryIndexFromSpatialLocationInto.
-        device::IdxArray<NDim> memoryPos{};
-        for (size_t i = 0; i < coords.size(); ++i)
-          memoryPos[i] = coords[i];
-        // Then, overwrite memoryPos with the actual memory indices.
-        device::apply([&](auto... idx) { mLayout.putMemoryIndexFromSpatialLocationInto(memoryPos, idx...); },
-                      memoryPos);
-        // To get the subview, we make another copy with one dimension less.
-        device::IdxArray<NDim - 1> subMemoryPos;
-        for (size_t i = 0; i < NDim - 1; ++i)
-          subMemoryPos[i] = memoryPos[i];
+      for (device::Idx c0 = 0; c0 < geo.count[0]; c0 += maxSlices) {
+        const device::Idx n0 = std::min(maxSlices, geo.count[0] - c0);
 
-        std::vector<vType> sdata(toolBox->mNGridPointsVec[dim]);
-        std::vector<vType> sdatasparse;
-        sdatasparse.reserve(sparsesizes.back());
-        // If the input is a field, we can copy directly from memory
-        if constexpr (requires(R _r) { _r.getView(); }) {
-          // And apply this to get the subview, with the last dimension as a range starting from memoryPos[dim] (which
-          // is nGhosts) to memoryPos[dim]+nGrid[dim].
-          auto subview = device::apply(
-              [&](const auto &...args) {
-                return device::memory::subview(
-                    r.getView(), args...,
-                    std::pair<device::Idx, device::Idx>(memoryPos[dim], memoryPos[dim] + subdims[dim]));
-              },
-              subMemoryPos);
+        device::IdxArray<NDim> extents = geo.count;
+        device::IdxArray<NDim> offsets = geo.offset;
+        device::IdxArray<NDim> memBase = memFirst;
+        extents[0] = n0;
+        offsets[0] += c0;
+        memBase[0] += c0 * geo.step[0];
 
-          // Finally, we can copy this subview to host and write it to the selected hyperslab in the dataset.
-          device::memory::copyDeviceToHost(subview, sdata.data());
-        } else {
-          // Otherwise, we get the data point by point.
-          device::memory::NDView<vType, 1> device_buf("buffer", toolBox->mNGridPointsVec[dim]);
-          auto functor = DEVICE_LAMBDA(device::IdxArray<1> jdx)
-          {
-            device::Idx i = jdx[0];
-            device::apply([&](const auto &...idx) { device_buf(i - memoryPos[dim]) = DoEval::eval(r, idx..., i); },
-                          subMemoryPos);
-          };
-          device::iteration::foreach<1>("SaveDimBufferFilling", {memoryPos[dim]}, {(device::Idx)subdims[dim]}, functor);
+        const device::Idx nElems = n0 * sliceElems;
 
-          // Finally, we can copy this subview to host and write it to the selected hyperslab in the dataset.
-          device::memory::copyDeviceToHost(device_buf, sdata.data());
-        }
-        // Keep every stepcoord-th point of the contiguous rod, sampling only the
-        // filled prefix [0, endcoord-inicoord). The dataset's last-axis extent is
-        // (endcoord-inicoord)/stepcoord, so cap at that count to stay consistent.
-        const auto sparseCount = (endcoord - inicoord) / stepcoord;
-        for (device::Idx j = 0; j < endcoord - inicoord && (device::Idx)sdatasparse.size() < sparseCount;
-             j += stepcoord)
-          sdatasparse.push_back(sdata[j]);
-        subdims.back() = sparseCount;
-        mDataset.writeSlices(sdatasparse, subdims, offsets);
-      } else {
-        // Recursive call to loop over an arbitrary number of dimensions.
-        if constexpr (NDim > 1) {
-          for (int i = 0; i < sizes[dim]; ++i) {
-            if (starts[dim] + i < inicoord || starts[dim] + i >= endcoord ||
-                (starts[dim] + i - inicoord) % stepcoord != 0)
-              continue;
-            std::vector<device::Idx> newCoords(coords);
-            newCoords.emplace_back(starts[dim] + i);
-            saveDim(r, dim + 1, newCoords);
+        // Rank 1 keeps the staging view contiguous, so copyDeviceToHost takes its fast path: one
+        // deep_copy, no temporary device allocation.
+        device::memory::NDView<vType, 1> device_buf("SaveBlockBuffer", nElems);
+        auto functor = DEVICE_LAMBDA(device::IdxArray<NDim> idx)
+        {
+          device::IdxArray<NDim> mem{};
+          device::Idx linear = 0;
+          for (size_t d = 0; d < NDim; ++d) {
+            mem[d] = memBase[d] + idx[d] * stepMem[d];
+            linear += idx[d] * bstride[d];
           }
-        }
+          device::apply([&](const auto &...i) { device_buf(linear) = DoEval::eval(r, i...); }, mem);
+        };
+        device::iteration::foreach<NDim>("SaveBlockBufferFilling", starts, extents, functor);
+
+        std::vector<vType> host(nElems);
+        device::memory::copyDeviceToHost(device_buf, host.data());
+
+        mDataset.writeSlices(host, extents, offsets);
       }
     }
 
   private:
     /* Put all member variables and private methods here. These may change arbitrarily. */
 
+    /** @brief Reject sparse limits that describe no dataset, before one is created for them.
+     *
+     *  setLimits cannot do this itself: it never sees the lattice, so it cannot tell whether `up`
+     *  is inside it. Both rejected cases used to fail silently and late:
+     *
+     *  - up > nGrid made the old rod branch read `up - down` elements starting at the first owned
+     *    point, i.e. straight through the ghost cells and out of the allocation, and write whatever
+     *    it found to the file.
+     *  - down >= up (or step < 1) gives a dataset with an empty or negative extent.
+     *
+     *  Note that step not dividing (up-down) is NOT rejected: it is a legitimate request, the
+     *  dataset extent simply floors, and saveBlock drops the trailing coordinate that would not
+     *  fit -- which is the same coordinate the old recursion failed to write anyway, only without
+     *  the HDF5 error stack it printed on the way.
+     */
+    template <typename C> void checkSparseLimits(const C &nGrid, size_t NDim) const
+    {
+      if (!sparsesave) return;
+
+      if (mdown.size() < NDim || mup.size() < NDim || mstep.size() < NDim)
+        throw InvalidSparseLimits("FileSaverHDF5::setLimits was called with fewer dimensions (" +
+                                  std::to_string(mup.size()) + ") than the lattice has (" + std::to_string(NDim) +
+                                  ").");
+
+      for (size_t d = 0; d < NDim; ++d) {
+        const std::string where = " in dimension " + std::to_string(d) + ": down=" + std::to_string(mdown[d]) +
+                                  ", up=" + std::to_string(mup[d]) + ", step=" + std::to_string(mstep[d]) +
+                                  ", nGrid=" + std::to_string((device::Idx)nGrid[d]) + ".";
+        if (mdown[d] < 0) throw InvalidSparseLimits("FileSaverHDF5: the lower save limit is negative" + where);
+        if (mup[d] > (device::Idx)nGrid[d])
+          throw InvalidSparseLimits("FileSaverHDF5: the upper save limit is beyond the lattice" + where);
+        if (mdown[d] >= mup[d])
+          throw InvalidSparseLimits("FileSaverHDF5: the save limits select nothing, down must be below up" + where);
+        if (mstep[d] < 1) throw InvalidSparseLimits("FileSaverHDF5: the save step must be at least 1" + where);
+      }
+    }
+
     HDF5File mFile;
     HDF5Dataset mDataset;
     std::vector<device::Idx> mup, mdown, mstep;
     std::vector<device::Idx> sparsesizes;
     bool sparsesave = false;
+    size_t mStagingBudgetBytes = 256ull << 20;
   };
 } // namespace TempLat
 

@@ -9,16 +9,19 @@
 
 #ifdef HAVE_HDF5
 
+#include <algorithm>
 #include <cstring>
 #include <iomanip>
 #include <sstream>
 #include <vector>
+#include "TempLat/lattice/IO/HDF5/helpers/blockgeometry.h"
 #include "TempLat/lattice/IO/HDF5/helpers/hdf5file.h"
 #include "TempLat/lattice/algebra/helpers/getstring.h"
 #include "TempLat/lattice/algebra/helpers/getgetreturntype.h"
 #include "TempLat/parameters/parameterparser.h"
 
 #include "TempLat/parallel/device.h"
+#include "TempLat/parallel/device_iteration.h"
 #include "TempLat/parallel/device_memory.h"
 
 namespace TempLat
@@ -91,6 +94,87 @@ namespace TempLat
 
       H5Dread(dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &value);
 
+      H5Dclose(dataset);
+    }
+
+    /**
+     * @brief Load a uint64_t scalar from a named dataset
+     * @param value The value to load into
+     * @param name Dataset name
+     */
+    void loadScalarU64(uint64_t &value, const std::string &name)
+    {
+      std::string fullName = "/" + name;
+      auto dataset = H5Dopen2(mFile.getHandle(), fullName.c_str(), H5P_DEFAULT);
+
+      H5Dread(dataset, H5T_NATIVE_UINT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, &value);
+
+      H5Dclose(dataset);
+    }
+
+    /**
+     * @brief Check whether a named dataset exists in the file
+     * @param name Dataset name
+     *
+     * Lets callers branch on checkpoint layout without provoking an HDF5 error.
+     */
+    bool datasetExists(const std::string &name)
+    {
+      std::string fullName = "/" + name;
+      return H5Lexists(mFile.getHandle(), fullName.c_str(), H5P_DEFAULT) > 0;
+    }
+
+    /**
+     * @brief Get the dimensions of a named dataset
+     * @param name Dataset name
+     * @return One entry per rank of the dataspace
+     *
+     * Used to distinguish checkpoint RNG layouts: legacy per-rank datasets are
+     * [nRanks, stateLen], where stateLen == 1 for the counter-based generator
+     * and 313/316 for the pre-Philox Mersenne-Twister state.
+     */
+    std::vector<hsize_t> getDatasetDims(const std::string &name)
+    {
+      std::string fullName = "/" + name;
+      auto dataset = H5Dopen2(mFile.getHandle(), fullName.c_str(), H5P_DEFAULT);
+      auto filespace = H5Dget_space(dataset);
+
+      const int ndims = H5Sget_simple_extent_ndims(filespace);
+      std::vector<hsize_t> dims(ndims > 0 ? ndims : 0);
+      if (ndims > 0) H5Sget_simple_extent_dims(filespace, dims.data(), nullptr);
+
+      H5Sclose(filespace);
+      H5Dclose(dataset);
+      return dims;
+    }
+
+    /**
+     * @brief Load every element of a 1-D double dataset
+     * @param values Output: resized to the dataset extent
+     * @param name Dataset name
+     *
+     * loadPerRank reads only this rank's element. This reads the whole array,
+     * which is what a rank-count change needs in order to re-aggregate
+     * per-rank acceptance counters written by a differently sized run.
+     */
+    void loadWholeArray(std::vector<double> &values, const std::string &name)
+    {
+      std::string fullName = "/" + name;
+      auto dataset = H5Dopen2(mFile.getHandle(), fullName.c_str(), H5P_DEFAULT);
+      auto filespace = H5Dget_space(dataset);
+
+      hsize_t dims[1];
+      H5Sget_simple_extent_dims(filespace, dims, nullptr);
+      values.assign(static_cast<size_t>(dims[0]), 0.0);
+
+      auto plist = H5Pcreate(H5P_DATASET_XFER);
+#ifdef HAVE_MPI
+      H5Pset_dxpl_mpio(plist, H5FD_MPIO_INDEPENDENT);
+#endif
+      H5Dread(dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, plist, values.data());
+
+      H5Pclose(plist);
+      H5Sclose(filespace);
       H5Dclose(dataset);
     }
 
@@ -277,75 +361,82 @@ namespace TempLat
     template <typename R> void load(R r)
     {
       mDataset = mFile.openDataset(GetString::get(r));
-      loadDim(r, 0, {});
+      loadBlock(r);
       mDataset.close();
     }
 
-    template <typename R> void loadDim(R r, int dim, std::vector<device::Idx> coords)
+    /** @brief Read the block of the dataset this rank owns, with ONE H5Dread per chunk.
+     *
+     *  The mirror of FileSaverHDF5::saveBlock, and the same reason: the recursion this replaces
+     *  issued one H5Dread per "rod" along the last lattice axis, so a 64^3 restart with 19 fields
+     *  cost 77824 independent MPI-IO reads for 40 MB.
+     *
+     *  The loader has no sparse support -- it assumes the dataset covers the lattice one to one --
+     *  so the geometry is the degenerate case of the saver's: ini = 0, end = nGrid, step = 1.
+     *
+     *  Public for the same reason saveBlock is: nvcc's extended-lambda restrictions do not allow
+     *  the DEVICE_LAMBDA below inside a private member function.
+     */
+    template <typename R> void loadBlock(R r)
     {
       auto toolBox = r.getToolBox();
-
       constexpr size_t NDim = std::decay_t<decltype(*toolBox)>::NDim;
+      using vType = typename GetGetReturnType<R>::type;
 
-      auto starts = toolBox->mLayouts.getConfigSpaceStarts(); // Local mpi offset.
-      auto sizes = toolBox->mLayouts.getConfigSpaceSizes();   // Local mpi sizes.
+      const auto geo = computeDenseBlockGeometry<NDim>(toolBox->mLayouts.getConfigSpaceStarts(), // Local mpi offset.
+                                                       toolBox->mLayouts.getConfigSpaceSizes(),  // Local mpi sizes.
+                                                       toolBox->mNGridPointsVec);
+      if (geo.isEmpty()) return;
 
       const auto mLayout = toolBox->mLayouts.getConfigSpaceLayout();
 
-      if ((size_t)dim == toolBox->NDim - 1) // Last dimension, saved as a full rod.
-      {
-        // look at index 0 in the last dimension. The next nGrid[last dimension] points are stored continuously.
-        coords.emplace_back(0);
+      device::IdxArray<NDim> memFirst = geo.first;
+      device::apply([&](auto... idx) { mLayout.putMemoryIndexFromSpatialLocationInto(memFirst, idx...); }, memFirst);
 
-        // for hdf5, tell it we want to store a sub array of size (1,1,1...,nGrid[last dimension]).
-        std::vector<hsize_t> subdims(toolBox->NDim, 1);
-        subdims.back() = toolBox->mNGridPointsVec[dim];
+      // Row-major strides of the staging buffer, matching H5Screate_simple's C ordering.
+      device::IdxArray<NDim> bstride{};
+      bstride[NDim - 1] = 1;
+      for (size_t d = NDim - 1; d > 0; --d)
+        bstride[d - 1] = bstride[d] * geo.count[d];
+      const device::Idx sliceElems = (NDim > 1) ? bstride[0] : 1;
 
-        // at position (i,j,k,...,0) in the global lattice file.
-        std::vector<hsize_t> offsets;
-        for (size_t i = 0; i < coords.size(); ++i)
-          offsets.emplace_back(coords[i]);
-        offsets.back() = 0;
+      const device::Idx maxSlices =
+          std::max<device::Idx>(1, (device::Idx)(mStagingBudgetBytes / std::max<size_t>(1, sliceElems * sizeof(vType))));
 
-        using vType = typename GetGetReturnType<R>::type;
+      const device::IdxArray<NDim> starts{}; // foreach's third argument is an EXTENT, not a stop.
+      const device::IdxArray<NDim> stepMem = geo.step;
+      auto view = r.getView();
 
-        // We have the coordinate, now we need to convert this to an index in local memory. Let's buffer the coords in a
-        // device array to use with putMemoryIndexFromSpatialLocationInto.
-        device::IdxArray<NDim> memoryPos{};
-        for (size_t i = 0; i < coords.size(); ++i)
-          memoryPos[i] = coords[i];
-        // Then, overwrite memoryPos with the actual memory indices.
-        device::apply([&](auto... idx) { mLayout.putMemoryIndexFromSpatialLocationInto(memoryPos, idx...); },
-                      memoryPos);
-        // To get the subview, we make another copy with one dimension less.
-        device::IdxArray<NDim - 1> subMemoryPos;
-        for (size_t i = 0; i < NDim - 1; ++i)
-          subMemoryPos[i] = memoryPos[i];
-        // And apply this to get the subview, with the last dimension as a range starting from memoryPos[dim] (which is
-        // nGhosts) to memoryPos[dim]+nGrid[dim].
-        auto subview = device::apply(
-            [&](const auto &...args) {
-              return device::memory::subview(
-                  r.getView(), args...,
-                  std::pair<device::Idx, device::Idx>(memoryPos[dim], memoryPos[dim] + subdims[dim]));
-            },
-            subMemoryPos);
+      for (device::Idx c0 = 0; c0 < geo.count[0]; c0 += maxSlices) {
+        const device::Idx n0 = std::min(maxSlices, geo.count[0] - c0);
 
-        // Now read from file to a temporary buffer on host
-        std::vector<vType> rdata(toolBox->mNGridPointsVec[dim]);
-        mDataset.readSlices(rdata, subdims, offsets);
+        device::IdxArray<NDim> extents = geo.count;
+        device::IdxArray<NDim> offsets = geo.offset;
+        device::IdxArray<NDim> memBase = memFirst;
+        extents[0] = n0;
+        offsets[0] += c0;
+        memBase[0] += c0 * geo.step[0];
 
-        // And copy to device.
-        device::memory::copyHostToDevice(rdata.data(), subview);
-      } else {
-        // Recursive call to loop over an arbitrary number of dimensions.
-        if constexpr (NDim > 1) { // To prevent compilation warnings for NDim == 1
-          for (int i = 0; i < sizes[dim]; ++i) {
-            std::vector<device::Idx> newCoords(coords);
-            newCoords.emplace_back(starts[dim] + i);
-            loadDim(r, dim + 1, newCoords);
+        const device::Idx nElems = n0 * sliceElems;
+
+        std::vector<vType> host(nElems);
+        mDataset.readSlices(host, extents, offsets);
+
+        // Rank 1 keeps the staging view contiguous, so copyHostToDevice takes its fast path.
+        device::memory::NDView<vType, 1> device_buf("LoadBlockBuffer", nElems);
+        device::memory::copyHostToDevice(host.data(), device_buf);
+
+        auto functor = DEVICE_LAMBDA(device::IdxArray<NDim> idx)
+        {
+          device::IdxArray<NDim> mem{};
+          device::Idx linear = 0;
+          for (size_t d = 0; d < NDim; ++d) {
+            mem[d] = memBase[d] + idx[d] * stepMem[d];
+            linear += idx[d] * bstride[d];
           }
-        }
+          device::apply([&](const auto &...i) { view(i...) = device_buf(linear); }, mem);
+        };
+        device::iteration::foreach<NDim>("LoadBlockBufferScattering", starts, extents, functor);
       }
     }
 
@@ -353,6 +444,9 @@ namespace TempLat
     /* Put all member variables and private methods here. These may change arbitrarily. */
     HDF5File mFile;
     HDF5Dataset mDataset;
+    /** @brief Cap on the buffer loadBlock stages a field through; see
+     *  FileSaverHDF5::setStagingBudgetBytes. */
+    size_t mStagingBudgetBytes = 256ull << 20;
   };
 } // namespace TempLat
 

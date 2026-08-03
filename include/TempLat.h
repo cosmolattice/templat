@@ -80,6 +80,7 @@
 // ---------------------------------------------------------------------------
 // Lattice parameters
 // ---------------------------------------------------------------------------
+#include "TempLat/lattice/latticebcspec.h"
 #include "TempLat/lattice/latticeparameters.h"
 
 // ---------------------------------------------------------------------------
@@ -105,6 +106,7 @@
 // ---------------------------------------------------------------------------
 // Ghost cells
 // ---------------------------------------------------------------------------
+#include "TempLat/lattice/ghostcells/boundaryconditions.h"
 #include "TempLat/lattice/ghostcells/ghostbuster.h"
 #include "TempLat/lattice/ghostcells/ghoststatekeeper.h"
 #include "TempLat/lattice/ghostcells/ghostsubarray.h"
@@ -433,6 +435,7 @@
 // ---------------------------------------------------------------------------
 #include "TempLat/lattice/IO/HDF5/fileloaderhdf5.h"
 #include "TempLat/lattice/IO/HDF5/filesaverhdf5.h"
+#include "TempLat/lattice/IO/HDF5/helpers/blockgeometry.h"
 #include "TempLat/lattice/IO/HDF5/helpers/hdf5attribute.h"
 #include "TempLat/lattice/IO/HDF5/helpers/hdf5dataset.h"
 #include "TempLat/lattice/IO/HDF5/helpers/hdf5file.h"
