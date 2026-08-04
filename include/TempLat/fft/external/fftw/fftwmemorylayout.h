@@ -52,8 +52,10 @@ namespace TempLat
       std::iota(fourTransposition.begin(), fourTransposition.end(), 0);
 
       fourLocalSizes[NDim - 1] = fourLocalSizes.back() / 2 + 1;
-      // That's the padding for r2c/cr2, making place for that additional complex value
-      confPadding[NDim - 1][1] = 2;
+      // That's the padding for r2c/cr2, making place for that additional complex value.
+      // The in-place real array has last extent 2*(n/2+1), i.e. n+2 for even n but n+1 for odd n,
+      // so the padding is not unconditionally 2.
+      confPadding[NDim - 1][1] = 2 * (nGridPoints[NDim - 1] / 2 + 1) - nGridPoints[NDim - 1];
 
       device::Idx fftwRequiredMemory = 0;
 

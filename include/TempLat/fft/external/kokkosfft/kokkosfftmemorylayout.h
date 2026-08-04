@@ -50,8 +50,10 @@ namespace TempLat
       std::iota(fourTransposition.begin(), fourTransposition.end(), 0);
 
       fourLocalSizes[NDim - 1] = fourLocalSizes.back() / 2 + 1;
-      // r2c/cr2 padding for the last dimension, KokkosFFT uses the same convention as FFTW
-      confPadding[NDim - 1][1] = 2;
+      // r2c/cr2 padding for the last dimension, KokkosFFT uses the same convention as FFTW.
+      // The in-place real array has last extent 2*(n/2+1), i.e. n+2 for even n but n+1 for odd n,
+      // so the padding is not unconditionally 2.
+      confPadding[NDim - 1][1] = 2 * (nGrid[NDim - 1] / 2 + 1) - nGrid[NDim - 1];
 
       result.configurationSpace.setLocalSizes(confLocalSizes);
       result.configurationSpace.setLocalStarts(confLocalStarts);
