@@ -226,23 +226,23 @@ namespace TempLat
       device::Idx result = 0;
       if (mgrs.empty()) return result;
       auto toolBox = mgrs[0]->mToolBox;
-      const BCSpec<NDim> bcSpec = mgrs[0]->mBCSpec;
       std::vector<MemoryBlock<T, NDim> *> stale;
+      std::vector<BCSpec<NDim>> staleBC;
       stale.reserve(mgrs.size());
+      staleBC.reserve(mgrs.size());
       for (auto *m : mgrs) {
         if (m->mToolBox.get() != toolBox.get())
           throw MemoryManagerAccessOutOfBounds("confirmGhostsUpToDateBatch: managers do not share a MemoryToolBox.");
-        if (m->mBCSpec != bcSpec)
-          throw MemoryManagerAccessOutOfBounds("confirmGhostsUpToDateBatch: components do not share a BCSpec. "
-                                               "All components of a multi-component field must carry the same "
-                                               "boundary condition.");
         result += m->confirmConfigSpace();
-        if (m->mGhostStateKeeper.isStale()) stale.push_back(&m->mBlock);
+        if (m->mGhostStateKeeper.isStale()) {
+          stale.push_back(&m->mBlock);
+          staleBC.push_back(m->mBCSpec);
+        }
       }
       if (!stale.empty()) {
         ++result;
         toolBox->mGhostUpdater.updateBatch(std::span<MemoryBlock<T, NDim> *const>(stale.data(), stale.size()),
-                                           bcSpec);
+                                           std::span<const BCSpec<NDim>>(staleBC.data(), staleBC.size()));
         for (auto *m : mgrs)
           m->mGhostStateKeeper.setUpToDate();
       }
@@ -258,20 +258,18 @@ namespace TempLat
     {
       if (mgrs.empty()) return;
       auto toolBox = mgrs[0]->mToolBox;
-      const BCSpec<NDim> bcSpec = mgrs[0]->mBCSpec;
       std::vector<MemoryBlock<T, NDim> *> blocks;
+      std::vector<BCSpec<NDim>> bcSpecs;
       blocks.reserve(mgrs.size());
+      bcSpecs.reserve(mgrs.size());
       for (auto *m : mgrs) {
         if (m->mToolBox.get() != toolBox.get())
           throw MemoryManagerAccessOutOfBounds("updateGhostsBatch: managers do not share a MemoryToolBox.");
-        if (m->mBCSpec != bcSpec)
-          throw MemoryManagerAccessOutOfBounds("updateGhostsBatch: components do not share a BCSpec. "
-                                               "All components of a multi-component field must carry the same "
-                                               "boundary condition.");
         blocks.push_back(&m->mBlock);
+        bcSpecs.push_back(m->mBCSpec);
       }
       toolBox->mGhostUpdater.updateBatch(std::span<MemoryBlock<T, NDim> *const>(blocks.data(), blocks.size()),
-                                         bcSpec);
+                                         std::span<const BCSpec<NDim>>(bcSpecs.data(), bcSpecs.size()));
       for (auto *m : mgrs)
         m->mBlock.flagHostMirrorOutdated();
     }

@@ -151,14 +151,23 @@ namespace TempLat
     }
   }
 
-  /** @brief Components of one multi-component field must agree on their BC. The coalesced exchange
-   * carries a single BCSpec, so a mismatch is rejected rather than silently resolved to whichever
-   * component happens to be first. */
-  template <size_t NDim> struct MemoryManagerBatchBCMismatchTester {
+  /** @brief Components of one multi-component field may legitimately DISAGREE on their BC, and the
+   * coalesced exchange must honour each one.
+   *
+   * This assertion used to run the other way: the batch carried a single BCSpec and rejected a
+   * mismatch. That invariant is false. C-star boundary conditions are per-component by construction
+   * -- Phi(x + L) = Phi*(x) is, in the real-component basis these fields are stored in, a sign flip
+   * on some components and not others, (c0, c1, c2, c3) -> (c0, -c1, c2, -c3) for an SU(2) element
+   * and (Re, Im) -> (Re, -Im) for a complex scalar -- so every C-star run drove a mixed batch and
+   * aborted on the rejection. The batch now carries one BCSpec per component.
+   *
+   * Kept minimal here (one mixed pair, one dimension); percomponentbc.cpp is where the per-component
+   * batch path is covered properly. */
+  template <size_t NDim> struct MemoryManagerBatchMixedBCTester {
     static void Test(TDDAssertion &tdd);
   };
 
-  template <size_t NDim> void MemoryManagerBatchBCMismatchTester<NDim>::Test(TDDAssertion &tdd)
+  template <size_t NDim> void MemoryManagerBatchMixedBCTester<NDim>::Test(TDDAssertion &tdd)
   {
     constexpr ptrdiff_t nGrid = 8;
     constexpr ptrdiff_t nGhost = 1;
@@ -169,19 +178,28 @@ namespace TempLat
     BCSpec<NDim> specB = allPeriodic<NDim>();
     specB[0] = BCType::Antiperiodic;
 
-    Field<double, NDim> f0("mismatch_0", toolBox, LatticeParameters<double>());
-    Field<double, NDim> f1("mismatch_1", toolBox, LatticeParameters<double>());
+    Field<double, NDim> f0("mixed_0", toolBox, LatticeParameters<double>());
+    Field<double, NDim> f1("mixed_1", toolBox, LatticeParameters<double>());
     f0.setBCSpec(specA);
     f1.setBCSpec(specB);
+    BCTestDetail::assignCoordinatePlusOne<NDim>(f0, toolBox, 0);
+    BCTestDetail::assignCoordinatePlusOne<NDim>(f1, toolBox, 0);
 
     MemoryManager<double, NDim> *mgrs[] = {f0.getMemoryManager().get(), f1.getMemoryManager().get()};
-    bool threw = false;
+    bool completed = true;
     try {
       MemoryManager<double, NDim>::updateGhostsBatch(mgrs);
-    } catch (const MemoryManagerAccessOutOfBounds &) {
-      threw = true;
+    } catch (const std::exception &e) {
+      completed = false;
+      sayMPI << "updateGhostsBatch rejected a mixed-BCSpec batch: " << e.what() << "\n";
     }
-    tdd.verify(threw);
+    tdd.verify(completed);
+    if (!completed) return;
+
+    // The periodic component wraps with a plus sign, the antiperiodic one with a minus, out of the
+    // same fused update of the same dimension.
+    tdd.verify(BCTestDetail::verifyGhostFaces<NDim>(f0, 0, BCType::Periodic, nGrid, nGhost));
+    tdd.verify(BCTestDetail::verifyGhostFaces<NDim>(f1, 0, BCType::Antiperiodic, nGrid, nGhost));
   }
 
 } // namespace TempLat
@@ -200,6 +218,6 @@ namespace
   TempLat::TDDContainer<TempLat::MemoryManagerBatchBCTester<2>> batchBCTest2;
   TempLat::TDDContainer<TempLat::MemoryManagerBatchBCTester<3>> batchBCTest3;
 
-  TempLat::TDDContainer<TempLat::MemoryManagerBatchBCMismatchTester<2>> batchBCMismatchTest2;
-  TempLat::TDDContainer<TempLat::MemoryManagerBatchBCMismatchTester<3>> batchBCMismatchTest3;
+  TempLat::TDDContainer<TempLat::MemoryManagerBatchMixedBCTester<2>> batchMixedBCTest2;
+  TempLat::TDDContainer<TempLat::MemoryManagerBatchMixedBCTester<3>> batchMixedBCTest3;
 } // namespace
