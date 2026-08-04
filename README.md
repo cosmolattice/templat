@@ -60,6 +60,9 @@ Which should output
 Hello, TempLat!
 ```
 
+To see some more examples of how to use TempLat, check out the [examples](examples/) directory.
+A list of all algebra operations and field types is available on the [vocabulary](https://cosmolattice.github.io/templat/vocabulary.html) page.
+
 ### The umbrella header
 
 TempLat is header-only and spread over several hundred headers. Rather than tracking down
@@ -90,6 +93,22 @@ picks the FFT and device backends for you.
 It is a convenience, not a replacement: including everything costs compile time, so translation
 units that only touch a small corner of the library are still better off including the individual
 headers directly.
+
+### Where things live
+
+All headers sit under `include/TempLat/`:
+
+| Directory     | Contents                                                       |
+| ------------- | -------------------------------------------------------------- |
+| `lattice/`    | fields, the expression algebra, memory layout, ghost cells, IO |
+| `parallel/`   | device abstraction (Kokkos backends) and MPI                   |
+| `fft/`        | FFT backend selection and the parallel decomposition           |
+| `parameters/` | parameter files and command-line parsing                       |
+| `session/`    | `SessionGuard`, which sets up and tears down a run             |
+| `util/`       | general-purpose helpers                                        |
+
+Alongside them, `tests/` holds the test suite, `benchmarks/` the performance
+tests, `tools/` the documentation generator, and `docs/` the website sources. `examples/` contains a few self-contained example programs.
 
 ### Choosing the device
 
