@@ -23,7 +23,13 @@ set(FETCHCONTENT_QUIET
     ON
     CACHE BOOL "Suppress output from FetchContent during configuration")
 mark_as_advanced(FETCHCONTENT_QUIET)
-if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.25")
+# FetchContent_Declare() gained the SYSTEM keyword in CMake 3.25, but 3.25.0 and
+# 3.25.1 forwarded it to ExternalProject_Add(), which does not know it and so
+# appends it to the preceding keyword's value list (e.g. the declarations below
+# end up with URL_HASH "SHA256=...;SYSTEM" and the configure fails). Fixed
+# upstream in 3.25.2, see CMake issue #24201. Debian 12 ships 3.25.1, so this
+# guard has to be 3.25.2 rather than 3.25.
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.25.2")
   set(SYSTEM_MARKER
       SYSTEM
       CACHE INTERNAL "")
