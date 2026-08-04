@@ -112,17 +112,40 @@ namespace TempLat
      *  The dimension sweep stays sequential so corner/edge ghosts remain correct. A batch of one is
      *  byte-identical to update().
      *
-     *  `bcSpec` applies to every block in the batch: the exchange itself is BC-agnostic (BC is a
-     *  per-block post-step), but a multi-component field whose components disagree on the boundary
-     *  condition is meaningless, so callers are expected to have validated uniformity — see
-     *  MemoryManager::updateGhostsBatch. */
+     *  This overload applies one `bcSpec` to every block in the batch; see the per-component
+     *  overload below for fields whose components differ. */
     template <typename T>
     void updateBatch(std::span<MemoryBlock<T, NDim> *const> blocks,
                      BCSpec<NDim> bcSpec = allPeriodic<NDim>())
     {
       if (blocks.empty()) return;
+      std::vector<BCSpec<NDim>> bcSpecs(blocks.size(), bcSpec);
+      updateBatch(blocks, std::span<const BCSpec<NDim>>(bcSpecs.data(), bcSpecs.size()));
+    }
+
+    /** @brief updateBatch with per-component boundary conditions: `bcSpecs[c]` belongs to
+     *  `blocks[c]`.
+     *
+     *  Components of one field disagreeing on their BC is not pathological — it is what C-star
+     *  boundary conditions are. The identification Phi(x + L) = Phi*(x) is, in the real-component
+     *  basis these fields are stored in, a sign flip on some components and not others:
+     *  (c0, c1, c2, c3) -> (c0, -c1, c2, -c3) for both an SU(2) group element and an SU(2)
+     *  doublet, (Re, Im) -> (Re, -Im) for a complex scalar. So a batch legitimately carries a
+     *  mixture of Periodic and Antiperiodic.
+     *
+     *  Nothing about the coalescing depends on uniformity: the exchange is BC-agnostic (it just
+     *  lands the global-wrap value in every ghost slab) and the BC is a per-block post-step that
+     *  was already written as a loop over the batch. Only the fused local kernel needs care —
+     *  see pUpdate_NOMPI_singleDim_batch. */
+    template <typename T>
+    void updateBatch(std::span<MemoryBlock<T, NDim> *const> blocks,
+                     std::span<const BCSpec<NDim>> bcSpecs)
+    {
+      if (blocks.empty()) return;
+      if (bcSpecs.size() != blocks.size())
+        throw GhostUpdaterException("updateBatch: expected exactly one BCSpec per block.");
       if (blocks.size() == 1) {
-        update(*blocks[0], bcSpec);
+        update(*blocks[0], bcSpecs[0]);
         return;
       }
       if (mGhostDepth == 0)
@@ -131,14 +154,14 @@ namespace TempLat
 #ifdef HAVE_MPI
       if constexpr (NDim > 1) {
         if (mExchangeManager.getMPICartesianGroup().size() > 1) {
-          pUpdateBatch(blocks, bcSpec);
+          pUpdateBatch(blocks, bcSpecs);
         } else {
-          pUpdate_NOMPI_batchLocal(blocks, bcSpec);
+          pUpdate_NOMPI_batchLocal(blocks, bcSpecs);
         }
       } else
 #endif
       {
-        pUpdate_NOMPI_batchLocal(blocks, bcSpec);
+        pUpdate_NOMPI_batchLocal(blocks, bcSpecs);
       }
     }
 
@@ -150,9 +173,19 @@ namespace TempLat
      *  launches per MC sweep against 70 sweep kernels. */
     template <typename T>
     void pUpdate_NOMPI_batchLocal(std::span<MemoryBlock<T, NDim> *const> blocks,
-                                  BCSpec<NDim> bcSpec)
+                                  std::span<const BCSpec<NDim>> bcSpecs)
     {
-      pUpdate_NOMPI_batch<T>(blocks, bcSpec);
+      pUpdate_NOMPI_batch<T>(blocks, bcSpecs);
+    }
+
+    /** @brief Does any component of the batch ask for a non-Periodic BC in `dim`? Lets the MPI
+     *  boundary post-step keep its single all-or-nothing early-out for the (overwhelmingly
+     *  common) all-periodic batch, now that the BC is read per component inside the loop. */
+    static bool anyNonPeriodic(std::span<const BCSpec<NDim>> bcSpecs, size_t dim)
+    {
+      for (const auto &s : bcSpecs)
+        if (s[dim] != BCType::Periodic) return true;
+      return false;
     }
 
   public:
@@ -215,7 +248,7 @@ namespace TempLat
      *  together (one MPI message / one P2P pull per direction) on both the CPU and GPU paths. */
     template <typename T>
     void pUpdateBatch(std::span<MemoryBlock<T, NDim> *const> blocks,
-                      BCSpec<NDim> bcSpec = allPeriodic<NDim>())
+                      std::span<const BCSpec<NDim>> bcSpecs)
     {
 #ifdef HAVE_MPI
       auto &decomp = mExchangeManager.getMPICartesianGroup().getDecomposition();
@@ -226,14 +259,14 @@ namespace TempLat
         // same reason the split dimensions are -- with a 1-D decomposition two of three
         // dimensions land here, so this is most of the ghost work even under MPI.
         if (decomp[d] <= 1) {
-          pUpdate_NOMPI_singleDim_batch<T>(blocks, d, bcSpec);
+          pUpdate_NOMPI_singleDim_batch<T>(blocks, d, bcSpecs);
           continue;
         }
 #endif
 #if defined(DEVICE_CUDA) || defined(DEVICE_HIP)
-        update_forDimension_device_batch(blocks, d, bcSpec);
+        update_forDimension_device_batch(blocks, d, bcSpecs);
 #else
-        update_forDimension_batch(blocks, d, bcSpec);
+        update_forDimension_batch(blocks, d, bcSpecs);
 #endif
       }
     }
@@ -381,7 +414,7 @@ namespace TempLat
      *  send buffers grow to C * maxSlab and re-publish their IPC handles once per new maximum C. */
     template <typename T>
     void update_forDimension_device_batch(std::span<MemoryBlock<T, NDim> *const> blocks, size_t dimension,
-                                          BCSpec<NDim> bcSpec = allPeriodic<NDim>())
+                                          std::span<const BCSpec<NDim>> bcSpecs)
     {
       const size_t C = blocks.size();
 
@@ -481,23 +514,26 @@ namespace TempLat
 #ifdef HAVE_MPI
       // BC-aware post-step, per component — mirrors update_forDimension_device()'s fixup, looped over
       // the batch. Placed after the unpack fence so every component's ghost slab holds the exchanged
-      // wrap-around value before the BC transform rewrites it in place.
-      if (bcSpec[dimension] != BCType::Periodic) {
+      // wrap-around value before the BC transform rewrites it in place. The BC is read per component:
+      // the exchange above was BC-agnostic, so components carrying different BCs cost nothing extra
+      // here beyond the ones that are Periodic being skipped.
+      if (anyNonPeriodic(bcSpecs, dimension)) {
         const auto boundary = isBoundaryRank(dimension);
         if (boundary.first || boundary.second) {
           device::IdxArray<NDim> ownedSizes = mLayout.getSizesInMemory();
           for (size_t c = 0; c < C; ++c) {
+            if (bcSpecs[c][dimension] == BCType::Periodic) continue;
             auto fullView = blocks[c]->getNDView(full_sizes);
             for (size_t depth = 1; depth <= (size_t)mGhostDepth; ++depth) {
               applyLocalBCAtDimDepth<T>(fullView, dimension, depth, ownedSizes, mGhostDepth,
-                                        bcSpec[dimension], boundary.first, boundary.second,
+                                        bcSpecs[c][dimension], boundary.first, boundary.second,
                                         /*mpiPostStep=*/true);
             }
           }
         }
       }
 #else
-      (void)bcSpec;
+      (void)bcSpecs;
 #endif
     }
 
@@ -556,7 +592,7 @@ namespace TempLat
      *  dimension sweep stays sequential (corner correctness). */
     template <typename T>
     void update_forDimension_batch(std::span<MemoryBlock<T, NDim> *const> blocks, device::Idx dimension,
-                                   BCSpec<NDim> bcSpec = allPeriodic<NDim>())
+                                   std::span<const BCSpec<NDim>> bcSpecs)
     {
 #ifdef HAVE_MPI
       auto subArrayHolder = mGhostSubarrayMap.template getSubArray<T>(dimension);
@@ -601,17 +637,20 @@ namespace TempLat
       // global-wrap value in every component's ghost slab exactly as the single-block path does, so
       // the fixup is the same one update_forDimension() applies, just looped over the batch. Runs
       // inside the per-dimension call so the sequential dimension sweep (corner correctness) holds.
-      if (bcSpec[dimension] != BCType::Periodic) {
+      // Read per component so a C-star batch (a mix of Periodic and Antiperiodic components) is
+      // handled by the same loop.
+      if (anyNonPeriodic(bcSpecs, dimension)) {
         const auto boundary = isBoundaryRank(dimension);
         if (boundary.first || boundary.second) {
           device::IdxArray<NDim> ownedSizes = mLayout.getSizesInMemory();
           device::IdxArray<NDim> full_sizes{};
           for (size_t i = 0; i < NDim; ++i) full_sizes[i] = ownedSizes[i] + 2 * mGhostDepth;
-          for (auto *b : blocks) {
-            auto fullView = b->getNDView(full_sizes);
+          for (size_t c = 0; c < C; ++c) {
+            if (bcSpecs[c][dimension] == BCType::Periodic) continue;
+            auto fullView = blocks[c]->getNDView(full_sizes);
             for (size_t depth = 1; depth <= (size_t)mGhostDepth; ++depth) {
               applyLocalBCAtDimDepth<T>(fullView, dimension, depth, ownedSizes, mGhostDepth,
-                                        bcSpec[dimension], boundary.first, boundary.second,
+                                        bcSpecs[c][dimension], boundary.first, boundary.second,
                                         /*mpiPostStep=*/true);
             }
           }
@@ -620,7 +659,7 @@ namespace TempLat
 #else
       (void)blocks;
       (void)dimension;
-      (void)bcSpec;
+      (void)bcSpecs;
 #endif
     }
 
@@ -916,27 +955,52 @@ namespace TempLat
     /** @brief Fused local ghost update of one dimension across a batch of components. */
     template <typename T>
     void pUpdate_NOMPI_singleDim_batch(std::span<MemoryBlock<T, NDim> *const> blocks, size_t dim,
-                                       BCSpec<NDim> bcSpec = allPeriodic<NDim>())
+                                       std::span<const BCSpec<NDim>> bcSpecs)
     {
       if (blocks.empty()) return;
       // NDim == 1 has its own hand-written branch in applyLocalBCAtDimDepth, and an
       // over-wide batch would blow the capture budget: defer both to the per-component path.
       if constexpr (NDim == 1) {
-        for (auto *b : blocks)
-          pUpdate_NOMPI_singleDim(*b, dim, bcSpec);
+        for (size_t c = 0; c < blocks.size(); ++c)
+          pUpdate_NOMPI_singleDim(*blocks[c], dim, bcSpecs[c]);
         return;
       } else {
         if (blocks.size() > cMaxLocalGhostBatch) {
-          for (auto *b : blocks)
-            pUpdate_NOMPI_singleDim(*b, dim, bcSpec);
+          for (size_t c = 0; c < blocks.size(); ++c)
+            pUpdate_NOMPI_singleDim(*blocks[c], dim, bcSpecs[c]);
           return;
         }
         const auto ghostDepth = mLayout.getPadding()[0][0];
         device::IdxArray<NDim> sizes;
         for (size_t i = 0; i < NDim; ++i)
           sizes[i] = mLayout.getSizesInMemory()[i];
-        for (size_t depth = 1; depth <= (size_t)mGhostDepth; ++depth)
-          applyLocalBCAtDimDepthBatch<T>(blocks, dim, depth, sizes, ghostDepth, bcSpec[dim]);
+
+        // The fused kernel below writes one BCType for the whole batch: the source plane it reads
+        // and the transform it applies are both BC-dependent, so they cannot be per-component
+        // without pushing a per-component branch into the inner loop. Instead, partition the batch
+        // by the BC it carries *in this dimension* and launch once per distinct BCType present.
+        // A uniform batch (every field except a C-star one) takes the fast path below unchanged
+        // and is byte-identical to before; a C-star batch has two groups, so 2 launches instead of
+        // 1 -- still far below the C launches the per-component path would cost.
+        bool uniform = true;
+        for (size_t c = 1; c < bcSpecs.size(); ++c)
+          if (bcSpecs[c][dim] != bcSpecs[0][dim]) { uniform = false; break; }
+
+        if (uniform) {
+          for (size_t depth = 1; depth <= (size_t)mGhostDepth; ++depth)
+            applyLocalBCAtDimDepthBatch<T>(blocks, dim, depth, sizes, ghostDepth, bcSpecs[0][dim]);
+          return;
+        }
+
+        for (BCType bc : {BCType::Periodic, BCType::Antiperiodic, BCType::Dirichlet, BCType::Neumann}) {
+          std::vector<MemoryBlock<T, NDim> *> group;
+          for (size_t c = 0; c < blocks.size(); ++c)
+            if (bcSpecs[c][dim] == bc) group.push_back(blocks[c]);
+          if (group.empty()) continue;
+          auto groupSpan = std::span<MemoryBlock<T, NDim> *const>(group.data(), group.size());
+          for (size_t depth = 1; depth <= (size_t)mGhostDepth; ++depth)
+            applyLocalBCAtDimDepthBatch<T>(groupSpan, dim, depth, sizes, ghostDepth, bc);
+        }
       }
     }
 
@@ -950,10 +1014,10 @@ namespace TempLat
      *  component still sees them in the same order. */
     template <typename T>
     void pUpdate_NOMPI_batch(std::span<MemoryBlock<T, NDim> *const> blocks,
-                             BCSpec<NDim> bcSpec = allPeriodic<NDim>())
+                             std::span<const BCSpec<NDim>> bcSpecs)
     {
       for (size_t d = 0; d < NDim; ++d)
-        pUpdate_NOMPI_singleDim_batch<T>(blocks, d, bcSpec);
+        pUpdate_NOMPI_singleDim_batch<T>(blocks, d, bcSpecs);
     }
 
   public:
