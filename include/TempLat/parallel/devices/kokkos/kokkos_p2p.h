@@ -69,7 +69,21 @@ namespace TempLat::device_kokkos::p2p
     return ptr;
   }
 
-  inline void ipcCloseHandle(void *ptr) { cudaIpcCloseMemHandle(ptr); }
+  /** @brief Close an IPC mapping. Returns 0 on success, the backend error code otherwise.
+   *
+   * Deliberately returns rather than throws: every caller is a destructor or a teardown path.
+   * It must not swallow the code either -- an unchecked close is an unchecked driver call in the
+   * one place where the failures are cross-process and therefore hardest to attribute.
+   *
+   * Measured caveat, worth knowing before trusting a zero: closing a mapping whose exporting
+   * process has ALREADY freed the allocation returns success on CUDA 12.9. The driver keeps the
+   * range reserved precisely because this process still has it mapped. So a clean close status
+   * does not prove the free/close ordering was right -- that has to be got right by construction
+   * (see ExchangeManager::retireBufferHandles), not detected here. */
+  inline int ipcCloseHandle(void *ptr) { return static_cast<int>(cudaIpcCloseMemHandle(ptr)); }
+
+  /** @brief Human-readable form of a code returned by ipcCloseHandle. */
+  inline const char *ipcErrorString(int err) { return cudaGetErrorString(static_cast<cudaError_t>(err)); }
 
   inline void memcpyAsync(void *dst, const void *src, size_t bytes)
   {
@@ -125,7 +139,12 @@ namespace TempLat::device_kokkos::p2p
     return ptr;
   }
 
-  inline void ipcCloseHandle(void *ptr) { hipIpcCloseMemHandle(ptr); }
+  /** @brief Close an IPC mapping. Returns 0 on success, the backend error code otherwise. See the
+   *  CUDA overload above for why this reports instead of throwing or discarding. */
+  inline int ipcCloseHandle(void *ptr) { return static_cast<int>(hipIpcCloseMemHandle(ptr)); }
+
+  /** @brief Human-readable form of a code returned by ipcCloseHandle. */
+  inline const char *ipcErrorString(int err) { return hipGetErrorString(static_cast<hipError_t>(err)); }
 
   inline void memcpyAsync(void *dst, const void *src, size_t bytes)
   {
@@ -273,6 +292,21 @@ namespace TempLat::device_kokkos::p2p
     int deviceId;
     uint64_t version;
   };
+
+  // ============================================================
+  // Failed-close accounting
+  // ============================================================
+
+  /** @brief Process-local count of ipcCloseHandle calls that returned an error.
+   *
+   * A correct run leaves this at zero, and diagnostics assert on that. Read the caveat on
+   * ipcCloseHandle for what a zero does NOT prove: closing after the exporter has freed is not
+   * one of the things the driver reports. */
+  inline unsigned long &ipcCloseErrorCount()
+  {
+    static unsigned long count = 0;
+    return count;
+  }
 
 } // namespace TempLat::device_kokkos::p2p
 
