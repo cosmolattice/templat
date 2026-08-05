@@ -208,6 +208,7 @@ namespace TempLat::device::p2p
 {
 #if (defined(DEVICE_CUDA) || defined(DEVICE_HIP))
   using export_device_namespace::p2p::canAccessPeer;
+  using export_device_namespace::p2p::ipcCloseErrorCount;
   using export_device_namespace::p2p::rawDeviceFree;
   using export_device_namespace::p2p::rawDeviceMalloc;
 #endif

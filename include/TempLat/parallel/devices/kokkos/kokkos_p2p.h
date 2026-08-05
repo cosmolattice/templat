@@ -69,7 +69,17 @@ namespace TempLat::device_kokkos::p2p
     return ptr;
   }
 
-  inline void ipcCloseHandle(void *ptr) { cudaIpcCloseMemHandle(ptr); }
+  /** @brief Close an IPC mapping. Returns 0 on success, the backend error code otherwise.
+   *
+   * Deliberately returns rather than throws: every caller is a destructor or a teardown path.
+   * It must not swallow the code either -- a discarded close status is exactly what hid a
+   * cross-process use-after-free (the exporter freeing buffers peers still had mapped) for as
+   * long as it existed, since the resulting close of an already-freed region reports an error
+   * and changes nothing else observable. */
+  inline int ipcCloseHandle(void *ptr) { return static_cast<int>(cudaIpcCloseMemHandle(ptr)); }
+
+  /** @brief Human-readable form of a code returned by ipcCloseHandle. */
+  inline const char *ipcErrorString(int err) { return cudaGetErrorString(static_cast<cudaError_t>(err)); }
 
   inline void memcpyAsync(void *dst, const void *src, size_t bytes)
   {
@@ -125,7 +135,12 @@ namespace TempLat::device_kokkos::p2p
     return ptr;
   }
 
-  inline void ipcCloseHandle(void *ptr) { hipIpcCloseMemHandle(ptr); }
+  /** @brief Close an IPC mapping. Returns 0 on success, the backend error code otherwise. See the
+   *  CUDA overload above for why this reports instead of throwing or discarding. */
+  inline int ipcCloseHandle(void *ptr) { return static_cast<int>(hipIpcCloseMemHandle(ptr)); }
+
+  /** @brief Human-readable form of a code returned by ipcCloseHandle. */
+  inline const char *ipcErrorString(int err) { return hipGetErrorString(static_cast<hipError_t>(err)); }
 
   inline void memcpyAsync(void *dst, const void *src, size_t bytes)
   {
@@ -273,6 +288,21 @@ namespace TempLat::device_kokkos::p2p
     int deviceId;
     uint64_t version;
   };
+
+  // ============================================================
+  // Failed-close accounting
+  // ============================================================
+
+  /** @brief Process-local count of ipcCloseHandle calls that returned an error.
+   *
+   * A correct run leaves this at zero. It is non-zero when a mapping is closed after the
+   * exporting process has already freed the underlying allocation, which is the observable
+   * signature of the buffer-lifecycle ordering being wrong; tests and diagnostics assert on it. */
+  inline unsigned long &ipcCloseErrorCount()
+  {
+    static unsigned long count = 0;
+    return count;
+  }
 
 } // namespace TempLat::device_kokkos::p2p
 

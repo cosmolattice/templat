@@ -17,11 +17,80 @@
 #endif
 
 #include <mpi.h>
+#include <algorithm>
 #include <array>
+#include <cstring>
+#include <exception>
 #include <vector>
 
 namespace TempLat::device_kokkos
 {
+
+#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
+
+  /**
+   * @brief Owning holder for one IPC mapping into another process's device allocation.
+   *
+   * Exists for two reasons that bare `void *` slots could not give:
+   *  - every close runs through one place, so none of them can quietly discard its error code;
+   *  - the compiler-generated move operations of the owner become correct. With bare pointers and
+   *    defaulted moves, a moved-from ExchangeManager still held the pointers and its destructor
+   *    closed mappings the moved-to object was using, while move-assignment leaked the target's.
+   *
+   * The slot is nulled *before* the close, so a slot never names an unmapped region -- not even
+   * transiently, and not if the close fails.
+   */
+  class IpcMapping
+  {
+  public:
+    IpcMapping() = default;
+    IpcMapping(const IpcMapping &) = delete;
+    IpcMapping &operator=(const IpcMapping &) = delete;
+    IpcMapping(IpcMapping &&other) noexcept : mPtr(other.mPtr) { other.mPtr = nullptr; }
+    IpcMapping &operator=(IpcMapping &&other) noexcept
+    {
+      if (this != &other) {
+        reset();
+        mPtr = other.mPtr;
+        other.mPtr = nullptr;
+      }
+      return *this;
+    }
+    ~IpcMapping() { reset(); }
+
+    void *get() const { return mPtr; }
+    explicit operator bool() const { return mPtr != nullptr; }
+
+    /** @brief Take ownership of a freshly opened mapping, closing whatever was held. */
+    void adopt(void *ptr)
+    {
+      reset();
+      mPtr = ptr;
+    }
+
+    /** @brief Close the mapping, if any, and null the slot. Never throws: this runs from
+     *  destructors. A failing close is counted and reported instead of being discarded. */
+    void reset() noexcept
+    {
+      if (mPtr == nullptr) return;
+      void *ptr = mPtr;
+      mPtr = nullptr;
+      int err = p2p::ipcCloseHandle(ptr);
+      if (err != 0) {
+        ++p2p::ipcCloseErrorCount();
+        try {
+          sayMPI << "IPC close error: closing the mapping at " << ptr << " failed: " << p2p::ipcErrorString(err)
+                 << ". The exporting rank most likely freed the allocation while it was still mapped here.\n";
+        } catch (...) {
+        }
+      }
+    }
+
+  private:
+    void *mPtr = nullptr;
+  };
+
+#endif
 
   /**
    * @brief Exchange manager that routes ghost cell communication to P2P or MPI per (dimension, direction).
@@ -47,31 +116,32 @@ namespace TempLat::device_kokkos
 
       mP2PAvailable.fill(false);
       mFullDuplex.fill(false);
-      mRemoteSendUpPtr.fill(nullptr);
-      mRemoteSendDownPtr.fill(nullptr);
       mRemoteHandleVersion.fill(0);
 
-      probeP2P(shmComm);
-#endif
-    }
-
-    ~ExchangeManager()
-    {
-#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
-      for (size_t i = 0; i < 2 * NDim; ++i) {
-        if (mRemoteSendUpPtr[i] != nullptr) {
-          p2p::ipcCloseHandle(mRemoteSendUpPtr[i]);
-          mRemoteSendUpPtr[i] = nullptr;
-        }
-        if (mRemoteSendDownPtr[i] != nullptr) {
-          p2p::ipcCloseHandle(mRemoteSendDownPtr[i]);
-          mRemoteSendDownPtr[i] = nullptr;
-        }
+      // Neighbour ranks are recorded unconditionally, before any P2P probing: the handle
+      // protocol below is collective over the whole cartesian communicator, so ranks with no
+      // node-local peer of their own still take part and need their neighbours' ranks.
+      auto &neighbours = mExchange.getNeighbours();
+      for (size_t d = 0; d < NDim; ++d) {
+        mNeighborRanks[d * 2 + 0] = neighbours.getUpperNeighbour(d);
+        mNeighborRanks[d * 2 + 1] = neighbours.getLowerNeighbour(d);
       }
+
+      probeP2P(shmComm);
+
+      // Whether ANY rank in the job has a P2P link. The IPC handle protocol is entered on this
+      // job-wide flag rather than on each rank's own links: its MPI_Sendrecv pairs are per-link
+      // rendezvous, so a rank that opted out locally while a neighbour opted in would hang the
+      // neighbour. This is the only predicate that is uniform by construction.
+      int anyLocal = 0;
+      for (size_t i = 0; i < 2 * NDim; ++i)
+        anyLocal |= mP2PAvailable[i] ? 1 : 0;
+      MPI_Allreduce(&anyLocal, &mAnyP2PInJob, 1, MPI_INT, MPI_MAX, mCartComm);
 #endif
     }
 
-    // Non-copyable (owns IPC handles)
+    // Non-copyable (owns IPC mappings); movable -- IpcMapping nulls the source on move, so the
+    // defaulted operations no longer double-close or leak.
     ExchangeManager(const ExchangeManager &) = delete;
     ExchangeManager &operator=(const ExchangeManager &) = delete;
     ExchangeManager(ExchangeManager &&) = default;
@@ -134,8 +204,8 @@ namespace TempLat::device_kokkos
 
         if (allFullDuplex) {
           // --- Single-phase: NVLink/xGMI is full-duplex, no bidirectional contention ---
-          if (canPullRecvUp) p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
-          if (canPullRecvDown) p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
+          if (canPullRecvUp) p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1].get(), byteCount);
+          if (canPullRecvDown) p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0].get(), byteCount);
           p2p::streamSynchronize();
         } else {
           // --- Two-phase: PCIe bidirectional contention avoidance ---
@@ -147,9 +217,9 @@ namespace TempLat::device_kokkos
 
           // Phase 0: reads where this rank has the lower rank number
           if (canPullRecvUp && mMyRank < upReadSource)
-            p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
+            p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1].get(), byteCount);
           if (canPullRecvDown && mMyRank < downReadSource)
-            p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
+            p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0].get(), byteCount);
           p2p::streamSynchronize();
 
           // Phase-ordering handshake (replaces the mid shared-memory barrier): on each P2P link the
@@ -159,9 +229,9 @@ namespace TempLat::device_kokkos
 
           // Phase 1: reads where this rank has the higher rank number
           if (canPullRecvUp && mMyRank > upReadSource)
-            p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1], byteCount);
+            p2p::memcpyAsync(recvUpPtr, mRemoteSendUpPtr[dimension * 2 + 1].get(), byteCount);
           if (canPullRecvDown && mMyRank > downReadSource)
-            p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0], byteCount);
+            p2p::memcpyAsync(recvDownPtr, mRemoteSendDownPtr[dimension * 2 + 0].get(), byteCount);
           p2p::streamSynchronize();
         }
 
@@ -243,11 +313,12 @@ namespace TempLat::device_kokkos
     std::array<bool, 2 * NDim> mFullDuplex{}; // true if link is NVLink/xGMI (no bidirectional contention)
     // IPC-mapped pointers to each neighbor's send buffers (we READ from these)
     // mRemoteSendUpPtr[d*2+dir]: the neighbor in direction 'dir' of dimension d's sendUp buffer
-    std::array<void *, 2 * NDim> mRemoteSendUpPtr{};
-    std::array<void *, 2 * NDim> mRemoteSendDownPtr{};
+    std::array<IpcMapping, 2 * NDim> mRemoteSendUpPtr{};
+    std::array<IpcMapping, 2 * NDim> mRemoteSendDownPtr{};
     std::array<uint64_t, 2 * NDim> mRemoteHandleVersion{};
     std::array<int, 2 * NDim> mNeighborRanks{};
     std::array<int, 2 * NDim> mNeighborDevices{};
+    int mAnyP2PInJob = 0; // job-wide: does any rank have a node-local P2P link?
 
     bool isP2PUp(size_t d) const { return mP2PAvailable[d * 2 + 0]; }
     bool isP2PDown(size_t d) const { return mP2PAvailable[d * 2 + 1]; }
@@ -338,17 +409,11 @@ namespace TempLat::device_kokkos
       for (int i = 0; i < shmSize; ++i)
         rankDeviceMap.emplace_back(shmGlobalRanks[i], shmDevices[i]);
 
-      auto &neighbours = mExchange.getNeighbours();
-
+      // mNeighborRanks was filled by the constructor, before this probe: it is needed whether or
+      // not P2P turns out to be available.
       for (size_t d = 0; d < NDim; ++d) {
-        int upperNeighbor = neighbours.getUpperNeighbour(d);
-        int lowerNeighbor = neighbours.getLowerNeighbour(d);
-
-        mNeighborRanks[d * 2 + 0] = upperNeighbor;
-        mNeighborRanks[d * 2 + 1] = lowerNeighbor;
-
-        checkAndEnableP2P(d, 0, upperNeighbor, rankDeviceMap);
-        checkAndEnableP2P(d, 1, lowerNeighbor, rankDeviceMap);
+        checkAndEnableP2P(d, 0, mNeighborRanks[d * 2 + 0], rankDeviceMap);
+        checkAndEnableP2P(d, 1, mNeighborRanks[d * 2 + 1], rankDeviceMap);
       }
 
       MPI_Group_free(&worldGroup);
@@ -403,58 +468,121 @@ namespace TempLat::device_kokkos
       //   - We need IPC handle for upper neighbor's sendDown buffer
       //   - We export our sendDown handle to our lower neighbor (they will recvDown = read our sendDown)
 
+      if (!mAnyP2PInJob) return;
+
+      // The two handles do not depend on the dimension, so pack them once.
+      p2p::IpcHandlePacket mySendUpPacket{};
+      if (sendUpPtr != nullptr) p2p::ipcGetHandle(sendUpPtr, mySendUpPacket.handle);
+      mySendUpPacket.deviceId = mMyDevice;
+      mySendUpPacket.version = (sendUpPtr != nullptr) ? version : 0;
+
+      p2p::IpcHandlePacket mySendDownPacket{};
+      if (sendDownPtr != nullptr) p2p::ipcGetHandle(sendDownPtr, mySendDownPacket.handle);
+      mySendDownPacket.deviceId = mMyDevice;
+      mySendDownPacket.version = (sendDownPtr != nullptr) ? version : 0;
+
+      // Discriminator, kept permanently because it costs one memcmp per growth and it names a
+      // failure this design cannot survive: if the two send buffers are suballocated from a
+      // single backing region the driver hands back the SAME handle for both, and an importer
+      // that maps per (dimension, direction) opens it twice -> "resource already mapped". No
+      // ordering of closes and opens fixes that; only deduplicating mappings per (peer,
+      // allocation) does. Report it rather than abort, so a run that is otherwise healthy still
+      // gets to say what went wrong.
+      if (sendUpPtr != nullptr && sendDownPtr != nullptr &&
+          std::memcmp(mySendUpPacket.handle, mySendDownPacket.handle, p2p::IpcHandleSize) == 0)
+        sayMPI << "IPC handle alias: sendUp (" << static_cast<void *>(sendUpPtr) << ") and sendDown ("
+               << static_cast<void *>(sendDownPtr) << ") produced identical IPC handles at version " << version
+               << ". Importers keyed per (dimension, direction) will fail to open the second one.\n";
+
       for (size_t d = 0; d < NDim; ++d) {
         int upperRank = mNeighborRanks[d * 2 + 0];
         int lowerRank = mNeighborRanks[d * 2 + 1];
 
-        // Exchange sendUp handles: we send ours to upper, receive lower's
-        if (mP2PAvailable[d * 2 + 0] || mP2PAvailable[d * 2 + 1]) {
-          // Pack our sendUp handle
-          p2p::IpcHandlePacket mySendUpPacket{};
-          if (sendUpPtr != nullptr) p2p::ipcGetHandle(sendUpPtr, mySendUpPacket.handle);
-          mySendUpPacket.deviceId = mMyDevice;
-          mySendUpPacket.version = version;
+        // No gate on this rank's own P2P flags. The exchanges below are per-link rendezvous, so
+        // a rank that skipped them while a neighbour with a node-local peer still posted its
+        // half would hang that neighbour. The only skip every rank in the dimension agrees on
+        // is an undivided dimension, where both neighbours are this rank itself.
+        if (upperRank == mMyRank && lowerRank == mMyRank) continue;
 
-          // Pack our sendDown handle
-          p2p::IpcHandlePacket mySendDownPacket{};
-          if (sendDownPtr != nullptr) p2p::ipcGetHandle(sendDownPtr, mySendDownPacket.handle);
-          mySendDownPacket.deviceId = mMyDevice;
-          mySendDownPacket.version = version;
+        // Exchange: send our sendUp handle to upper neighbor (they need it for their recvUp = read our sendUp)
+        //           receive lower neighbor's sendUp handle (we need it for our recvUp = read their sendUp)
+        p2p::IpcHandlePacket recvSendUpFromLower{};
+        MPI_Status stat;
+        int tag1 = 700 + d * 4 + 0;
+        MPI_Sendrecv(&mySendUpPacket, sizeof(p2p::IpcHandlePacket), MPI_BYTE, upperRank, tag1, &recvSendUpFromLower,
+                     sizeof(p2p::IpcHandlePacket), MPI_BYTE, lowerRank, tag1, mCartComm, &stat);
 
-          // Exchange: send our sendUp handle to upper neighbor (they need it for their recvUp = read our sendUp)
-          //           receive lower neighbor's sendUp handle (we need it for our recvUp = read their sendUp)
-          p2p::IpcHandlePacket recvSendUpFromLower{};
-          MPI_Status stat;
-          int tag1 = 700 + d * 4 + 0;
-          MPI_Sendrecv(&mySendUpPacket, sizeof(p2p::IpcHandlePacket), MPI_BYTE, upperRank, tag1, &recvSendUpFromLower,
-                       sizeof(p2p::IpcHandlePacket), MPI_BYTE, lowerRank, tag1, mCartComm, &stat);
+        // Exchange: send our sendDown handle to lower neighbor (they need it for their recvDown = read our sendDown)
+        //           receive upper neighbor's sendDown handle (we need it for our recvDown = read their sendDown)
+        p2p::IpcHandlePacket recvSendDownFromUpper{};
+        int tag2 = 700 + d * 4 + 1;
+        MPI_Sendrecv(&mySendDownPacket, sizeof(p2p::IpcHandlePacket), MPI_BYTE, lowerRank, tag2, &recvSendDownFromUpper,
+                     sizeof(p2p::IpcHandlePacket), MPI_BYTE, upperRank, tag2, mCartComm, &stat);
 
-          // Exchange: send our sendDown handle to lower neighbor (they need it for their recvDown = read our sendDown)
-          //           receive upper neighbor's sendDown handle (we need it for our recvDown = read their sendDown)
-          p2p::IpcHandlePacket recvSendDownFromUpper{};
-          int tag2 = 700 + d * 4 + 1;
-          MPI_Sendrecv(&mySendDownPacket, sizeof(p2p::IpcHandlePacket), MPI_BYTE, lowerRank, tag2,
-                       &recvSendDownFromUpper, sizeof(p2p::IpcHandlePacket), MPI_BYTE, upperRank, tag2, mCartComm,
-                       &stat);
+        // Open lower neighbor's sendUp handle (for our recvUp)
+        bool failLower = tryOpen(mRemoteSendUpPtr[d * 2 + 1], mP2PAvailable[d * 2 + 1], recvSendUpFromLower,
+                                 mRemoteHandleVersion[d * 2 + 1], lowerRank, "sendUp");
 
-          // Open lower neighbor's sendUp handle (for our recvUp)
-          if (mP2PAvailable[d * 2 + 1] && recvSendUpFromLower.version > mRemoteHandleVersion[d * 2 + 1]) {
-            if (mRemoteSendUpPtr[d * 2 + 1] != nullptr) p2p::ipcCloseHandle(mRemoteSendUpPtr[d * 2 + 1]);
-            mRemoteSendUpPtr[d * 2 + 1] =
-                (recvSendUpFromLower.version > 0) ? p2p::ipcOpenHandle(recvSendUpFromLower.handle) : nullptr;
-          }
+        // Open upper neighbor's sendDown handle (for our recvDown)
+        bool failUpper = tryOpen(mRemoteSendDownPtr[d * 2 + 0], mP2PAvailable[d * 2 + 0], recvSendDownFromUpper,
+                                 mRemoteHandleVersion[d * 2 + 0], upperRank, "sendDown");
 
-          // Open upper neighbor's sendDown handle (for our recvDown)
-          if (mP2PAvailable[d * 2 + 0] && recvSendDownFromUpper.version > mRemoteHandleVersion[d * 2 + 0]) {
-            if (mRemoteSendDownPtr[d * 2 + 0] != nullptr) p2p::ipcCloseHandle(mRemoteSendDownPtr[d * 2 + 0]);
-            mRemoteSendDownPtr[d * 2 + 0] =
-                (recvSendDownFromUpper.version > 0) ? p2p::ipcOpenHandle(recvSendDownFromUpper.handle) : nullptr;
-          }
+        // A failed open has to demote the whole LINK, on both ends. The same flag decides
+        // whether the exporter posts an MPI send and whether the importer pulls, so a one-sided
+        // fallback would leave one rank reading a mapping it does not have while the other
+        // never sends. Each rank therefore tells a neighbour whether ITS open failed and learns
+        // whether the neighbour's did -- same (dest, source) pairing as the handle exchange, so
+        // what arrives from the lower neighbour concerns the link recorded in slot d*2+1.
+        char myFailToUpper = failUpper ? 1 : 0;
+        char myFailToLower = failLower ? 1 : 0;
+        char peerFailFromLower = 0, peerFailFromUpper = 0;
+        int tag3 = 700 + d * 4 + 2;
+        MPI_Sendrecv(&myFailToUpper, 1, MPI_BYTE, upperRank, tag3, &peerFailFromLower, 1, MPI_BYTE, lowerRank, tag3,
+                     mCartComm, &stat);
+        int tag4 = 700 + d * 4 + 3;
+        MPI_Sendrecv(&myFailToLower, 1, MPI_BYTE, lowerRank, tag4, &peerFailFromUpper, 1, MPI_BYTE, upperRank, tag4,
+                     mCartComm, &stat);
 
-          mRemoteHandleVersion[d * 2 + 0] = std::max(mRemoteHandleVersion[d * 2 + 0], recvSendDownFromUpper.version);
-          mRemoteHandleVersion[d * 2 + 1] = std::max(mRemoteHandleVersion[d * 2 + 1], recvSendUpFromLower.version);
-        }
+        if (failLower || peerFailFromLower) demoteLink(d * 2 + 1, lowerRank);
+        if (failUpper || peerFailFromUpper) demoteLink(d * 2 + 0, upperRank);
+
+        mRemoteHandleVersion[d * 2 + 0] = std::max(mRemoteHandleVersion[d * 2 + 0], recvSendDownFromUpper.version);
+        mRemoteHandleVersion[d * 2 + 1] = std::max(mRemoteHandleVersion[d * 2 + 1], recvSendUpFromLower.version);
       }
+    }
+
+    /**
+     * @brief Open one published handle into `slot`. Returns true if the open FAILED.
+     *
+     * The slot is left empty on failure rather than left naming the region it named before --
+     * the old code closed first and assigned second, so a throwing open left the slot pointing
+     * at an unmapped region and the next exchange segfaulted inside cudaMemcpyAsync.
+     */
+    bool tryOpen(IpcMapping &slot, bool available, const p2p::IpcHandlePacket &packet, uint64_t knownVersion,
+                 int peerRank, const char *what)
+    {
+      if (!available || packet.version == 0 || packet.version <= knownVersion) return false;
+      slot.reset();
+      try {
+        slot.adopt(p2p::ipcOpenHandle(packet.handle));
+      } catch (const std::exception &e) {
+        sayMPI << "IPC open failed for rank " << peerRank << "'s " << what << " buffer (version " << packet.version
+               << "): " << e.what() << ". Falling back to MPI on this link.\n";
+        return true;
+      }
+      return false;
+    }
+
+    /** @brief Turn one P2P link off for the rest of the run and drop its mappings. Both ends do
+     *  this in the same call, so the two ranks stay in agreement about who sends and who pulls. */
+    void demoteLink(size_t idx, int peerRank)
+    {
+      mRemoteSendUpPtr[idx].reset();
+      mRemoteSendDownPtr[idx].reset();
+      if (!mP2PAvailable[idx]) return;
+      mP2PAvailable[idx] = false;
+      sayMPI << "Ghost exchange: P2P disabled for the link to rank " << peerRank
+             << " after a failed IPC open; this link now uses MPI.\n";
     }
 #endif
   };
