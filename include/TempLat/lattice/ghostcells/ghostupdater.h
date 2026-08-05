@@ -75,6 +75,14 @@ namespace TempLat
 
     ~GhostUpdater()
     {
+#ifdef HAVE_MPI
+      // Teardown is the other place these send buffers are freed, so it needs the same
+      // close-before-free ordering as growth does; without it every rank frees buffers its
+      // peers may still have mapped and the closes that follow report on freed memory. Safe as
+      // a collective for the same reason destruction of the shared MemoryToolBox is: all ranks
+      // reach it. A rank unwinding alone would already be heading for MPI_Abort.
+      mExchangeManager.retireBufferHandles();
+#endif
 #if defined(DEVICE_CUDA) || defined(DEVICE_HIP)
       device::p2p::rawDeviceFree(mSendUpRaw);
       device::p2p::rawDeviceFree(mSendDownRaw);
@@ -291,6 +299,18 @@ namespace TempLat
       // Ensure byte buffers are large enough for this T (lazy alloc on first call or type change)
       size_t neededBytes = mMaxSlabSize * sizeof(T);
       if (neededBytes > mAllocatedBytes) {
+#ifdef HAVE_MPI
+        // Retire, barrier, reallocate, republish. Peers hold IPC mappings into these send
+        // buffers, so every rank must close its mappings BEFORE any rank frees -- see
+        // ExchangeManager::retireBufferHandles.
+        //
+        // This is a collective call, which is only safe because growth happens in lockstep:
+        // mAllocatedBytes is always mMaxSlabSize times the largest sizeof(T)*C seen so far, and
+        // mMaxSlabSize is a positive per-rank constant, so the predicate above reduces to
+        // sizeof(T)*C > that largest product -- identical on every rank even when the
+        // decomposition is uneven. All ranks therefore take this branch in the same call.
+        mExchangeManager.retireBufferHandles();
+#endif
         // Send buffers: raw GPU alloc for clean IPC base pointers
 #if defined(DEVICE_CUDA) || defined(DEVICE_HIP)
         device::p2p::rawDeviceFree(mSendUpRaw);
@@ -432,6 +452,11 @@ namespace TempLat
       // Grow the shared send/recv buffers to hold all C component slabs contiguously.
       size_t neededBytes = mMaxSlabSize * sizeof(T) * C;
       if (neededBytes > mAllocatedBytes) {
+#ifdef HAVE_MPI
+        // Collective close-before-free; see the identical comment in update_forDimension_device
+        // for why this branch is guaranteed to be taken by every rank in the same call.
+        mExchangeManager.retireBufferHandles();
+#endif
 #if defined(DEVICE_CUDA) || defined(DEVICE_HIP)
         device::p2p::rawDeviceFree(mSendUpRaw);
         device::p2p::rawDeviceFree(mSendDownRaw);

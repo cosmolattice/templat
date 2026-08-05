@@ -151,6 +151,36 @@ namespace TempLat::device_kokkos
     // Buffer handle exchange — call after (re)allocating send/recv buffers
     // ------------------------------------------------------------------
 
+    /**
+     * @brief Collectively close every IPC mapping into the send buffers, then barrier.
+     *
+     * Call this BEFORE freeing the send buffers, on every rank. It is the half of the growth
+     * protocol that cannot live inside updateBufferHandles(): the handle exchange there runs
+     * after the exporter has already freed and reallocated, so no ordering inside it can put a
+     * peer's close before that free. Without this hoist the exporter frees memory its peers
+     * still have IPC-mapped on every single growth, and the peers then close mappings to freed
+     * memory -- a cross-process use-after-free that MPI orders wrong deterministically rather
+     * than a race that usually gets away with it.
+     *
+     * The barrier is what makes "all ranks have closed" true before the first free happens. It
+     * is affordable because growth is rare: the send buffers are a high-water mark shared by
+     * every field, so a run climbs the component ladder a handful of times and then stops.
+     */
+    void retireBufferHandles()
+    {
+#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
+      if (!mAnyP2PInJob) return;
+      for (size_t i = 0; i < 2 * NDim; ++i) {
+        mRemoteSendUpPtr[i].reset();
+        mRemoteSendDownPtr[i].reset();
+      }
+      // Forget the published versions too: the slots are empty, so the next publication must be
+      // opened even if its version were somehow not newer.
+      mRemoteHandleVersion.fill(0);
+      MPI_Barrier(mCartComm);
+#endif
+    }
+
     void updateBufferHandles([[maybe_unused]] char *sendUpPtr, [[maybe_unused]] char *sendDownPtr,
                              [[maybe_unused]] uint64_t version)
     {
@@ -468,6 +498,10 @@ namespace TempLat::device_kokkos
       //   - We need IPC handle for upper neighbor's sendDown buffer
       //   - We export our sendDown handle to our lower neighbor (they will recvDown = read our sendDown)
 
+      // This function OPENS ONLY. Everything this rank had mapped was closed by
+      // retireBufferHandles() before any rank freed its send buffers; see the growth sites in
+      // GhostUpdater. Closing here instead -- as this function used to -- is structurally too
+      // late, because it runs after the exporter has already freed and reallocated.
       if (!mAnyP2PInJob) return;
 
       // The two handles do not depend on the dimension, so pack them once.
