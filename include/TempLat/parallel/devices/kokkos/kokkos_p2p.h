@@ -72,10 +72,14 @@ namespace TempLat::device_kokkos::p2p
   /** @brief Close an IPC mapping. Returns 0 on success, the backend error code otherwise.
    *
    * Deliberately returns rather than throws: every caller is a destructor or a teardown path.
-   * It must not swallow the code either -- a discarded close status is exactly what hid a
-   * cross-process use-after-free (the exporter freeing buffers peers still had mapped) for as
-   * long as it existed, since the resulting close of an already-freed region reports an error
-   * and changes nothing else observable. */
+   * It must not swallow the code either -- an unchecked close is an unchecked driver call in the
+   * one place where the failures are cross-process and therefore hardest to attribute.
+   *
+   * Measured caveat, worth knowing before trusting a zero: closing a mapping whose exporting
+   * process has ALREADY freed the allocation returns success on CUDA 12.9. The driver keeps the
+   * range reserved precisely because this process still has it mapped. So a clean close status
+   * does not prove the free/close ordering was right -- that has to be got right by construction
+   * (see ExchangeManager::retireBufferHandles), not detected here. */
   inline int ipcCloseHandle(void *ptr) { return static_cast<int>(cudaIpcCloseMemHandle(ptr)); }
 
   /** @brief Human-readable form of a code returned by ipcCloseHandle. */
@@ -295,9 +299,9 @@ namespace TempLat::device_kokkos::p2p
 
   /** @brief Process-local count of ipcCloseHandle calls that returned an error.
    *
-   * A correct run leaves this at zero. It is non-zero when a mapping is closed after the
-   * exporting process has already freed the underlying allocation, which is the observable
-   * signature of the buffer-lifecycle ordering being wrong; tests and diagnostics assert on it. */
+   * A correct run leaves this at zero, and diagnostics assert on that. Read the caveat on
+   * ipcCloseHandle for what a zero does NOT prove: closing after the exporter has freed is not
+   * one of the things the driver reports. */
   inline unsigned long &ipcCloseErrorCount()
   {
     static unsigned long count = 0;

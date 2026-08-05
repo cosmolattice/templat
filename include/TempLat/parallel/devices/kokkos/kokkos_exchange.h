@@ -80,7 +80,7 @@ namespace TempLat::device_kokkos
         ++p2p::ipcCloseErrorCount();
         try {
           sayMPI << "IPC close error: closing the mapping at " << ptr << " failed: " << p2p::ipcErrorString(err)
-                 << ". The exporting rank most likely freed the allocation while it was still mapped here.\n";
+                 << ".\n";
         } catch (...) {
         }
       }
@@ -158,9 +158,17 @@ namespace TempLat::device_kokkos
      * protocol that cannot live inside updateBufferHandles(): the handle exchange there runs
      * after the exporter has already freed and reallocated, so no ordering inside it can put a
      * peer's close before that free. Without this hoist the exporter frees memory its peers
-     * still have IPC-mapped on every single growth, and the peers then close mappings to freed
-     * memory -- a cross-process use-after-free that MPI orders wrong deterministically rather
-     * than a race that usually gets away with it.
+     * still have IPC-mapped on every single growth -- deterministically, since the importer's
+     * only synchronisation with the exporter is a Sendrecv that sits after the free.
+     *
+     * What that costs is not a fault at the free. The driver keeps the range reserved exactly
+     * because a peer still has it mapped, so the exporter's next allocation can land back
+     * inside it, and the peer's next open then overlaps a mapping it never closed:
+     * cudaIpcOpenMemHandle -> "resource already mapped". Measured on 2 ranks / 2 A100s, growing
+     * the batch from 4 to 9 components: the open of the peer's new sendUp fails while the stale
+     * mapping of its old sendDown is still held (at two ranks in a periodic dimension the upper
+     * and lower neighbour are the same rank, so both slots point into the same process). With
+     * every mapping retired first, the same growth opens cleanly.
      *
      * The barrier is what makes "all ranks have closed" true before the first free happens. It
      * is affordable because growth is rare: the send buffers are a high-water mark shared by
@@ -522,6 +530,10 @@ namespace TempLat::device_kokkos
       // ordering of closes and opens fixes that; only deduplicating mappings per (peer,
       // allocation) does. Report it rather than abort, so a run that is otherwise healthy still
       // gets to say what went wrong.
+      //
+      // It has never fired: on CUDA 12.9 two ~320 B and ~720 B cudaMallocs got distinct handles,
+      // which is what rules this mechanism out as the cause of the growth abort and leaves the
+      // stale-mapping overlap described on retireBufferHandles as the one that matters.
       if (sendUpPtr != nullptr && sendDownPtr != nullptr &&
           std::memcmp(mySendUpPacket.handle, mySendDownPacket.handle, p2p::IpcHandleSize) == 0)
         sayMPI << "IPC handle alias: sendUp (" << static_cast<void *>(sendUpPtr) << ") and sendDown ("
