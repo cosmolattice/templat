@@ -39,7 +39,20 @@ namespace TempLat
 
     FileLoaderHDF5() = default;
 
-    void open(std::string fn) { mFile.open(fn); }
+    /** @brief Open a file for reading.
+     *
+     *  Defaults to ReadOnly, and deliberately so: a *loader* has no write API at all -- every
+     *  method below is an H5Dread -- so opening H5F_ACC_RDWR only ever bought the risk of one.
+     *  HDF5 marks the superblock while a file is open for write and clears it on a clean close,
+     *  so a job killed mid-load (walltime, node failure, scancel) could leave a production
+     *  checkpoint flagged "already open for write" and unopenable until `h5clear -s`, on the one
+     *  artifact a run cannot regenerate. Read-only opens never set that mark, never move the
+     *  file's mtime, and work against a checkpoint directory the user has chmod'ed read-only.
+     *
+     *  The flag stays settable for the rare caller that really does want to reopen a file it
+     *  intends to modify through the raw handle.
+     */
+    void open(std::string fn, FileMode flag = ReadOnly) { mFile.open(fn, flag); }
 
 #ifdef HAVE_MPI
     /** @brief Point collective I/O at the communicator the lattice is decomposed over.
