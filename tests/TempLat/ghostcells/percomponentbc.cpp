@@ -224,6 +224,49 @@ namespace TempLat
       return ok;
     }
 
+    /** @brief The batch path, checked ABSOLUTELY, corners included.
+     *
+     * checkBatchMatchesSingle proves the fused path agrees with the per-component one. Agreement is
+     * not correctness: two identically wrong answers agree. And neither path had an absolute corner
+     * check anywhere in this tree -- verifyGhostFaces reads one ghost index in one dimension and
+     * holds the rest interior, so a cell that is a ghost in TWO directions was never pinned to a
+     * value under any non-periodic BC.
+     *
+     * This fills each component with the injective global code and demands, in every padded cell,
+     * the PRODUCT of that component's per-direction signs times the global-wrap partner's value.
+     * With `{P,P,AP}` on components 1 and 3 and all-periodic on 0 and 2 -- C-star in the last
+     * direction only, which is exactly the SU(2)/doublet pattern of a mixed run -- an edge that
+     * wrapped in the antiperiodic direction and one periodic direction must come back NEGATIVE on
+     * components 1,3 and POSITIVE on 0,2, in the same fused launch.
+     */
+    template <size_t NDim>
+    bool checkBatchAbsoluteCorners(device::memory::host_ptr<MemoryToolBox<NDim>> toolBox,
+                                   const std::vector<BCSpec<NDim>> &specs, ptrdiff_t nGrid, ptrdiff_t nGhost,
+                                   const char *what)
+    {
+      const size_t C = specs.size();
+      std::vector<std::unique_ptr<Field<double, NDim>>> fields;
+      std::vector<MemoryManager<double, NDim> *> mgrs;
+      fields.reserve(C);
+      mgrs.reserve(C);
+      for (size_t c = 0; c < C; ++c) {
+        fields.push_back(std::make_unique<Field<double, NDim>>("bac_" + std::to_string(c), toolBox,
+                                                               LatticeParameters<double>()));
+        fields[c]->setBCSpec(specs[c]);
+        BCTestDetail::assignGlobalCode<NDim>(*fields[c], toolBox, nGrid);
+        mgrs.push_back(fields[c]->getMemoryManager().get());
+      }
+
+      MemoryManager<double, NDim>::updateGhostsBatch(
+          std::span<MemoryManager<double, NDim> *const>(mgrs.data(), mgrs.size()));
+
+      bool ok = true;
+      for (size_t c = 0; c < C; ++c)
+        ok &= BCTestDetail::verifyGhostCorners<NDim>(*fields[c], specs[c], nGrid, nGhost,
+                                                     std::string(what) + " comp " + std::to_string(c));
+      return ok;
+    }
+
     /** @brief Set a per-component BC on a real multi-component field type, fill, update its ghosts
      *  through whichever batch entry point the type uses, and verify every component's ghost slabs.
      *  `Cs...` are the component tags of the type (SU2LieAlgebraField's start at 1; its Tag<0> is a
@@ -357,6 +400,49 @@ namespace TempLat
         crossDim[3][0] = BCType::Antiperiodic;
         crossDim[3][NDim - 1] = BCType::Neumann;
         tdd.verify(guarded("mixed-crossdim", [&] { return checkBatchMatchesSingle<NDim>(toolBox, crossDim, nGhost); }));
+      }
+
+      // The same crossing of axes, but checked ABSOLUTELY rather than against the single-block
+      // path -- and on the pattern that a per-direction C-star run actually produces:
+      //
+      //     components 1 and 3 (odd under C):  {Periodic, ..., Antiperiodic}
+      //     components 0 and 2 (even under C): all periodic
+      //
+      // i.e. C-star imposed in the LAST direction only. Both axes are live at once: the
+      // COMPONENT index decides whether a component flips at all, the DIRECTION index decides
+      // where. A build that swapped them would put the Antiperiodic in the wrong slot of the
+      // wrong array and this fails; checkBatchMatchesSingle above cannot see it, because both
+      // paths would swap identically.
+      {
+        std::vector<BCSpec<NDim>> cstarLastDim(4, allPeriodic<NDim>());
+        cstarLastDim[1][NDim - 1] = BCType::Antiperiodic;
+        cstarLastDim[3][NDim - 1] = BCType::Antiperiodic;
+        tdd.verify(guarded("cstar-lastdim-absolute", [&] {
+          return checkBatchAbsoluteCorners<NDim>(toolBox, cstarLastDim, nGrid, static_cast<ptrdiff_t>(nGhost),
+                                                 "cstar-lastdim");
+        }));
+
+        // ... and the mirror, C-star in the FIRST direction only, so a mask that happens to be
+        // right only for the last dimension does not pass.
+        std::vector<BCSpec<NDim>> cstarFirstDim(4, allPeriodic<NDim>());
+        cstarFirstDim[1][0] = BCType::Antiperiodic;
+        cstarFirstDim[3][0] = BCType::Antiperiodic;
+        tdd.verify(guarded("cstar-firstdim-absolute", [&] {
+          return checkBatchAbsoluteCorners<NDim>(toolBox, cstarFirstDim, nGrid, static_cast<ptrdiff_t>(nGhost),
+                                                 "cstar-firstdim");
+        }));
+
+        // All directions C-star on the odd components: the legacy mask, so the new absolute
+        // check also covers the case production has been running.
+        std::vector<BCSpec<NDim>> cstarAllDims(4, allPeriodic<NDim>());
+        for (size_t d = 0; d < NDim; ++d) {
+          cstarAllDims[1][d] = BCType::Antiperiodic;
+          cstarAllDims[3][d] = BCType::Antiperiodic;
+        }
+        tdd.verify(guarded("cstar-alldims-absolute", [&] {
+          return checkBatchAbsoluteCorners<NDim>(toolBox, cstarAllDims, nGrid, static_cast<ptrdiff_t>(nGhost),
+                                                 "cstar-alldims");
+        }));
       }
     }
   }
