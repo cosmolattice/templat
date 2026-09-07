@@ -7,6 +7,8 @@
 #include "TempLat/lattice/algebra/su2algebra/su2wrapper.h"
 #include "TempLat/util/tdd/tdd.h"
 #include "TempLat/lattice/algebra/su2algebra/su2field.h"
+#include "TempLat/lattice/algebra/su2algebra/scalarsu2multiplication.h"
+#include "TempLat/lattice/algebra/constants/zerotype.h"
 #include "TempLat/lattice/memory/memorytoolbox.h"
 #include "TempLat/parallel/device_memory.h"
 
@@ -37,6 +39,23 @@ namespace TempLat
     tdd.verify(device::memory::getAtOnePoint(f1.SU2Get(1_c), device::IdxArray<3>{1, 1, 1}) == 3.0);
     tdd.verify(device::memory::getAtOnePoint(f1.SU2Get(2_c), device::IdxArray<3>{1, 1, 1}) == 4.0);
     tdd.verify(device::memory::getAtOnePoint(f1.SU2Get(3_c), device::IdxArray<3>{1, 1, 1}) == 4.0);
+
+    // A ZeroType in the identity slot must not set the element type of the whole quadruple.
+    // ZeroType evaluates to the int literal 0, so reading the type off the first slot alone
+    // used to give an array<int, 4> and round the three real components to whole numbers.
+    auto w3 = SU2Wrap(ZeroType(), 0.25, -0.5, 0.75);
+    const auto c = w3.eval(1, 1, 1);
+    tdd.verify(c[1] == 0.25);
+    tdd.verify(c[2] == -0.5);
+    tdd.verify(c[3] == 0.75);
+
+    // Same through a scalar prefactor, which ScalarSU2Multiplication applies in place: on an
+    // integer array a small prefactor rounded what was left of the components to zero.
+    SU2Field<double, 3> f2("f2", toolbox);
+    f2 = 0.5 * w3;
+    tdd.verify(device::memory::getAtOnePoint(f2.SU2Get(1_c), device::IdxArray<3>{1, 1, 1}) == 0.125);
+    tdd.verify(device::memory::getAtOnePoint(f2.SU2Get(2_c), device::IdxArray<3>{1, 1, 1}) == -0.25);
+    tdd.verify(device::memory::getAtOnePoint(f2.SU2Get(3_c), device::IdxArray<3>{1, 1, 1}) == 0.375);
   }
 
 } // namespace TempLat

@@ -32,8 +32,6 @@ namespace TempLat
   template <class A, class B, class C, class D> class SU2Wrapper : public SU2Operator
   {
   public:
-    using SV = typename GetGetReturnType<A>::type;
-
     SU2Wrapper(const A &pA, const B &pB, const C &pC, const D &pD) : data(pA, pB, pC, pD) {}
     SU2Wrapper() = default;
 
@@ -60,11 +58,18 @@ namespace TempLat
       }
     DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
-      device::array<SV, 4> result;
-      result[0] = DoEval::eval(device::get<0>(data), idx...);
-      result[1] = DoEval::eval(device::get<1>(data), idx...);
-      result[2] = DoEval::eval(device::get<2>(data), idx...);
-      result[3] = DoEval::eval(device::get<3>(data), idx...);
+      const auto c0 = DoEval::eval(device::get<0>(data), idx...);
+      const auto c1 = DoEval::eval(device::get<1>(data), idx...);
+      const auto c2 = DoEval::eval(device::get<2>(data), idx...);
+      const auto c3 = DoEval::eval(device::get<3>(data), idx...);
+
+      // The element type has to be common to all four
+      using SVE = std::decay_t<decltype(c0 + c1 + c2 + c3)>;
+      device::array<SVE, 4> result;
+      result[0] = c0;
+      result[1] = c1;
+      result[2] = c2;
+      result[3] = c3;
       return result;
     }
 
