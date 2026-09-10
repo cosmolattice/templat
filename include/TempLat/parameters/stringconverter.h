@@ -17,6 +17,7 @@
 
 namespace TempLat
 {
+  MakeException(ParameterParserUnparseableValue);
   MakeException(BCKeywordUnknown);
   MakeException(BCSpecArityMismatch);
 
@@ -39,6 +40,24 @@ namespace TempLat
       while (iss >> std::boolalpha >> std::skipws >> tmp) {
         arr.push_back(ParameterGetter<T>(tmp, name));
       }
+
+      // A failed extraction used to leave arr empty and say nothing, so ParameterParser::get fell
+      // back to its caller's default while the parameter file -- and any .infos written from it --
+      // still showed the value the user wrote. That is how `flag = 0` for a bool silently became
+      // the default: std::boolalpha accepts only the literals "true" and "false", so "0" never
+      // parses, nothing is pushed, and the default wins. A wrong value has to be louder than a
+      // missing one, which already throws, so refuse here too.
+      const bool hasContent = str.find_first_not_of(" \t\n\r\f\v") != std::string::npos;
+      if (hasContent && arr.size() == 0)
+        throw ParameterParserUnparseableValue("Parameter " + name + " has the value '" + str +
+            "', which cannot be read as the type it is declared with. For a boolean write 'true' or "
+            "'false'; 0 and 1 are not accepted. Abort.");
+
+      // Some values parsed but the stream stopped short, so there is trailing text that would be
+      // dropped without trace -- e.g. "0.005 # comment" or a stray second value.
+      if (hasContent && !iss.eof())
+        throw ParameterParserUnparseableValue("Parameter " + name + " has the value '" + str +
+            "', of which only the leading part could be read. Remove or fix the trailing text. Abort.");
     }
   };
 
