@@ -35,6 +35,8 @@ namespace TempLat
 // requires-expression, which clang rejects ("non-local lambda expression cannot have a capture-default"),
 // breaking nested `Total(i, ..., Total(j, ...))` (B2SU2, theta_ijk, ...). Gating on the range keeps the
 // empty-range safety (for end < beg the `expr` branch is never instantiated) without that hazard.
+// The test is signed: `end` is often `N - 1` with an unsigned N, which wraps for N = 0, and an
+// unsigned `end < 0` is also flagged by nvcc as a pointless comparison (#186-D).
 /**
  * @vocab-summary Sums `expr` over a compile-time index range — the expression-level $\sum_i$.
  * @vocab-signature Total(i, beg, end, expr)
@@ -42,7 +44,7 @@ namespace TempLat
  **/
 #define Total(i, beg, end, expr)                                                                                       \
   TempLat::sum_in_range<beg, end + 1>([&](auto i) {                                                                    \
-    if constexpr ((end) < (beg)) {                                                                                     \
+    if constexpr (static_cast<long long>(end) < static_cast<long long>(beg)) {                                         \
       return TempLat::ZeroType();                                                                                      \
     } else {                                                                                                           \
       return expr;                                                                                                     \
