@@ -263,7 +263,15 @@ namespace TempLat::device_kokkos
           // Phase-ordering handshake (replaces the mid shared-memory barrier): on each P2P link the
           // lower-ranked rank reads in phase 0 then signals the higher-ranked rank, which waits for that
           // token before its phase-1 read — so the two reads on a link never overlap on the PCIe switch.
-          p2pPhaseHandshake(dimension, canPullRecvUp, canPullRecvDown, upReadSource, downReadSource);
+          //
+          // Tokens are exchanged only on the links that are themselves half-duplex. Whether a rank takes
+          // this two-phase branch at all is a per-rank decision (any of its links is PCIe), so its
+          // full-duplex neighbour may be on the single-phase branch and would never send or receive a
+          // token: e.g. a ring 0-1-2-3 with only 3<->0 on PCIe, where rank 3 would wait on rank 2 forever.
+          // The link type is the same from both ends, so gating on it keeps the pairs matched.
+          const bool tokenUp = canPullRecvUp && !mFullDuplex[dimension * 2 + 1];     // link to lower neighbour
+          const bool tokenDown = canPullRecvDown && !mFullDuplex[dimension * 2 + 0]; // link to upper neighbour
+          p2pPhaseHandshake(dimension, tokenUp, tokenDown, upReadSource, downReadSource);
 
           // Phase 1: reads where this rank has the higher rank number
           if (canPullRecvUp && mMyRank > upReadSource)
