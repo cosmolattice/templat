@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2026
 
 #include "TempLat/lattice/algebra/helpers/hasghostmethod.h"
+#include "TempLat/lattice/algebra/helpers/iscompositeexpression.h"
 
 namespace TempLat
 {
@@ -31,6 +32,9 @@ namespace TempLat
       requires(!HasGhostMethod<U>)
     static constexpr inline device::Idx apply(U &obj)
     {
+      static_assert(!IsCompositeExpression<U>,
+                    "Composite expression node without confirmGhostsUpToDate: its operands would skip the ghost "
+                    "exchange.");
       return 0;
     }
 

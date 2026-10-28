@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2026
 
 #include "TempLat/lattice/algebra/helpers/hasspaceconfirmationmethods.h"
+#include "TempLat/lattice/algebra/helpers/iscompositeexpression.h"
 #include "TempLat/lattice/memory/memorylayouts/layoutstruct.h"
 #include "TempLat/lattice/algebra/spacestateinterface.h"
 
@@ -33,6 +34,8 @@ namespace TempLat
       requires(!HasSpaceConfirmationMethods<U, NDim>)
     static constexpr inline void apply(U &obj, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType)
     {
+      static_assert(!IsCompositeExpression<U>,
+                    "Composite expression node without confirmSpace: its operands would skip the space confirmation.");
     }
 
     template <int N, typename U, size_t NDim>

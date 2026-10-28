@@ -11,6 +11,8 @@
 #include "TempLat/lattice/algebra/helpers/getdx.h"
 #include "TempLat/lattice/algebra/helpers/getkir.h"
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 #include "TempLat/lattice/field/assignablefieldcollection.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2doubletget.h"
 #include "TempLat/util/rangeiteration/make_list_tag.h"
@@ -78,12 +80,21 @@ namespace TempLat
       return fs[t];
     }
 
+    /** @brief Confirms space and rhosts for the right-hand side r. Returns true if r reads one of this field's
+     *  components at a neighbouring site, i.e. if assigning r in place would read already overwritten values. */
+    template <typename R> bool onBeforeAssignment(R &&r)
+    {
+      // Walk the whole expression once per component: r may read any component at shifted sites.
+      bool readShifted = fs[0].onBeforeAssignment(r);
+      readShifted |= fs[1].onBeforeAssignment(r);
+      readShifted |= fs[2].onBeforeAssignment(r);
+      readShifted |= fs[3].onBeforeAssignment(r);
+      return readShifted;
+    }
+
     template <typename R> void operator=(R &&r)
     {
-      fs[0].onBeforeAssignment(std::decay_t<R>::Getter::get(r, 0_c));
-      fs[1].onBeforeAssignment(std::decay_t<R>::Getter::get(r, 1_c));
-      fs[2].onBeforeAssignment(std::decay_t<R>::Getter::get(r, 2_c));
-      fs[3].onBeforeAssignment(std::decay_t<R>::Getter::get(r, 3_c));
+      onBeforeAssignment(r);
 
       PreGet::apply(r);
 
@@ -116,6 +127,23 @@ namespace TempLat
     std::string toString() const { return *mName; }
 
     device::memory::host_ptr<MemoryToolBox<NDim>> getToolBox() const { return GetToolBox::get(fs[0]); }
+
+    // Space/ghost confirmation of the components, so that this leaf can be walked as part of a whole expression.
+    // A bare field needs no ghosts by itself; a shift above it calls confirmGhostsUpToDate.
+    void doWeNeedGhosts() const {}
+    device::Idx confirmGhostsUpToDate() const
+    {
+      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
+                                        fs[2].getMemoryManager().get(), fs[3].getMemoryManager().get()};
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(mgrs);
+    }
+    void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(fs[0], newLayout, spaceType);
+      ConfirmSpace::apply(fs[1], newLayout, spaceType);
+      ConfirmSpace::apply(fs[2], newLayout, spaceType);
+      ConfirmSpace::apply(fs[3], newLayout, spaceType);
+    }
 
     auto getDx() const { return GetDx::getDx(fs[0]); }
     auto getKIR() const { return GetKIR::getKIR(fs[0]); }

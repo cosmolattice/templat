@@ -15,6 +15,9 @@
 
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
 {
@@ -52,6 +55,20 @@ namespace TempLat
       result[0] = DoEval::eval(mR, idx...);
       result[1] = DoEval::eval(mT, idx...);
       return result;
+    }
+
+    /** @brief Space/ghost confirmation forwarded to the wrapped expressions. */
+    void doWeNeedGhosts() const
+    {
+      GhostsHunter::apply(mR);
+      GhostsHunter::apply(mT);
+    }
+    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mT); }
+    template <size_t LayoutNDim>
+    void confirmSpace(const LayoutStruct<LayoutNDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mR, newLayout, spaceType);
+      ConfirmSpace::apply(mT, newLayout, spaceType);
     }
 
     void preGet()

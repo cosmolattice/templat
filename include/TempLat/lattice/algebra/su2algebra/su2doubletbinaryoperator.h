@@ -16,6 +16,11 @@
 #include "TempLat/lattice/algebra/helpers/gettoolbox.h"
 #include "TempLat/util/containsspace.h"
 #include "TempLat/lattice/algebra/helpers/getstring.h"
+#include "TempLat/lattice/algebra/helpers/preget.h"
+#include "TempLat/lattice/algebra/helpers/postget.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
 {
@@ -64,6 +69,33 @@ namespace TempLat
         return GetToolBox::get(mT);
       else
         return nullptr;
+    }
+
+    /** @brief Space/ghost confirmation forwarded to the operands, so that an assignment can walk the whole expression.
+     */
+    void doWeNeedGhosts() const
+    {
+      GhostsHunter::apply(mR);
+      GhostsHunter::apply(mT);
+    }
+    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mT); }
+    template <size_t LayoutNDim>
+    void confirmSpace(const LayoutStruct<LayoutNDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mR, newLayout, spaceType);
+      ConfirmSpace::apply(mT, newLayout, spaceType);
+    }
+
+    void preGet()
+    {
+      PreGet::apply(mR);
+      PreGet::apply(mT);
+    }
+
+    void postGet()
+    {
+      PostGet::apply(mR);
+      PostGet::apply(mT);
     }
 
   protected:

@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Adrien Florio, Year: 2019
 
 #include "TempLat/lattice/algebra/helpers/hasdoweneedghosts.h"
+#include "TempLat/lattice/algebra/helpers/iscompositeexpression.h"
 
 namespace TempLat
 {
@@ -29,6 +30,8 @@ namespace TempLat
       requires(!HasDoWeNeedGhostsMethod<U>)
     static void apply(U &obj)
     {
+      static_assert(!IsCompositeExpression<U>,
+                    "Composite expression node without doWeNeedGhosts: its operands would skip the ghost exchange.");
     }
 
     // Put public methods here. These should change very little over time.

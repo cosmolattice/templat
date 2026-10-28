@@ -10,6 +10,7 @@
 #include "TempLat/util/rangeiteration/tagliteral.h"
 #include "TempLat/lattice/algebra/constants/zerotype.h"
 #include "TempLat/lattice/algebra/constants/onetype.h"
+#include "TempLat/lattice/algebra/helpers/iscompositeexpression.h"
 
 #include "TempLat/parallel/device.h"
 
@@ -21,7 +22,7 @@ namespace TempLat
    **/
   namespace Constants
   {
-    struct Sigma0 {
+    struct Sigma0 : NoFieldDependence {
       DEVICE_INLINE_FUNCTION
       static constexpr OneType SU2Get(Tag<0> t) { return {}; }
       DEVICE_INLINE_FUNCTION
@@ -36,7 +37,7 @@ namespace TempLat
     };
     constexpr Sigma0 sigma0;
 
-    struct Sigma1 {
+    struct Sigma1 : NoFieldDependence {
       static constexpr ZeroType SU2Get(Tag<0> t) { return {}; }
       DEVICE_INLINE_FUNCTION
       static constexpr OneType SU2Get(Tag<1> t) { return {}; }
@@ -50,7 +51,7 @@ namespace TempLat
     };
     constexpr Sigma1 sigma1;
 
-    struct Sigma2 {
+    struct Sigma2 : NoFieldDependence {
       DEVICE_INLINE_FUNCTION
       static constexpr ZeroType SU2Get(Tag<0> t) { return {}; }
       DEVICE_INLINE_FUNCTION
@@ -65,7 +66,7 @@ namespace TempLat
     };
     constexpr Sigma2 sigma2;
 
-    struct Sigma3 {
+    struct Sigma3 : NoFieldDependence {
       DEVICE_INLINE_FUNCTION
       static constexpr ZeroType SU2Get(Tag<0> t) { return {}; }
       DEVICE_INLINE_FUNCTION

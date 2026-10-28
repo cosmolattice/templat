@@ -17,6 +17,9 @@
 
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
 {
@@ -50,6 +53,16 @@ namespace TempLat
 
     auto getDx() const { return GetDx::getDx(mR); }
     auto getKIR() const { return GetKIR::getKIR(mR); }
+
+    /** @brief Space/ghost confirmation forwarded to the operand, so that an assignment can walk the whole expression.
+     */
+    void doWeNeedGhosts() const { GhostsHunter::apply(mR); }
+    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR); }
+    template <size_t LayoutNDim>
+    void confirmSpace(const LayoutStruct<LayoutNDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mR, newLayout, spaceType);
+    }
 
     void preGet() { PreGet::apply(mR); }
     void postGet() { PostGet::apply(mR); }

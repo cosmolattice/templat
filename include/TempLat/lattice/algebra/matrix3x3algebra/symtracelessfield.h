@@ -15,6 +15,8 @@
 #include "TempLat/lattice/algebra/matrix3x3algebra/symtracelesswrapper.h"
 #include "TempLat/lattice/algebra/matrix3x3algebra/symtracelessfieldfourierview.h"
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 #include <memory>
 
 namespace TempLat
@@ -38,9 +40,11 @@ namespace TempLat
     static constexpr size_t NDim = _NDim;
 
     SymTracelessField(Field<T, NDim> f0, Field<T, NDim> f1, Field<T, NDim> f2, Field<T, NDim> f3, Field<T, NDim> f4)
-        : m0(f0), m1(f1), m2(f2), m3(f3), m4(f4), mName("symtraceless(" + f0.getName() + ", " + f1.getName() + ", " +
-                                                        f2.getName() + ", " + f3.getName() + ", " + f4.getName() + ")"),
-          mToolBox(m1.getToolBox() == nullptr ? m1.getToolBox() : m0.getToolBox()),
+        : m0(f0), m1(f1), m2(f2), m3(f3), m4(f4),
+          mName("symtraceless(" + f0.getMemoryManager()->getName() + ", " + f1.getMemoryManager()->getName() + ", " +
+                f2.getMemoryManager()->getName() + ", " + f3.getMemoryManager()->getName() + ", " +
+                f4.getMemoryManager()->getName() + ")"),
+          mToolBox(m0.getToolBox() == nullptr ? m1.getToolBox() : m0.getToolBox()),
           mLayout(mToolBox->mLayouts.getConfigSpaceLayout())
     {
     }
@@ -148,19 +152,22 @@ namespace TempLat
       return {m0.inFourierSpace(), m1.inFourierSpace(), m2.inFourierSpace(), m3.inFourierSpace(), m4.inFourierSpace()};
     }
 
+    /** @brief Confirms space and ghosts for the right-hand side g. Returns true if g reads one of this field's
+     *  components at a neighbouring site, i.e. if assigning g in place would read already overwritten values. */
+    template <typename R> bool onBeforeAssignment(R &&g)
+    {
+      // Walk the whole expression once per component: g may read any component at shifted sites.
+      bool readShifted = m0.onBeforeAssignment(g);
+      readShifted |= m1.onBeforeAssignment(g);
+      readShifted |= m2.onBeforeAssignment(g);
+      readShifted |= m3.onBeforeAssignment(g);
+      readShifted |= m4.onBeforeAssignment(g);
+      return readShifted;
+    }
+
     template <typename R> void operator=(R &&g)
     {
-      const auto &g0 = SymTracelessGetter::get(g, 0_c);
-      const auto &g1 = SymTracelessGetter::get(g, 1_c);
-      const auto &g2 = SymTracelessGetter::get(g, 2_c);
-      const auto &g3 = SymTracelessGetter::get(g, 3_c);
-      const auto &g4 = SymTracelessGetter::get(g, 4_c);
-
-      m0.onBeforeAssignment(g0);
-      m1.onBeforeAssignment(g1);
-      m2.onBeforeAssignment(g2);
-      m3.onBeforeAssignment(g3);
-      m4.onBeforeAssignment(g4);
+      onBeforeAssignment(g);
 
       PreGet::apply(g);
 
@@ -197,6 +204,25 @@ namespace TempLat
     template <typename R> void operator+=(R &&r) { (*this) = (*this) + r; }
 
     std::string toString() const { return *mName; }
+
+    // Space/ghost confirmation of the components, so that this leaf can be walked as part of a whole expression.
+    // A bare field needs no ghosts by itself; a shift above it calls confirmGhostsUpToDate.
+    void doWeNeedGhosts() const {}
+    device::Idx confirmGhostsUpToDate() const
+    {
+      MemoryManager<T, NDim> *mgrs[] = {m0.getMemoryManager().get(), m1.getMemoryManager().get(),
+                                        m2.getMemoryManager().get(), m3.getMemoryManager().get(),
+                                        m4.getMemoryManager().get()};
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(mgrs);
+    }
+    void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(m0, newLayout, spaceType);
+      ConfirmSpace::apply(m1, newLayout, spaceType);
+      ConfirmSpace::apply(m2, newLayout, spaceType);
+      ConfirmSpace::apply(m3, newLayout, spaceType);
+      ConfirmSpace::apply(m4, newLayout, spaceType);
+    }
 
     auto getDx() const { return m0.getDx(); }
     auto getKIR() const { return m0.getKIR(); }

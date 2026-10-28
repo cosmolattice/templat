@@ -14,6 +14,8 @@
 #include "TempLat/util/rangeiteration/for_in_range.h"
 #include "TempLat/util/rangeiteration/tagliteral.h"
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
 {
@@ -81,6 +83,16 @@ namespace TempLat
       device::iteration::foreach ("ComplexFourierViewAssign", mLayout, functor);
 
       PostGet::apply(g);
+    }
+
+    // Space/ghost confirmation of the components, so that this leaf can be walked as part of a whole expression.
+    // A bare field needs no ghosts by itself; a shift above it calls confirmGhostsUpToDate.
+    void doWeNeedGhosts() const {}
+    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mI); }
+    void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mR, newLayout, spaceType);
+      ConfirmSpace::apply(mI, newLayout, spaceType);
     }
 
     auto getDx() const { return mR.getDx(); }

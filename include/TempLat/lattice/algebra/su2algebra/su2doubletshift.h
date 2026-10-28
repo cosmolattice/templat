@@ -52,6 +52,9 @@ namespace TempLat
       return device::apply([&](const auto &...shifted_idx) { return DoEval::eval(mR, shifted_idx...); }, tup);
     }
 
+    // A shifted read needs the operand's ghost cells; the base-class forwarder would not trigger the exchange.
+    void doWeNeedGhosts() const { ConfirmGhosts::apply(mR); }
+
     virtual std::string operatorString() const override { return shift<N...>(mR.SU2DoubletGet(0_c)).getString({N...}); }
   };
 
@@ -84,6 +87,9 @@ namespace TempLat
       return device::apply([&](const auto &...shifted_idx) { return DoEval::eval(mR, shifted_idx...); },
                            tuple_add_to_nth<N - 1, dir>(device::tie(idx...)));
     }
+
+    // A shifted read needs the operand's ghost cells; the base-class forwarder would not trigger the exchange.
+    void doWeNeedGhosts() const { ConfirmGhosts::apply(mR); }
 
     std::string toString() const { return GetString::get(mR) + "_(->" + std::to_string(N) + ")"; }
   };

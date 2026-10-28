@@ -192,6 +192,7 @@ namespace TempLat
 
     device::Idx confirmGhostsUpToDate()
     {
+      noteShiftedRead();
       device::Idx result = confirmConfigSpace();
 
       if (mToolBox->verbosity.ghostConfirmationSteps)
@@ -233,6 +234,7 @@ namespace TempLat
       for (auto *m : mgrs) {
         if (m->mToolBox.get() != toolBox.get())
           throw MemoryManagerAccessOutOfBounds("confirmGhostsUpToDateBatch: managers do not share a MemoryToolBox.");
+        m->noteShiftedRead();
         result += m->confirmConfigSpace();
         if (m->mGhostStateKeeper.isStale()) {
           stale.push_back(&m->mBlock);
@@ -308,7 +310,42 @@ namespace TempLat
 
     size_t bytes() const { return mBlock.size() * sizeof(T); }
 
+    /** @brief Marks this manager as the target of an assignment for the guard's lifetime and records whether the
+     *  right-hand side reads it at a neighbouring site. Non-local operators (shifts, derivatives, Laplacians)
+     *  request ghosts of every field they read, so a ghost request reaching the target during the ghost walk of
+     *  the right-hand side means exactly that. Such an assignment cannot be done in place. */
+    class AssignmentTargetGuard
+    {
+    public:
+      explicit AssignmentTargetGuard(MemoryManager &manager)
+          : mManager(manager), mPrevIsTarget(manager.mIsAssignmentTarget),
+            mPrevReadShifted(manager.mTargetReadShifted)
+      {
+        mManager.mIsAssignmentTarget = true;
+        mManager.mTargetReadShifted = false;
+      }
+      ~AssignmentTargetGuard()
+      {
+        mManager.mIsAssignmentTarget = mPrevIsTarget;
+        mManager.mTargetReadShifted = mPrevReadShifted;
+      }
+      AssignmentTargetGuard(const AssignmentTargetGuard &) = delete;
+      AssignmentTargetGuard &operator=(const AssignmentTargetGuard &) = delete;
+
+      bool targetReadShifted() const { return mManager.mTargetReadShifted; }
+
+    private:
+      MemoryManager &mManager;
+      bool mPrevIsTarget;
+      bool mPrevReadShifted;
+    };
+
   private:
+    void noteShiftedRead()
+    {
+      if (mIsAssignmentTarget) mTargetReadShifted = true;
+    }
+
     /* Put all member variables and private methods here. These may change arbitrarily. */
     device::memory::host_ptr<MemoryToolBox<NDim>> mToolBox;
     std::string mName;
@@ -318,6 +355,9 @@ namespace TempLat
     MemoryLayoutState mLayoutState;
     GhostStateKeeper mGhostStateKeeper;
     BCSpec<NDim> mBCSpec;
+
+    bool mIsAssignmentTarget = false;
+    bool mTargetReadShifted = false;
   };
 
 } // namespace TempLat

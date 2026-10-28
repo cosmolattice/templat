@@ -79,16 +79,22 @@ namespace TempLat
       return fs[M];
     }
 
+    /** @brief Confirms space and ghosts for the right-hand side r. Returns true if r reads one of this field's
+     *  components at a neighbouring site, i.e. if assigning r in place would read already overwritten values. */
+    template <typename R> bool onBeforeAssignment(R &&r)
+    {
+      // Walk the whole SU(2) expression r (linear in its structure) instead of building r.SU2Get(k) per
+      // component (exponential). One call per target component: each also confirms fs[k] itself.
+      bool readShifted = fs[0].onBeforeAssignment(r);
+      readShifted |= fs[1].onBeforeAssignment(r);
+      readShifted |= fs[2].onBeforeAssignment(r);
+      readShifted |= fs[3].onBeforeAssignment(r);
+      return readShifted;
+    }
+
     template <typename R> void operator=(R &&r)
     {
-      // Confirm config-space / ghost requirements by walking the WHOLE SU(2) expression r (linear in its
-      // structure), instead of building r.SU2Get(k) per component (the exponential per-component
-      // expansion, instantiated only to be walked then discarded). One call per target component is
-      // kept: onBeforeAssignment also confirms the target field fs[k] and flags its host mirror.
-      fs[0].onBeforeAssignment(r);
-      fs[1].onBeforeAssignment(r);
-      fs[2].onBeforeAssignment(r);
-      fs[3].onBeforeAssignment(r);
+      onBeforeAssignment(r);
 
       PreGet::apply(r);
 

@@ -15,6 +15,8 @@
 #include "TempLat/lattice/algebra/complexalgebra/complexwrapper.h"
 #include "TempLat/lattice/algebra/complexalgebra/complexfieldfourierview.h"
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 #include <memory>
 
 namespace TempLat
@@ -35,7 +37,8 @@ namespace TempLat
     static constexpr size_t NDim = _NDim;
 
     ComplexField(Field<T, NDim> f1, Field<T, NDim> f2)
-        : mR(f1), mI(f2), mName("complex(" + f1.getName() + ", " + f2.getName() + ")"),
+        : mR(f1), mI(f2),
+          mName("complex(" + f1.getMemoryManager()->getName() + ", " + f2.getMemoryManager()->getName() + ")"),
           mToolBox(mR.getToolBox() == nullptr ? mI.getToolBox() : mR.getToolBox()),
           mLayout(mToolBox->mLayouts.getConfigSpaceLayout())
     {
@@ -81,13 +84,19 @@ namespace TempLat
 
     ComplexFieldFourierView<T, NDim> inFourierSpace() { return {mR.inFourierSpace(), mI.inFourierSpace()}; }
 
+    /** @brief Confirms space and ghosts for the right-hand side g. Returns true if g reads one of this field's
+     *  components at a neighbouring site, i.e. if assigning g in place would read already overwritten values. */
+    template <typename R> bool onBeforeAssignment(R &&g)
+    {
+      // Walk the whole expression once per component: g reads mI at shifted sites as much as mR.
+      const bool readR = mR.onBeforeAssignment(g);
+      const bool readI = mI.onBeforeAssignment(g);
+      return readR || readI;
+    }
+
     template <typename R> void operator=(R &&g)
     {
-      const auto &gR = ComplexFieldGetter::get(g, 0_c);
-      const auto &gI = ComplexFieldGetter::get(g, 1_c);
-
-      mR.onBeforeAssignment(gR);
-      mI.onBeforeAssignment(gI);
+      onBeforeAssignment(g);
 
       PreGet::apply(g);
 
@@ -115,6 +124,20 @@ namespace TempLat
     template <typename R> void operator+=(R &&r) { (*this) = (*this) + r; }
 
     std::string toString() const { return *mName; }
+
+    // Space/ghost confirmation of the components, so that this leaf can be walked as part of a whole expression.
+    // A bare field needs no ghosts by itself; a shift above it calls confirmGhostsUpToDate.
+    void doWeNeedGhosts() const {}
+    device::Idx confirmGhostsUpToDate() const
+    {
+      MemoryManager<T, NDim> *mgrs[] = {mR.getMemoryManager().get(), mI.getMemoryManager().get()};
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(mgrs);
+    }
+    void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mR, newLayout, spaceType);
+      ConfirmSpace::apply(mI, newLayout, spaceType);
+    }
 
     auto getDx() const { return mR.getDx(); }
     auto getKIR() const { return mR.getKIR(); }
