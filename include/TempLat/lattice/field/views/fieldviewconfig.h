@@ -40,10 +40,10 @@ namespace TempLat
     using AbstractField<T, NDim>::mManager;
     using AbstractField<T, NDim>::toolBox;
 
-    ConfigView(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar)
-        : AbstractField<T, NDim>(name, toolBox, pLatPar), mDisableFFTBlocking(false)
+    ConfigView(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> ptoolBox, LatticeParameters<T> pLatPar)
+        : AbstractField<T, NDim>(name, ptoolBox, pLatPar), mDisableFFTBlocking(false)
     {
-      initFromToolBox(toolBox);
+      initFromToolBox(ptoolBox);
     }
 
     auto getView() const { return mView; }
@@ -133,10 +133,10 @@ namespace TempLat
     std::string to_string() const { return mManager->getName() + "(x)"; }
 
   private:
-    void initFromToolBox(device::memory::host_ptr<MemoryToolBox<NDim>> toolBox)
+    void initFromToolBox(device::memory::host_ptr<MemoryToolBox<NDim>> ptoolBox)
     {
-      if (toolBox != nullptr)
-        mLayout = toolBox->mLayouts.getConfigSpaceLayout();
+      if (ptoolBox != nullptr)
+        mLayout = ptoolBox->mLayouts.getConfigSpaceLayout();
       else
         throw FieldViewConfigMissingToolBox("A FieldViewConfig must be constructed with a valid MemoryToolBox.");
 
