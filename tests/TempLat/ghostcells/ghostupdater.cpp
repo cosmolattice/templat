@@ -19,6 +19,8 @@
 
 #include "bctesthelpers.h"
 
+#include <string>
+
 #include <sstream>
 #include <iomanip>
 
@@ -272,6 +274,48 @@ namespace TempLat
       tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Neumann,      nGrid, nGhost));
       // Periodic regression: new BC plumbing must not change existing all-periodic behavior.
       tdd.verify(BCTestDetail::checkBCInDim<NDim>(toolBox, bcDim, BCType::Periodic,     nGrid, nGhost));
+    }
+
+    // ---- Corners and edges, absolutely -----------------------------------------------
+    //
+    // Everything above pins FACES: verifyGhostFaces holds every index other than bcDim at
+    // an interior value, so it never reads a cell that is a ghost in two directions at
+    // once. Nothing in this tree used to pin such a cell under any non-periodic BC -- the
+    // edge/corner region was covered only by "the batch agrees with the single-block
+    // path", which two identically wrong answers satisfy just as well.
+    //
+    // checkCornersForSpec walks the WHOLE padded volume and expects, in every cell, the
+    // PRODUCT of the per-direction signs applied to the injectively-coded global-wrap
+    // partner. A cell that wrapped the boundary in two antiperiodic directions must come
+    // back POSITIVE; one that wrapped in one must come back negative; and the magnitude
+    // says which lattice site it came from, so a corner taken from the wrong dimension is
+    // caught as well as a corner given the wrong sign.
+    {
+      // One direction flipped, each in turn. Its ghost faces are negated, and so are the
+      // edges/corners it participates in -- but only those.
+      for (size_t d = 0; d < NDim; ++d) {
+        BCSpec<NDim> spec = allPeriodic<NDim>();
+        spec[d] = BCType::Antiperiodic;
+        tdd.verify(BCTestDetail::checkCornersForSpec<NDim>(toolBox, spec, nGrid, nGhost,
+                                                           "single-flip dim " + std::to_string(d)));
+      }
+
+      // Two directions flipped. This is the case the product rule exists for: a corner
+      // that crossed BOTH boundaries carries (-1)*(-1) = +1, and a build that applied one
+      // sign to the whole cell, or applied the last dimension's sign only, gets it wrong
+      // while every FACE it fills stays correct.
+      for (size_t d0 = 0; d0 < NDim; ++d0) {
+        for (size_t d1 = d0 + 1; d1 < NDim; ++d1) {
+          BCSpec<NDim> spec = allPeriodic<NDim>();
+          spec[d0] = BCType::Antiperiodic;
+          spec[d1] = BCType::Antiperiodic;
+          tdd.verify(BCTestDetail::checkCornersForSpec<NDim>(
+              toolBox, spec, nGrid, nGhost, "double-flip dims " + std::to_string(d0) + "," + std::to_string(d1)));
+        }
+      }
+
+      // All-periodic control: every cell, corners included, is the plain wrap.
+      tdd.verify(BCTestDetail::checkCornersForSpec<NDim>(toolBox, allPeriodic<NDim>(), nGrid, nGhost, "all-periodic"));
     }
   }
 

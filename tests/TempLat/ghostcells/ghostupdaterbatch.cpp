@@ -23,11 +23,15 @@
 #include "TempLat/lattice/ghostcells/boundaryconditions.h"
 #include "TempLat/util/log/saycomplete.h"
 
+#include "bctesthelpers.h"
+
 #include <cmath>
 #include <sstream>
 #include <vector>
 #include <memory>
 #include <span>
+#include <string>
+#include <array>
 
 namespace TempLat
 {
@@ -206,6 +210,81 @@ namespace TempLat
       return ok;
     }
 
+    /** @brief The MPI antiperiodic boundary, checked ABSOLUTELY, in a SPLIT dimension.
+     *
+     * ghostupdater.h's antiperiodic post-step has two distinct implementations, and only one of
+     * them had a test that could see a wrong answer:
+     *
+     *   * local  (mpiPostStep == false):  ghost = -source,  negatingCopySubview(from, to).
+     *   * MPI    (mpiPostStep == true):   the exchange has ALREADY placed the wrapped value in
+     *                                     the ghost, so the sign is applied IN PLACE --
+     *                                     negatingCopySubview(dst, dst).
+     *
+     * The in-place form runs in production on every all-C-star run, on dimension 0, which is the
+     * one dimension the usual decomposition splits. Its only coverage was
+     * test_batch_matches_single, which compares the batch against the per-component path -- but
+     * BOTH go through the same in-place post-step on a boundary rank, so a sign applied twice, or
+     * not at all, or to the wrong slab, agrees with itself perfectly.
+     *
+     * This checks the padded volume against an analytic expectation instead: the value
+     * double_initialize wrote at the GLOBAL-WRAP partner, times the product of the per-direction
+     * signs. It only means anything under more than one rank -- with a single rank dimension 0 is
+     * unsplit and the local path runs -- which is why the ctest entry runs it under mpiexec -n 4.
+     */
+    template <size_t nd>
+    bool test_batch_absolute_bc(const device::Idx nGrid, const size_t nGhost, const size_t C, const BCSpec<nd> &spec,
+                                const char *what)
+    {
+      auto toolBox = MemoryToolBox<nd>::makeShared(nGrid, nGhost);
+      toolBox->unsetVerbose();
+
+      MPICartesianGroup mGroup(FFTMPIDomainSplit<nd>::makeMPIGroup(toolBox->mNGridPointsVec));
+      FFTLibrarySelector<nd> fftlib(mGroup, toolBox->mNGridPointsVec);
+      TripleStateLayouts fullLayout(fftlib.getLayout(), nGhost);
+      GhostUpdater<nd> ghostUpdater(mGroup, fullLayout.getConfigSpaceLayout());
+      const auto config_layout = fullLayout.getConfigSpaceLayout();
+
+      const auto localSizes = config_layout.getLocalSizes();
+      device::IdxArray<nd> padded{};
+      size_t total_size = 1;
+      for (size_t i = 0; i < nd; ++i) {
+        padded[i] = localSizes[i] + 2 * nGhost;
+        total_size *= padded[i];
+      }
+
+      std::vector<std::unique_ptr<MemoryBlock<double, nd>>> blocks;
+      std::vector<MemoryBlock<double, nd> *> ptrs;
+      blocks.reserve(C);
+      ptrs.reserve(C);
+      for (size_t c = 0; c < C; ++c) {
+        blocks.push_back(std::make_unique<MemoryBlock<double, nd>>(total_size));
+        double_initialize<nd>(*blocks[c], config_layout, static_cast<device::Idx>(c));
+        ptrs.push_back(blocks[c].get());
+      }
+
+      ghostUpdater.updateBatch(std::span<MemoryBlock<double, nd> *const>(ptrs.data(), ptrs.size()), spec);
+
+      bool ok = true;
+      for (size_t c = 0; c < C; ++c) {
+        blocks[c]->flagHostMirrorOutdated();
+        // The value double_initialize wrote at a set of GLOBAL coordinates.
+        auto owned = [&](const std::array<ptrdiff_t, nd> &g) {
+          double val = 1.0e9 * static_cast<double>(c + 1);
+          double mult = 1.0;
+          for (size_t k = 0; k < nd; ++k) {
+            val += static_cast<double>(g[k] + 1) * mult;
+            mult *= 37.0;
+          }
+          return val;
+        };
+        ok &= BCTestDetail::verifyGhostCornersView<nd>(blocks[c]->template getNDHostView<double>(padded),
+                                                       config_layout, spec, static_cast<ptrdiff_t>(nGrid),
+                                                       static_cast<ptrdiff_t>(nGhost), owned,
+                                                       std::string(what) + " comp " + std::to_string(c));
+      }
+      return ok;
+    }
+
     template <size_t nd> bool test_ghost_updater_batch(const device::Idx nGrid, const size_t nGhost, const size_t C)
     {
       auto toolBox = MemoryToolBox<nd>::makeShared(nGrid, nGhost);
@@ -302,6 +381,77 @@ namespace TempLat
     }
   }
 
+  /** @brief The antiperiodic post-step, pinned to a value rather than to the other path.
+   *
+   * Runs under `mpiexec -n ${NPROCESSES}` like every ctest entry here, so with more than one rank
+   * dimension 0 is MPI-split and the in-place `negatingCopySubview(dst, dst)` branch is the one
+   * under test. Everything is checked absolutely, corners included, against the product of the
+   * per-direction signs.
+   */
+  template <size_t NDim> struct GhostUpdaterBatchAbsoluteBCTester {
+    static void Test(TDDAssertion &tdd);
+  };
+
+  template <size_t NDim> void GhostUpdaterBatchAbsoluteBCTester<NDim>::Test(TDDAssertion &tdd)
+  {
+    static_assert(NDim > 1, "GhostUpdater batch test only makes sense in 2 or more dimensions.");
+    constexpr device::Idx nGrid = 16;
+
+    // Which dimensions the decomposition actually splits. ParaFaFT gives the LAST dimension
+    // decomposition 1 (parafaft_r2c.hpp:712-716) and the FFTW backend splits dimension 0 only
+    // (fftwinterface.h:93-96), so dimension 0 is the MPI-split one and the last never is. That
+    // is load-bearing for the SU(2)xU(1) C-star-in-z runs -- it is why a z-only mask never meets
+    // the MPI antiperiodic path at all -- so pin it rather than infer it.
+    {
+      auto toolBox = MemoryToolBox<NDim>::makeShared(nGrid, 1);
+      toolBox->unsetVerbose();
+      MPICartesianGroup mGroup(FFTMPIDomainSplit<NDim>::makeMPIGroup(toolBox->mNGridPointsVec));
+      FFTLibrarySelector<NDim> fftlib(mGroup, toolBox->mNGridPointsVec);
+      TripleStateLayouts fullLayout(fftlib.getLayout(), 1);
+      const auto localSizes = fullLayout.getConfigSpaceLayout().getLocalSizes();
+      std::stringstream ss;
+      ss << "NDim=" << NDim << ", " << toolBox->getNProcesses() << " rank(s), local config-space sizes = ";
+      for (size_t d = 0; d < NDim; ++d) ss << localSizes[d] << " ";
+      say << ss.str();
+      // The last dimension is never decomposed.
+      tdd.verify(localSizes[NDim - 1] == nGrid);
+      // ... and dimension 0 IS, under more than one rank. Without this the absolute checks
+      // below would silently run the single-rank local path and prove nothing about the MPI
+      // in-place negate they exist for.
+      if (toolBox->getNProcesses() > 1) tdd.verify(localSizes[0] < nGrid);
+    }
+
+    for (size_t nGhost : {size_t(1), size_t(2)}) {
+      // All-periodic control.
+      tdd.verify(TestScratch::test_batch_absolute_bc<NDim>(nGrid, nGhost, 4, allPeriodic<NDim>(), "periodic"));
+
+      // One direction antiperiodic, each in turn. d == 0 is the MPI-split one: that call is the
+      // whole point of this tester.
+      for (size_t d = 0; d < NDim; ++d) {
+        BCSpec<NDim> spec = allPeriodic<NDim>();
+        spec[d] = BCType::Antiperiodic;
+        tdd.verify(TestScratch::test_batch_absolute_bc<NDim>(nGrid, nGhost, 4, spec,
+                                                             ("anti-dim" + std::to_string(d)).c_str()));
+      }
+
+      // Antiperiodic in the split dimension AND in a local one: the corner where the in-place MPI
+      // negate and the local negate compose. The product of the two signs must be +1 there.
+      {
+        BCSpec<NDim> spec = allPeriodic<NDim>();
+        spec[0] = BCType::Antiperiodic;
+        spec[NDim - 1] = BCType::Antiperiodic;
+        tdd.verify(TestScratch::test_batch_absolute_bc<NDim>(nGrid, nGhost, 4, spec, "anti-split-and-local"));
+      }
+
+      // Every direction antiperiodic: the mask production runs today.
+      {
+        BCSpec<NDim> spec{};
+        for (size_t d = 0; d < NDim; ++d) spec[d] = BCType::Antiperiodic;
+        tdd.verify(TestScratch::test_batch_absolute_bc<NDim>(nGrid, nGhost, 2, spec, "anti-all"));
+      }
+    }
+  }
+
 } // namespace TempLat
 
 namespace
@@ -313,4 +463,7 @@ namespace
 
   TempLat::TDDContainer<TempLat::GhostUpdaterBatchBCTester<2>> bcTest2;
   TempLat::TDDContainer<TempLat::GhostUpdaterBatchBCTester<3>> bcTest3;
+
+  TempLat::TDDContainer<TempLat::GhostUpdaterBatchAbsoluteBCTester<2>> absTest2;
+  TempLat::TDDContainer<TempLat::GhostUpdaterBatchAbsoluteBCTester<3>> absTest3;
 } // namespace
