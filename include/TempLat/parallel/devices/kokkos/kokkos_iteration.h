@@ -85,23 +85,32 @@ namespace TempLat::device_kokkos::iteration
 #error "TEMPLAT_VECTORIZED_MDRANGE and TEMPLAT_LEGACY_MDRANGE are mutually exclusive. Legacy is now \
 the default, so -DTEMPLAT_LEGACY_MDRANGE is redundant; drop it, or drop the vectorized one."
 #endif
+  // 2b. foreach: LayoutStruct, restricted to the planes [firstPlane, firstPlane + nPlanes) of axis 0. Dispatches
+  // like 2., with policies of the same type, so a functor used by both is instantiated once.
   template <size_t NDim, typename Functor>
     requires requires(Functor functor) { functor(device_kokkos::IdxArray<NDim>{}); }
-  void foreach (const std::string &name, const LayoutStruct<NDim> &mLayout, const Functor &functor)
+  void foreach (const std::string &name, const LayoutStruct<NDim> &mLayout, device_kokkos::Idx firstPlane,
+                device_kokkos::Idx nPlanes, const Functor &functor)
   {
 #ifdef TEMPLAT_VECTORIZED_MDRANGE
     if constexpr (!device_kokkos::reverse_access_pattern && NDim >= 2) {
       const auto localSizes = mLayout.getSizesInMemory();
       const device_kokkos::Idx nGhosts = mLayout.getNGhosts();
-      Kokkos::parallel_for(name, device_kokkos::getLocalKokkosOuterPolicy(mLayout),
+      Kokkos::parallel_for(name, device_kokkos::getLocalKokkosOuterPolicy(mLayout, firstPlane, nPlanes),
                            device_kokkos::KokkosNDLambdaWrapperInnerLoop<NDim, Functor>(
                                functor, nGhosts, nGhosts + (device_kokkos::Idx)localSizes[NDim - 1]));
     } else
 #endif
     {
-      Kokkos::parallel_for(name, device_kokkos::getLocalKokkosPolicy(mLayout),
+      Kokkos::parallel_for(name, device_kokkos::getLocalKokkosPolicy(mLayout, firstPlane, nPlanes),
                            device_kokkos::KokkosNDLambdaWrapper<NDim, Functor>(functor));
     }
+  }
+  template <size_t NDim, typename Functor>
+    requires requires(Functor functor) { functor(device_kokkos::IdxArray<NDim>{}); }
+  void foreach (const std::string &name, const LayoutStruct<NDim> &mLayout, const Functor &functor)
+  {
+    foreach (name, mLayout, 0, mLayout.getSizesInMemory()[0], functor);
   }
   // 3. foreach: CheckerboardLayout
   template <size_t NDim, typename Functor>

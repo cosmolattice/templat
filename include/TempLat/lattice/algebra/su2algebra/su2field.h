@@ -88,30 +88,11 @@ namespace TempLat
 
     template <typename R> void operator=(R &&r)
     {
-      onBeforeAssignment(r);
-
-      PreGet::apply(r);
-
-      const auto view0 = fs[0].getView();
-      const auto view1 = fs[1].getView();
-      const auto view2 = fs[2].getView();
-      const auto view3 = fs[3].getView();
-
-      auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
-      {
-        device::apply(
-            [&](const auto &...args) {
-              auto result = DoEval::eval(r, args...);
-              view0(args...) = result[0];
-              view1(args...) = result[1];
-              view2(args...) = result[2];
-              view3(args...) = result[3];
-            },
-            idx);
-      };
-      device::iteration::foreach ("SU2ConfigViewAssign", mLayout, functor);
-
-      PostGet::apply(r);
+      const GhostReach targetReach = onBeforeAssignment(r);
+      assignViews("SU2ConfigViewAssign",
+                  device::array<decltype(fs[0].getView()), 4>{fs[0].getView(), fs[1].getView(), fs[2].getView(),
+                                                              fs[3].getView()},
+                  r, mLayout, targetReach, fs[0].toolBox()->mSweepBuffer);
 
       fs[0].setGhostsAreStale();
       fs[1].setGhostsAreStale();

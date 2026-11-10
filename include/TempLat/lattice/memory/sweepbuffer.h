@@ -17,7 +17,7 @@
 namespace TempLat
 {
   /** @brief Device scratch memory for assignments that read their own target at neighbouring sites, see
-   *  sweepAssign. One per MemoryToolBox, allocated on first use and grown when a larger one is needed. The first
+   *  assignViews. One per MemoryToolBox, allocated on first use and grown when a larger one is needed. The first
    *  allocation prints a warning on rank 0.
    *
    *  Unit test: ctest -R test-sweepassignment
