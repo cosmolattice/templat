@@ -25,6 +25,7 @@ static_assert(false, "No device iteration backend selected.");
 
 namespace TempLat::device::iteration
 {
+  using export_device_namespace::iteration::concurrency;
   using export_device_namespace::iteration::fence;
   using export_device_namespace::iteration::foreach;
   using export_device_namespace::iteration::reduce;

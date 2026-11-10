@@ -100,6 +100,7 @@
 #include "TempLat/lattice/memory/memorylayoutstate.h"
 #include "TempLat/lattice/memory/memorymanager.h"
 #include "TempLat/lattice/memory/memorytoolbox.h"
+#include "TempLat/lattice/memory/sweepbuffer.h"
 #include "TempLat/lattice/memory/triplestatelayouts.h"
 #include "TempLat/lattice/memory/verbositylevels.h"
 
@@ -119,6 +120,7 @@
 #include "TempLat/lattice/field/abstractfield.h"
 #include "TempLat/lattice/field/assignablefieldcollection.h"
 #include "TempLat/lattice/field/assignment/prepareassignment.h"
+#include "TempLat/lattice/field/assignment/sweepassign.h"
 #include "TempLat/lattice/field/collections/fieldcollection.h"
 #include "TempLat/lattice/field/collections/vectorfield.h"
 #include "TempLat/lattice/field/collections/vectorfieldcollection.h"

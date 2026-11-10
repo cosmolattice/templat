@@ -184,6 +184,9 @@ the default, so -DTEMPLAT_LEGACY_MDRANGE is redundant; drop it, or drop the vect
 
   // ===== FENCE =====
   inline void fence() { Kokkos::fence(); }
+
+  /** @brief Number of threads the default execution space can keep resident at once. */
+  inline device_kokkos::Idx concurrency() { return Kokkos::DefaultExecutionSpace().concurrency(); }
 } // namespace TempLat::device_kokkos::iteration
 
 #endif

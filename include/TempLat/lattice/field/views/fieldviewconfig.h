@@ -12,6 +12,7 @@
 #include "TempLat/lattice/algebra/helpers/ghostshunter.h"
 #include "TempLat/lattice/field/abstractfield.h"
 #include "TempLat/lattice/field/assignment/prepareassignment.h"
+#include "TempLat/lattice/field/assignment/sweepassign.h"
 #include "TempLat/lattice/memory/memorylayouts/layoutstruct.h"
 
 #include "TempLat/lattice/algebra/helpers/preget.h"
@@ -49,17 +50,22 @@ namespace TempLat
 
     auto getView() const { return mView; }
 
+    /** @brief Assigns g. If g reads this field at neighbouring sites, a plane-by-plane sweep keeps those reads
+     *  on the old values, see sweepAssign. */
     template <typename R> void assign(R &&g)
     {
-      onBeforeAssignment(g);
+      const GhostReach targetReach = onBeforeAssignment(g);
 
       PreGet::apply(g);
 
-      auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
-      {
-        device::apply([&](auto &&...args) { mView(args...) = DoEval::eval(g, args...); }, idx);
-      };
-      device::iteration::foreach ("ConfigViewAssign", mLayout, functor);
+      if (targetReach.isZero()) {
+        auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
+        {
+          device::apply([&](auto &&...args) { mView(args...) = DoEval::eval(g, args...); }, idx);
+        };
+        device::iteration::foreach ("ConfigViewAssign", mLayout, functor);
+      } else
+        sweepAssign(mView, g, mLayout, targetReach.lo[0], toolBox()->mSweepBuffer);
 
       PostGet::apply(g);
 
