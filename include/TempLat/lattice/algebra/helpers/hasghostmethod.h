@@ -9,28 +9,24 @@
 
 #include "TempLat/util/rangeiteration/tag.h"
 
-// #include "TempLat/lattice/field/fieldshiftedviewdetection.h"
+#include "TempLat/lattice/algebra/helpers/ghostreach.h"
 namespace TempLat
 {
-  /** @brief A concept which determines at compile time whether an object has a method `confirmGhostsUpToDate`.
-   * See HasGetMethod.
-   * Unit test: ctest -R test-hasgetmethod
+  /** @brief Concepts for the ghost walk: whether an object takes part in it via confirmGhostsUpToDate(reach), as a
+   *  whole, per list component (Tag<N>), or through its N-th element.
+   *
+   * Unit test: ctest -R test-hasghostmethod
    **/
   template <class T>
-  concept HasGhostMethod = requires(std::decay_t<T> t) { t.confirmGhostsUpToDate(); };
+  concept HasGhostMethod = requires(std::decay_t<T> t, const GhostReach &reach) { t.confirmGhostsUpToDate(reach); };
 
   template <int N, class T>
-  concept HasGhostMethodIndexed = requires(std::decay_t<T> t, Tag<N> tag) { t.confirmGhostsUpToDate(tag); };
-
-  template <class T>
-  concept HasGhostMethodDirectIndexed = requires(std::decay_t<T> t, device::Idx i) { t.confirmGhostsUpToDate(i); };
+  concept HasGhostMethodIndexed =
+      requires(std::decay_t<T> t, Tag<N> tag, const GhostReach &reach) { t.confirmGhostsUpToDate(tag, reach); };
 
   template <int N, class T>
-  concept HasGhostMethodElement = requires(std::decay_t<T> t, Tag<N> tag) { t(tag).confirmGhostsUpToDate(); };
-
-  template <class T>
-  concept HasGhostMethodDirectElement = requires(std::decay_t<T> t, device::Idx i) { t(i).confirmGhostsUpToDate(); };
-
+  concept HasGhostMethodElement =
+      requires(std::decay_t<T> t, Tag<N> tag, const GhostReach &reach) { t(tag).confirmGhostsUpToDate(reach); };
 } // namespace TempLat
 
 #endif

@@ -42,9 +42,6 @@ namespace TempLat
       return result;
     }
 
-    void doWeNeedGhosts(device::Idx i) const {}
-    template <int N> device::Idx confirmGhostsUpToDate(Tag<N> i) const { return 1; }
-
     virtual void confirmSpace(device::Idx i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
       switch (spaceType) {
@@ -57,6 +54,9 @@ namespace TempLat
         break;
       }
     }
+
+    /** @brief Coordinates read no field: the ghost walk stops here. */
+    template <int N> static device::Idx confirmGhostsUpToDate(Tag<N>, const GhostReach &) { return 0; }
 
     template <int N> auto vectorGet(Tag<N> t) const
     {

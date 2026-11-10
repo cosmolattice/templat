@@ -94,19 +94,10 @@ namespace TempLat
     }
 
     /** @brief Space/ghost confirmation forwarded to the wrapped expressions. */
-    void doWeNeedGhosts() const
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
-      GhostsHunter::apply(mR0);
-      GhostsHunter::apply(mR1);
-      GhostsHunter::apply(mR2);
-      GhostsHunter::apply(mR3);
-      GhostsHunter::apply(mR4);
-      GhostsHunter::apply(mR5);
-    }
-    device::Idx confirmGhostsUpToDate() const
-    {
-      return ConfirmGhosts::apply(mR0) + ConfirmGhosts::apply(mR1) + ConfirmGhosts::apply(mR2) +
-             ConfirmGhosts::apply(mR3) + ConfirmGhosts::apply(mR4) + ConfirmGhosts::apply(mR5);
+      return ConfirmGhosts::apply(mR0, reach) + ConfirmGhosts::apply(mR1, reach) + ConfirmGhosts::apply(mR2, reach) +
+             ConfirmGhosts::apply(mR3, reach) + ConfirmGhosts::apply(mR4, reach) + ConfirmGhosts::apply(mR5, reach);
     }
     template <size_t LayoutNDim>
     void confirmSpace(const LayoutStruct<LayoutNDim> &newLayout, const SpaceStateType &spaceType) const

@@ -103,23 +103,11 @@ namespace TempLat
     }
 
     /** @brief Space/ghost confirmation forwarded to the wrapped expressions. */
-    void doWeNeedGhosts() const
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
-      GhostsHunter::apply(mR11);
-      GhostsHunter::apply(mR12);
-      GhostsHunter::apply(mR13);
-      GhostsHunter::apply(mR21);
-      GhostsHunter::apply(mR22);
-      GhostsHunter::apply(mR23);
-      GhostsHunter::apply(mR31);
-      GhostsHunter::apply(mR32);
-      GhostsHunter::apply(mR33);
-    }
-    device::Idx confirmGhostsUpToDate() const
-    {
-      return ConfirmGhosts::apply(mR11) + ConfirmGhosts::apply(mR12) + ConfirmGhosts::apply(mR13) +
-             ConfirmGhosts::apply(mR21) + ConfirmGhosts::apply(mR22) + ConfirmGhosts::apply(mR23) +
-             ConfirmGhosts::apply(mR31) + ConfirmGhosts::apply(mR32) + ConfirmGhosts::apply(mR33);
+      return ConfirmGhosts::apply(mR11, reach) + ConfirmGhosts::apply(mR12, reach) + ConfirmGhosts::apply(mR13, reach) +
+             ConfirmGhosts::apply(mR21, reach) + ConfirmGhosts::apply(mR22, reach) + ConfirmGhosts::apply(mR23, reach) +
+             ConfirmGhosts::apply(mR31, reach) + ConfirmGhosts::apply(mR32, reach) + ConfirmGhosts::apply(mR33, reach);
     }
     template <size_t LayoutNDim>
     void confirmSpace(const LayoutStruct<LayoutNDim> &newLayout, const SpaceStateType &spaceType) const

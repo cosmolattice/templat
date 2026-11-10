@@ -84,15 +84,9 @@ namespace TempLat
     }
 
     // Space/ghost confirmation forwarded to the 3 stored component expressions (see SU2Field operator=).
-    void doWeNeedGhosts() const
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
-      GhostsHunter::apply(mA);
-      GhostsHunter::apply(mB);
-      GhostsHunter::apply(mC);
-    }
-    device::Idx confirmGhostsUpToDate() const
-    {
-      return ConfirmGhosts::apply(mA) + ConfirmGhosts::apply(mB) + ConfirmGhosts::apply(mC);
+      return ConfirmGhosts::apply(mA, reach) + ConfirmGhosts::apply(mB, reach) + ConfirmGhosts::apply(mC, reach);
     }
     template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {

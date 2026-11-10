@@ -9,6 +9,7 @@
 
 #include <type_traits>
 
+#include "TempLat/lattice/algebra/helpers/ghostreach.h"
 #include "TempLat/parallel/device.h"
 
 #include "TempLat/lattice/algebra/complexalgebra/helpers/hascomplexfieldget.h"
@@ -24,9 +25,9 @@ namespace TempLat
   /** @brief An expression of one of the composite algebras (complex, SU(2), SU(2) doublet, 3x3 matrices).
    *
    * Assignments walk these expressions as a whole for space and ghost confirmation, so every composite node must
-   * forward doWeNeedGhosts, confirmGhostsUpToDate and confirmSpace to its operands. A node that does not would
-   * silently skip the ghost exchange of everything below it; GhostsHunter, ConfirmGhosts and ConfirmSpace therefore
-   * reject composite nodes without these methods at compile time. Constants derive from NoFieldDependence.
+   * forward confirmGhostsUpToDate and confirmSpace to its operands. A node that does not would silently skip the
+   * ghost exchange of everything below it; ConfirmGhosts and ConfirmSpace therefore reject composite nodes without
+   * these methods at compile time. Constants derive from NoFieldDependence.
    *
    * Unit test: ctest -R test-assignmentaliasing
    **/
@@ -38,8 +39,7 @@ namespace TempLat
 
   /** @brief Base for constant composite expressions: they read no field, so there is nothing to confirm. */
   struct NoFieldDependence {
-    static void doWeNeedGhosts() {}
-    static device::Idx confirmGhostsUpToDate() { return 0; }
+    static device::Idx confirmGhostsUpToDate(const GhostReach &) { return 0; }
     template <typename Layout, typename SpaceType> static void confirmSpace(const Layout &, const SpaceType &) {}
   };
 } // namespace TempLat

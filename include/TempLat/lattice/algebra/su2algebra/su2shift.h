@@ -24,8 +24,6 @@ namespace TempLat
   {
   public:
     // Put public methods here. These should change very little over time.
-    static constexpr size_t dim = sizeof...(N);
-    static constexpr auto shifts = device::make_tuple(N...);
 
     using SU2UnaryOperator<R>::mR;
 
@@ -40,19 +38,15 @@ namespace TempLat
       }
     DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
-      auto tup = device::tie(idx...);
-      constexpr_for<0, dim>([&](const auto _d) {
-        constexpr size_t d = decltype(_d)::value;
-        tup = tuple_add_to_nth<d, device::get<d>(shifts)>(tup);
-      });
-      return device::apply([&](const auto &...shifted_idx) { return DoEval::eval(mR, shifted_idx...); }, tup);
+      return evalShifted<N...>(mR, idx...);
     }
 
-    // Override: a shifted read requires the operand's ghost cells to be up to date (mirrors
-    // operators/shift.h). The base-class forwarder would not trigger the exchange.
-    void doWeNeedGhosts() const { ConfirmGhosts::apply(mR); }
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, shiftedReach<N...>(reach));
+    }
 
-    virtual std::string operatorString() const override { return shift<N...>(mR.SU2Get(0_c)).getString({N...}); }
+    std::string toString() const { return GetString::get(mR) + shiftSuffix<N...>(); }
   };
 
   template <typename R, int _N> class SU2ShifterByOne : public SU2UnaryOperator<R>
@@ -81,11 +75,12 @@ namespace TempLat
                            tuple_add_to_nth<N - 1, dir>(device::tie(idx...)));
     }
 
-    // Override: a shifted read requires the operand's ghost cells to be up to date (mirrors
-    // operators/shift.h). The base-class forwarder would not trigger the exchange.
-    void doWeNeedGhosts() const { ConfirmGhosts::apply(mR); }
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, reach.shifted(N - 1, dir));
+    }
 
-    std::string toString() const { return GetString::get(mR) + "_(->" + std::to_string(N) + ")"; }
+    std::string toString() const { return GetString::get(mR) + "_(->" + std::to_string(_N) + ")"; }
   };
 
   template <int... shifts, class R>

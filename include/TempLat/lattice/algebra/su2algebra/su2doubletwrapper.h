@@ -71,17 +71,10 @@ namespace TempLat
     template <int N> auto operator()(Tag<N> t) const { return SU2DoubletGet(t); }
 
     /** @brief Space/ghost confirmation forwarded to the wrapped expressions. */
-    void doWeNeedGhosts() const
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
-      GhostsHunter::apply(device::get<0>(mData));
-      GhostsHunter::apply(device::get<1>(mData));
-      GhostsHunter::apply(device::get<2>(mData));
-      GhostsHunter::apply(device::get<3>(mData));
-    }
-    device::Idx confirmGhostsUpToDate() const
-    {
-      return ConfirmGhosts::apply(device::get<0>(mData)) + ConfirmGhosts::apply(device::get<1>(mData)) +
-             ConfirmGhosts::apply(device::get<2>(mData)) + ConfirmGhosts::apply(device::get<3>(mData));
+      return ConfirmGhosts::apply(device::get<0>(mData), reach) + ConfirmGhosts::apply(device::get<1>(mData), reach) +
+             ConfirmGhosts::apply(device::get<2>(mData), reach) + ConfirmGhosts::apply(device::get<3>(mData), reach);
     }
     template <size_t LayoutNDim>
     void confirmSpace(const LayoutStruct<LayoutNDim> &newLayout, const SpaceStateType &spaceType) const

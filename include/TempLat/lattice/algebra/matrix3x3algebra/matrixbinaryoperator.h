@@ -62,12 +62,10 @@ namespace TempLat
 
     /** @brief Space/ghost confirmation forwarded to the operands, so that an assignment can walk the whole expression.
      */
-    void doWeNeedGhosts() const
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
-      GhostsHunter::apply(mR);
-      GhostsHunter::apply(mT);
+      return ConfirmGhosts::apply(mR, reach) + ConfirmGhosts::apply(mT, reach);
     }
-    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mT); }
     template <size_t LayoutNDim>
     void confirmSpace(const LayoutStruct<LayoutNDim> &newLayout, const SpaceStateType &spaceType) const
     {

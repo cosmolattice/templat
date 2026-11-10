@@ -44,9 +44,9 @@ namespace TempLat
       ConfirmSpace::apply(mT, i, newLayout, spaceType);
     }
 
-    template <int N> device::Idx confirmGhostsUpToDate(Tag<N> i) const
+    template <int N> device::Idx confirmGhostsUpToDate(Tag<N> i, const GhostReach &reach) const
     {
-      return ConfirmGhosts::apply(mR, i) + ConfirmGhosts::apply(mT, i);
+      return ConfirmGhosts::apply(mR, i, reach) + ConfirmGhosts::apply(mT, i, reach);
     }
 
     /** @brief Override this method in your derived class, to have an easy implementation of your toString method. */

@@ -60,7 +60,7 @@ namespace TempLat
       return fs[t - Tag<SHIFTIND>()];
     }
 
-    template <int M> auto getComp(Tag<M> t) { return fs[t]; }
+    template <int M> auto getComp(Tag<M> t) const { return fs[t]; }
 
     template <typename R> void operator=(R &&r)
     {

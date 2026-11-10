@@ -36,7 +36,11 @@ namespace TempLat
     template <int M> auto getComp(Tag<M> t) const { return shift<N...>(GetComponent::get(mR, t)); }
 
     virtual std::string operatorString() const override { return ""; }
-    template <int M> void doWeNeedGhosts(Tag<M> i) { GetComponent::get(mR, i).confirmGhostsUpToDate(); }
+
+    template <int M> device::Idx confirmGhostsUpToDate(Tag<M> i, const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, i, shiftedReach<N...>(reach));
+    }
 
     static const size_t size = tuple_size<R>::value;
   };
@@ -44,18 +48,23 @@ namespace TempLat
   template <typename R, int N> class ListShifterByOne : public ListUnaryOperator<R>
   {
   public:
-    // Put public methods here. These should change very little over time.
-    ListShifterByOne(const R &pR) : ListUnaryOperator<R>(pR), mR(pR) {}
+    using ListUnaryOperator<R>::mR;
+    ListShifterByOne(const R &pR) : ListUnaryOperator<R>(pR) {}
 
     template <int M> auto getComp(Tag<M> t) const { return shift<N>(GetComponent::get(mR, t)); }
 
-  private:
-    /* Put all member variables and private methods here. These may change arbitrarily. */
-    R mR;
+    virtual std::string operatorString() const override { return ""; }
+
+    template <int M> device::Idx confirmGhostsUpToDate(Tag<M> i, const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, i, reach.shifted((N > 0 ? N : -N) - 1, N > 0 ? 1 : -1));
+    }
+
+    static const size_t size = tuple_size<R>::value;
   };
 
-  template <typename R, int... N>
-    requires(IsSTDGettable<0, R> || IsTempLatGettable<0, R>)
+  template <int... N, typename R>
+    requires((sizeof...(N) > 1) && (IsSTDGettable<0, R> || IsTempLatGettable<0, R>))
   auto shift(const R &r)
   {
     return ListShifter<R, N...>(r);

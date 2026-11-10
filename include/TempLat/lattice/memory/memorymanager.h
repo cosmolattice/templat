@@ -7,6 +7,7 @@
 
 // File info: Main contributor(s): Wessel Valkenburg, Franz R. Sattler, Year: 2025
 
+#include "TempLat/lattice/algebra/helpers/ghostreach.h"
 #include "TempLat/lattice/ghostcells/boundaryconditions.h"
 #include "TempLat/lattice/ghostcells/ghoststatekeeper.h"
 #include "TempLat/lattice/memory/memoryblock.h"
@@ -29,6 +30,8 @@ namespace TempLat
    **/
   template <typename T, size_t NDim> class MemoryManager
   {
+    static_assert(NDim <= GhostReach::maxNDim, "GhostReach tracks at most GhostReach::maxNDim axes.");
+
   public:
     // Put public methods here. These should change very little over time.
     MemoryManager(device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, std::string name = "")
@@ -190,9 +193,9 @@ namespace TempLat
       return result;
     }
 
+    /** @brief Update the ghosts if they are stale. Returns the number of FFTs and ghost exchanges triggered. */
     device::Idx confirmGhostsUpToDate()
     {
-      noteShiftedRead();
       device::Idx result = confirmConfigSpace();
 
       if (mToolBox->verbosity.ghostConfirmationSteps)
@@ -208,6 +211,15 @@ namespace TempLat
         sayMPI << "Ghost cells are up to date.\n" << mGhostStateKeeper << "\n";
       mBlock.flagHostMirrorOutdated();
       return result;
+    }
+
+    /** @brief Ghost walk entry: the field is read at the offsets in reach. A zero reach is a point-wise read and
+     *  needs no ghosts; otherwise throws if the ghost layers are too shallow, then confirms the ghosts. */
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach)
+    {
+      if (reach.isZero()) return 0;
+      checkShiftedRead(reach);
+      return confirmGhostsUpToDate();
     }
 
     void flagHostMirrorOutdated() { mBlock.flagHostMirrorOutdated(); }
@@ -234,7 +246,6 @@ namespace TempLat
       for (auto *m : mgrs) {
         if (m->mToolBox.get() != toolBox.get())
           throw MemoryManagerAccessOutOfBounds("confirmGhostsUpToDateBatch: managers do not share a MemoryToolBox.");
-        m->noteShiftedRead();
         result += m->confirmConfigSpace();
         if (m->mGhostStateKeeper.isStale()) {
           stale.push_back(&m->mBlock);
@@ -251,6 +262,16 @@ namespace TempLat
       for (auto *m : mgrs)
         m->mBlock.flagHostMirrorOutdated();
       return result;
+    }
+
+    /** @brief Ghost walk entry for a multi-component field, see confirmGhostsUpToDate(const GhostReach &). */
+    static device::Idx confirmGhostsUpToDateBatch(std::span<MemoryManager<T, NDim> *const> mgrs,
+                                                  const GhostReach &reach)
+    {
+      if (reach.isZero()) return 0;
+      for (auto *m : mgrs)
+        m->checkShiftedRead(reach);
+      return confirmGhostsUpToDateBatch(mgrs);
     }
 
     /** @brief Coalesced forced updateGhosts over the managers of a multi-component field. Matches the
@@ -310,40 +331,59 @@ namespace TempLat
 
     size_t bytes() const { return mBlock.size() * sizeof(T); }
 
-    /** @brief Marks this manager as the target of an assignment for the guard's lifetime and records whether the
-     *  right-hand side reads it at a neighbouring site. Non-local operators (shifts, derivatives, Laplacians)
-     *  request ghosts of every field they read, so a ghost request reaching the target during the ghost walk of
-     *  the right-hand side means exactly that. Such an assignment cannot be done in place. */
+    /** @brief Marks managers as the targets of one assignment kernel for the guard's lifetime and collects the
+     *  offsets at which the ghost walk of the right-hand side reaches them. A non-zero reach means the right-hand
+     *  side reads a target at neighbouring sites, so the assignment cannot be done in place. */
     class AssignmentTargetGuard
     {
     public:
-      explicit AssignmentTargetGuard(MemoryManager &manager)
-          : mManager(manager), mPrevIsTarget(manager.mIsAssignmentTarget),
-            mPrevReadShifted(manager.mTargetReadShifted)
+      explicit AssignmentTargetGuard(std::span<MemoryManager *const> managers)
       {
-        mManager.mIsAssignmentTarget = true;
-        mManager.mTargetReadShifted = false;
+        mSaved.reserve(managers.size());
+        for (auto *m : managers) {
+          mSaved.push_back({m, m->mIsAssignmentTarget, m->mTargetReach});
+          m->mIsAssignmentTarget = true;
+          m->mTargetReach = GhostReach{};
+        }
       }
       ~AssignmentTargetGuard()
       {
-        mManager.mIsAssignmentTarget = mPrevIsTarget;
-        mManager.mTargetReadShifted = mPrevReadShifted;
+        // Reverse order, so a manager listed twice (fields sharing memory) gets its original state back.
+        for (auto it = mSaved.rbegin(); it != mSaved.rend(); ++it) {
+          it->manager->mIsAssignmentTarget = it->isTarget;
+          it->manager->mTargetReach = it->reach;
+        }
       }
       AssignmentTargetGuard(const AssignmentTargetGuard &) = delete;
       AssignmentTargetGuard &operator=(const AssignmentTargetGuard &) = delete;
 
-      bool targetReadShifted() const { return mManager.mTargetReadShifted; }
+      /** @brief The smallest range containing 0 and every offset at which a target was read. */
+      GhostReach targetReach() const
+      {
+        GhostReach res;
+        for (const auto &saved : mSaved)
+          res |= saved.manager->mTargetReach;
+        return res;
+      }
 
     private:
-      MemoryManager &mManager;
-      bool mPrevIsTarget;
-      bool mPrevReadShifted;
+      struct Saved {
+        MemoryManager *manager;
+        bool isTarget;
+        GhostReach reach;
+      };
+      std::vector<Saved> mSaved;
     };
 
   private:
-    void noteShiftedRead()
+    /** @brief Throws if the ghost layers are too shallow for reach; records reach if this is an assignment target. */
+    void checkShiftedRead(const GhostReach &reach)
     {
-      if (mIsAssignmentTarget) mTargetReadShifted = true;
+      if (reach.depth() > mToolBox->getNGhosts())
+        throw GhostDepthTooSmall(mName + " is read at offsets " + reach.toString(NDim) + ", which needs " +
+                                 std::to_string(reach.depth()) + " ghost layers, but it has " +
+                                 std::to_string(mToolBox->getNGhosts()) + ".");
+      if (mIsAssignmentTarget) mTargetReach |= reach;
     }
 
     /* Put all member variables and private methods here. These may change arbitrarily. */
@@ -357,7 +397,7 @@ namespace TempLat
     BCSpec<NDim> mBCSpec;
 
     bool mIsAssignmentTarget = false;
-    bool mTargetReadShifted = false;
+    GhostReach mTargetReach;
   };
 
 } // namespace TempLat

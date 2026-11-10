@@ -79,17 +79,11 @@ namespace TempLat
       return fs[M];
     }
 
-    /** @brief Confirms space and ghosts for the right-hand side r. Returns true if r reads one of this field's
-     *  components at a neighbouring site, i.e. if assigning r in place would read already overwritten values. */
-    template <typename R> bool onBeforeAssignment(R &&r)
+    /** @brief Prepares the right-hand side r for the single assignment kernel writing all components, see
+     *  prepareAssignment. */
+    template <typename R> GhostReach onBeforeAssignment(R &&r)
     {
-      // Walk the whole SU(2) expression r (linear in its structure) instead of building r.SU2Get(k) per
-      // component (exponential). One call per target component: each also confirms fs[k] itself.
-      bool readShifted = fs[0].onBeforeAssignment(r);
-      readShifted |= fs[1].onBeforeAssignment(r);
-      readShifted |= fs[2].onBeforeAssignment(r);
-      readShifted |= fs[3].onBeforeAssignment(r);
-      return readShifted;
+      return prepareAssignment<T, NDim>(r, componentManagers(), fs[0].getLayout());
     }
 
     template <typename R> void operator=(R &&r)
@@ -157,21 +151,20 @@ namespace TempLat
 
     inline auto getToolBox() const { return GetToolBox::get(fs[0]); }
 
-    // Space/ghost confirmation forwarded to the 4 component fields, so this leaf can be walked as a whole
-    // SU(2) expression (see operator=). GhostsHunter::apply on a Field is a no-op (matches the prior
-    // per-component path where r.SU2Get(k) was the bare field fs[k]).
-    void doWeNeedGhosts() const
+    // Ghost walk entry (see ConfirmGhosts), batched over the components; without a reach, unconditionally confirms
+    // the ghosts of all components.
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
-      GhostsHunter::apply(fs[0]);
-      GhostsHunter::apply(fs[1]);
-      GhostsHunter::apply(fs[2]);
-      GhostsHunter::apply(fs[3]);
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers(), reach);
     }
     device::Idx confirmGhostsUpToDate() const
     {
-      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
-                                        fs[2].getMemoryManager().get(), fs[3].getMemoryManager().get()};
-      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(mgrs);
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers());
+    }
+    std::array<MemoryManager<T, NDim> *, 4> componentManagers() const
+    {
+      return {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(), fs[2].getMemoryManager().get(),
+              fs[3].getMemoryManager().get()};
     }
     void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {

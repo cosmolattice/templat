@@ -30,7 +30,6 @@ namespace TempLat
     template <int N> auto getComp(Tag<N> t) { return log(GetComponent::get(mR, t)); }
 
     virtual std::string operatorString() const { return "log"; }
-    template <int N> void doWeNeedGhosts(Tag<N> i) { GhostsHunter::apply(mR, i); }
     static const size_t size = tuple_size<R>::value;
   };
 

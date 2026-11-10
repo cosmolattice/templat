@@ -31,8 +31,6 @@ namespace TempLat
 
     virtual std::string operatorString() const override { return "abs"; }
 
-    template <int N> void doWeNeedGhosts(Tag<N> i) { GhostsHunter::apply(mR, i); }
-
     static constexpr size_t size = tuple_size<R>::value;
   };
 

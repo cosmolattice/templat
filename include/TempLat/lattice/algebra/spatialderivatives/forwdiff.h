@@ -36,7 +36,10 @@ namespace TempLat
 
     ForwDiff(R pR) : UnaryOperator<R>(pR), dx(GetDx::getDx(pR)) {}
 
-    void doWeNeedGhosts() const { mR.confirmGhostsUpToDate(); }
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, reach.widened(dir - 1, 0, 1));
+    }
 
     virtual std::string operatorString() const override { return "ForwDiff"; }
 

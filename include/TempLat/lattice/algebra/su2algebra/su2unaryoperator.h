@@ -65,12 +65,8 @@ namespace TempLat
 
     void postGet() { PostGet::apply(mR); }
 
-    /** @brief Space/ghost confirmation by walking the operand's structure (see SU2BinaryOperator). Note:
-     *  shifters (SU2Shifter/SU2ShifterByOne) OVERRIDE doWeNeedGhosts to trigger the actual ghost
-     *  exchange for the shifted read. */
-    void doWeNeedGhosts() const { GhostsHunter::apply(mR); }
-
-    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR); }
+    /** @brief Ghost walk, forwarded to the operand; shifters override it to add their offset. */
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const { return ConfirmGhosts::apply(mR, reach); }
 
     template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {

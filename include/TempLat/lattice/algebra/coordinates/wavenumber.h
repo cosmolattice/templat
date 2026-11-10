@@ -48,6 +48,9 @@ namespace TempLat
       return result;
     }
 
+    /** @brief Coordinates read no field: the ghost walk stops here. */
+    template <int N> static device::Idx confirmGhostsUpToDate(Tag<N>, const GhostReach &) { return 0; }
+
     template <int N> auto vectorGet(Tag<N> t) const
     {
       static_assert(N > 0 && N <= NDim, "VectorGet: N must be between 1 and NDim for WaveNumber");

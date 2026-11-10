@@ -91,7 +91,11 @@ namespace TempLat
 
     device::memory::host_ptr<MemoryToolBox<NDim>> getToolBox() const { return mManager->getToolBox(); }
 
-    device::Idx confirmGhostsUpToDate() const { return this->mManager->confirmGhostsUpToDate(); }
+    /** @brief Ghost walk entry, see ConfirmGhosts. */
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const { return mManager->confirmGhostsUpToDate(reach); }
+
+    /** @brief Update the ghosts if they are stale. */
+    device::Idx confirmGhostsUpToDate() const { return mManager->confirmGhostsUpToDate(); }
 
     // Mostly for testing purpose
 

@@ -86,8 +86,6 @@ namespace TempLat
 
     std::string toString() const { return "Grad(" + GetString::get(mR) + ")"; }
 
-    void doWeNeedGhosts() const { mR.confirmGhostsUpToDate(); }
-
     auto getDx() const { return dx; }
     auto getKIR() const { return GetKIR::getKIR(mR); }
 
@@ -96,7 +94,16 @@ namespace TempLat
       ConfirmSpace::apply(mR, i, newLayout, spaceType);
     }
 
-    template <int N> device::Idx confirmGhostsUpToDate(Tag<N> i) const { return ConfirmGhosts::apply(mR, i); }
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, reach.widenedAll(NDim, 0, 1));
+    }
+
+    /** @brief The N-th component (0-based) is the forward difference along axis N. */
+    template <int N> device::Idx confirmGhostsUpToDate(Tag<N>, const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, reach.widened(N, 0, 1));
+    }
 
     /** For measurement objects. */
     inline device::memory::host_ptr<MemoryToolBox<NDim>> getToolBox() const { return GetToolBox::get(mR); }

@@ -152,17 +152,11 @@ namespace TempLat
       return {m0.inFourierSpace(), m1.inFourierSpace(), m2.inFourierSpace(), m3.inFourierSpace(), m4.inFourierSpace()};
     }
 
-    /** @brief Confirms space and ghosts for the right-hand side g. Returns true if g reads one of this field's
-     *  components at a neighbouring site, i.e. if assigning g in place would read already overwritten values. */
-    template <typename R> bool onBeforeAssignment(R &&g)
+    /** @brief Prepares the right-hand side g for the single assignment kernel writing all components, see
+     *  prepareAssignment. */
+    template <typename R> GhostReach onBeforeAssignment(R &&g)
     {
-      // Walk the whole expression once per component: g may read any component at shifted sites.
-      bool readShifted = m0.onBeforeAssignment(g);
-      readShifted |= m1.onBeforeAssignment(g);
-      readShifted |= m2.onBeforeAssignment(g);
-      readShifted |= m3.onBeforeAssignment(g);
-      readShifted |= m4.onBeforeAssignment(g);
-      return readShifted;
+      return prepareAssignment<T, NDim>(g, componentManagers(), m0.getLayout());
     }
 
     template <typename R> void operator=(R &&g)
@@ -205,15 +199,20 @@ namespace TempLat
 
     std::string toString() const { return *mName; }
 
-    // Space/ghost confirmation of the components, so that this leaf can be walked as part of a whole expression.
-    // A bare field needs no ghosts by itself; a shift above it calls confirmGhostsUpToDate.
-    void doWeNeedGhosts() const {}
+    // Ghost walk entry (see ConfirmGhosts), batched over the components; without a reach, unconditionally confirms
+    // the ghosts of all components.
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers(), reach);
+    }
     device::Idx confirmGhostsUpToDate() const
     {
-      MemoryManager<T, NDim> *mgrs[] = {m0.getMemoryManager().get(), m1.getMemoryManager().get(),
-                                        m2.getMemoryManager().get(), m3.getMemoryManager().get(),
-                                        m4.getMemoryManager().get()};
-      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(mgrs);
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers());
+    }
+    std::array<MemoryManager<T, NDim> *, 5> componentManagers() const
+    {
+      return {m0.getMemoryManager().get(), m1.getMemoryManager().get(), m2.getMemoryManager().get(),
+              m3.getMemoryManager().get(), m4.getMemoryManager().get()};
     }
     void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {

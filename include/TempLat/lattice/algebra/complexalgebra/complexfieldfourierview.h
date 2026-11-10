@@ -85,10 +85,12 @@ namespace TempLat
       PostGet::apply(g);
     }
 
-    // Space/ghost confirmation of the components, so that this leaf can be walked as part of a whole expression.
-    // A bare field needs no ghosts by itself; a shift above it calls confirmGhostsUpToDate.
-    void doWeNeedGhosts() const {}
-    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mI); }
+    // Space confirmation and ghost walk forwarded to the components, so that this leaf can be walked as part of a
+    // whole expression.
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, reach) + ConfirmGhosts::apply(mI, reach);
+    }
     void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
       ConfirmSpace::apply(mR, newLayout, spaceType);

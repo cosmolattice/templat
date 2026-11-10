@@ -93,13 +93,11 @@ namespace TempLat
      *  forwarded to both operands, mirroring the generic BinaryOperator. This lets an SU(2) assignment
      *  confirm space/ghosts on the whole expression instead of building the exponential per-component
      *  SU2Get expansion just for confirmation (see su2liealgebrafield.h / su2field.h operator=). */
-    void doWeNeedGhosts() const
-    {
-      GhostsHunter::apply(mR);
-      GhostsHunter::apply(mT);
-    }
 
-    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mT); }
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, reach) + ConfirmGhosts::apply(mT, reach);
+    }
 
     template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {

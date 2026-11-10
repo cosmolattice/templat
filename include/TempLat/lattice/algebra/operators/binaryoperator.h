@@ -39,12 +39,6 @@ namespace TempLat
 
     static consteval size_t getNDim() { return std::max(GetNDim::get<R>(), GetNDim::get<T>()); }
 
-    void doWeNeedGhosts() const
-    {
-      GhostsHunter::apply(mR);
-      GhostsHunter::apply(mT);
-    }
-
     void preGet()
     {
       PreGet::apply(mR);
@@ -63,7 +57,10 @@ namespace TempLat
       ConfirmSpace::apply(mT, newLayout, spaceType);
     }
 
-    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR) + ConfirmGhosts::apply(mT); }
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, reach) + ConfirmGhosts::apply(mT, reach);
+    }
 
     // if constexpr rather than a ternary: a ternary would need a common type across the three
     // branches, and the `1.` fallback used to drag the result to double for every subtree --

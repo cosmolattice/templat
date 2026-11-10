@@ -14,8 +14,54 @@
 #include "TempLat/util/tuple_size.h"
 #include "TempLat/util/tuple_tools.h"
 
+#include <string>
+#include <type_traits>
+#include <utility>
+
 namespace TempLat
 {
+  /** @brief The I-th component of the shift vector (SHIFTS..., 0, 0, ...). */
+  template <size_t I, int... SHIFTS> constexpr int shiftComponent()
+  {
+    if constexpr (I < sizeof...(SHIFTS)) {
+      constexpr int s[] = {SHIFTS...};
+      return s[I];
+    } else
+      return 0;
+  }
+
+  /** @brief Evaluates r at idx + (SHIFTS...). The indices are made signed first: they may be unsigned (e.g. in
+   *  CUDA builds) and the shifts negative. */
+  template <int... SHIFTS, typename R, size_t... I, typename... IDX>
+  DEVICE_INLINE_FUNCTION auto evalShiftedImpl(const R &r, std::index_sequence<I...>, const IDX &...idx)
+  {
+    return DoEval::eval(r, (static_cast<std::make_signed_t<IDX>>(idx) +
+                            std::integral_constant<int, shiftComponent<I, SHIFTS...>()>::value)...);
+  }
+
+  template <int... SHIFTS, typename R, typename... IDX>
+  DEVICE_INLINE_FUNCTION auto evalShifted(const R &r, const IDX &...idx)
+  {
+    return evalShiftedImpl<SHIFTS...>(r, std::index_sequence_for<IDX...>{}, idx...);
+  }
+
+  /** @brief reach offset by the shift vector (SHIFTS...), see GhostReach. */
+  template <int... SHIFTS> constexpr GhostReach shiftedReach(GhostReach reach)
+  {
+    size_t axis = 0;
+    ((reach = reach.shifted(axis++, SHIFTS)), ...);
+    return reach;
+  }
+
+  /** @brief The suffix "_(s1,s2,...)" naming shift<s1,s2,...> in expression strings. */
+  template <int... SHIFTS> std::string shiftSuffix()
+  {
+    std::string res = "_(";
+    ((res += std::to_string(SHIFTS) + ","), ...);
+    res.back() = ')';
+    return res;
+  }
+
   /** @brief A class which implements shifts in coordinates.
    *
    * Unit test: ctest -R test-shift
@@ -26,9 +72,6 @@ namespace TempLat
     // Put public methods here. These should change very little over time.
     using UnaryOperator<R>::mR;
 
-    static constexpr size_t dim = sizeof...(SHIFTS);
-    static constexpr auto shifts = device::make_tuple(SHIFTS...);
-
     ExpressionShifter(const R &pR) : UnaryOperator<R>(pR) {}
 
     template <typename... IDX>
@@ -38,24 +81,15 @@ namespace TempLat
       }
     DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
-      auto tup = device::tie(idx...);
-      constexpr_for<0, dim>([&](const auto _d) {
-        constexpr size_t d = decltype(_d)::value;
-        tup = tuple_add_to_nth<d, device::get<d>(shifts)>(tup);
-      });
-      return device::apply([&](const auto &...shifted_idx) { return DoEval::eval(mR, shifted_idx...); }, tup);
+      return evalShifted<SHIFTS...>(mR, idx...);
     }
 
-    void doWeNeedGhosts() const { mR.confirmGhostsUpToDate(); }
-
-    virtual std::string operatorString() const override
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
-      std::string res = "_(";
-      for (auto x : device::tie(SHIFTS...))
-        res += std::to_string(x) + ",";
-      res.pop_back();
-      return res + ")";
+      return ConfirmGhosts::apply(mR, shiftedReach<SHIFTS...>(reach));
     }
+
+    std::string toString() const { return GetString::get(mR) + shiftSuffix<SHIFTS...>(); }
   };
 
   template <typename R, int _N> class ExpressionShifterByOne : public UnaryOperator<R>
@@ -82,9 +116,12 @@ namespace TempLat
                            tuple_add_to_nth<N - 1, dir>(device::tie(idx...)));
     }
 
-    void doWeNeedGhosts() const { mR.confirmGhostsUpToDate(); }
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, reach.shifted(N - 1, dir));
+    }
 
-    std::string toString() const { return GetString::get(mR) + "_(->" + std::to_string(N) + ")"; }
+    std::string toString() const { return GetString::get(mR) + "_(->" + std::to_string(_N) + ")"; }
   };
 
   /**

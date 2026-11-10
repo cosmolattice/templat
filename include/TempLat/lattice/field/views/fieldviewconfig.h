@@ -11,6 +11,7 @@
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/algebra/helpers/ghostshunter.h"
 #include "TempLat/lattice/field/abstractfield.h"
+#include "TempLat/lattice/field/assignment/prepareassignment.h"
 #include "TempLat/lattice/memory/memorylayouts/layoutstruct.h"
 
 #include "TempLat/lattice/algebra/helpers/preget.h"
@@ -119,23 +120,11 @@ namespace TempLat
       return mView(idx...);
     }
 
-    /** @brief Prepares the right-hand side g for evaluation. Returns true if g reads this field at a
-     *  neighbouring site, i.e. if assigning g in place would read already overwritten values. */
-    template <typename R> bool onBeforeAssignment(R &&g)
+    /** @brief Prepares the right-hand side g for evaluation, see prepareAssignment. */
+    template <typename R> GhostReach onBeforeAssignment(R &&g)
     {
-      /* likewise, make sure we are in configuration space (here the FFT may be fired!). */
-      mManager->confirmConfigSpace();
-
-      ConfirmSpace::apply(g, mLayout, SpaceStateType::Configuration);
-
-      bool targetReadShifted;
-      {
-        typename MemoryManager<T, NDim>::AssignmentTargetGuard guard(*mManager);
-        GhostsHunter::apply(g);
-        targetReadShifted = guard.targetReadShifted();
-      }
-      mManager->flagHostMirrorOutdated();
-      return targetReadShifted;
+      MemoryManager<T, NDim> *target[] = {mManager.get()};
+      return prepareAssignment<T, NDim>(g, target, mLayout);
     }
 
     std::string to_string() const { return mManager->getName() + "(x)"; }

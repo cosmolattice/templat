@@ -12,25 +12,26 @@
 
 namespace TempLat
 {
-  /** @brief A class which wraps the calls to confirm(Configuration/Fourier)Space, for classes that have it and objects
-   *that don't.
+  /** @brief The ghost walk. Every node forwards confirmGhostsUpToDate(reach) to its operands; non-local nodes
+   *  (shifts, finite differences, Laplacians) first add their stencil to reach. A field reached with a non-zero
+   *  reach checks its ghost depth and updates its ghosts; see GhostReach. Objects without the method (constants)
+   *  are skipped. Returns the number of FFTs and ghost exchanges triggered.
    *
-   * Unit test: ctest -R test-confirmspace
+   * Unit test: ctest -R test-ghostreach
    **/
   class ConfirmGhosts
   {
   public:
-    // Put public methods here. These should change very little over time.
     template <typename U>
       requires HasGhostMethod<U>
-    static inline device::Idx apply(U &obj)
+    static device::Idx apply(U &obj, const GhostReach &reach)
     {
-      return obj.confirmGhostsUpToDate();
+      return obj.confirmGhostsUpToDate(reach);
     }
 
     template <typename U>
       requires(!HasGhostMethod<U>)
-    static constexpr inline device::Idx apply(U &obj)
+    static constexpr device::Idx apply(U &, const GhostReach &)
     {
       static_assert(!IsCompositeExpression<U>,
                     "Composite expression node without confirmGhostsUpToDate: its operands would skip the ghost "
@@ -40,48 +41,26 @@ namespace TempLat
 
     template <int N, typename U>
       requires HasGhostMethodIndexed<N, U>
-    static inline device::Idx apply(U &obj, Tag<N> i)
+    static device::Idx apply(U &obj, Tag<N> i, const GhostReach &reach)
     {
-      return obj.confirmGhostsUpToDate(i);
+      return obj.confirmGhostsUpToDate(i, reach);
     }
 
     template <int N, typename U>
       requires(!HasGhostMethodIndexed<N, U> && HasGhostMethodElement<N, U>)
-    static inline device::Idx apply(U &obj, Tag<N> i)
+    static device::Idx apply(U &obj, Tag<N> i, const GhostReach &reach)
     {
-      return obj(i).confirmGhostsUpToDate();
+      return obj(i).confirmGhostsUpToDate(reach);
     }
 
     template <int N, typename U>
       requires(!HasGhostMethodIndexed<N, U> && !HasGhostMethodElement<N, U>)
-    static constexpr inline device::Idx apply(U &obj, Tag<N> i)
-    {
-      return 0;
-    }
-
-    template <typename U>
-      requires HasGhostMethodDirectIndexed<U>
-    static inline device::Idx apply(U &obj, device::Idx i)
-    {
-      return obj.confirmGhostsUpToDate(i);
-    }
-
-    template <typename U>
-      requires(!HasGhostMethodDirectIndexed<U> && HasGhostMethodDirectElement<U>)
-    static inline device::Idx apply(U &obj, device::Idx i)
-    {
-      return obj(i).confirmGhostsUpToDate();
-    }
-
-    template <typename U>
-      requires(!HasGhostMethodDirectIndexed<U> && !HasGhostMethodDirectElement<U>)
-    static constexpr inline device::Idx apply(U &obj, device::Idx i)
+    static constexpr device::Idx apply(U &, Tag<N>, const GhostReach &)
     {
       return 0;
     }
 
   private:
-    /* Put all member variables and private methods here. These may change arbitrarily. */
     ConfirmGhosts() = default;
   };
 } // namespace TempLat
