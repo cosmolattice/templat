@@ -7,7 +7,10 @@
 
 // File info: Main contributor(s): Adrien Florio, Year: 2019
 
+#include <optional>
+
 #include "TempLat/lattice/field/field.h"
+#include "TempLat/lattice/field/assignment/collectionassignmentorder.h"
 #include "TempLat/util/shiftedindexsequence.h"
 #include "TempLat/util/foreach.h"
 #include "TempLat/util/concat.h"
@@ -44,12 +47,22 @@ namespace TempLat
       for_in_range<0, size>([&](auto j) { std::get<j>(fs) = std::get<j>(other.fs); });
     }
 
+    /** @brief Assigns the list r member by member, in an order in which no member reads another member's target
+     *  after it was overwritten, see assignMembersInOrder. */
     template <typename R>
       requires(!std::is_same_v<R, AssignableCollectionBase<Q, Args...>>)
     void operator=(R &&r)
     {
       using nakedR = std::decay_t<R>;
-      for_in_range<0, size>([&](auto j) { std::get<j>(fs) = nakedR::Getter::get(r, j); });
+      // Scratch members are allocated only for a cycle of reads; tuples assigned to are usually temporaries.
+      std::tuple<std::optional<Args>...> scratch;
+      assignMembersInOrder<size>([&](auto j) -> auto & { return std::get<j>(fs); },
+                                 [&](auto j) { return nakedR::Getter::get(r, j); },
+                                 [&](auto j) -> auto & {
+                                   auto &s = std::get<j>(scratch);
+                                   if (!s) s.emplace(CollectionAssignmentDetail::makeScratchLike(std::get<j>(fs)));
+                                   return *s;
+                                 });
     }
 
     template <int M> auto &operator()(Tag<M> t)
