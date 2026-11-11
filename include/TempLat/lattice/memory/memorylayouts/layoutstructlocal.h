@@ -97,12 +97,11 @@ namespace TempLat
       if constexpr (NDim != d2)
         return false;
       else {
-        bool result = a.mGlobal == b.mGlobal && a.mLocalSizes.size() == b.mLocalSizes.size() &&
-                      a.mLocalStarts.size() == b.mLocalStarts.size();
-
-        for (size_t i = 0; i < a.mLocalSizes.size(); ++i) {
+        bool result = a.mGlobal == b.mGlobal && a.mNGhosts == b.mNGhosts;
+        for (size_t i = 0; i < NDim; ++i) {
           result = result && a.mLocalSizes[i] == b.mLocalSizes[i];
           result = result && a.mLocalStarts[i] == b.mLocalStarts[i];
+          result = result && a.mPadding[i][0] == b.mPadding[i][0] && a.mPadding[i][1] == b.mPadding[i][1];
         }
         return result;
       }

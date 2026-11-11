@@ -51,6 +51,7 @@ namespace TempLat
         break;
       case SpaceStateType::Configuration:
       default:
+        confirmSameLayout(mLayout, newLayout, toString());
         break;
       }
     }

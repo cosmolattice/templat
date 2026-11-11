@@ -80,10 +80,12 @@ namespace TempLat
     {
       switch (spaceType) {
       case SpaceStateType::Fourier:
+        confirmSameLayout(toolBox()->mLayouts.getFourierSpaceLayout(), newLayout, mManager->getName());
         mManager->confirmFourierSpace();
         break;
       case SpaceStateType::Configuration:
       default:
+        confirmSameLayout(toolBox()->mLayouts.getConfigSpaceLayout(), newLayout, mManager->getName());
         mManager->confirmConfigSpace();
         break;
       }

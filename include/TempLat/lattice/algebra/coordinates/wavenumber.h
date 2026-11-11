@@ -77,6 +77,7 @@ namespace TempLat
         break;
       case SpaceStateType::Fourier:
       default:
+        confirmSameLayout(mLayout, newLayout, toString());
         break;
       }
     }
