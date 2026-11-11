@@ -131,9 +131,11 @@ int main(int argc, char **argv)
     return Pi(g)(i) - dt * Total(j, 1, NDim, IfElse(i != j, plaq(U(g), i, j) - plaqBack(U(g), i, j), ZeroType()));
   };
   auto drift = [&](auto g, auto i) { return exp(dt * Pi(g)(i)) * U(g)(i); };
+#if defined(GROUPS_FUSED)
   // Member m of the fused assignment is group m / NDim, direction m % NDim + 1.
   auto group = [](auto m) { return Tag<int(decltype(m)::value / NDim)>(); };
   auto dir = [](auto m) { return Tag<int(decltype(m)::value % NDim + 1)>(); };
+#endif
 
   Benchmark bench([&](Benchmark::Measurer &measurer) {
     for (size_t step = 0; step < nSteps; ++step) {
