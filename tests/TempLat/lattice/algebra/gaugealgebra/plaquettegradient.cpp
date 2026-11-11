@@ -99,11 +99,11 @@ namespace TempLat
       auto kick = Pi - 0.01 * plaqGrad(U);
       static_assert(decltype(wholeOf<T, NDim, NDim>(kick))::shares);
       static_assert(!EvaluatesMembers<WholeAssignment<decltype(wholeOf<T, NDim, NDim>(kick))>, NDim>);
-      Pi = Pi - 0.01 * plaqGrad(U);
+      Pi = kick;
       for_in_range<1, NDim + 1>([&](auto i) { ref(i) = ref(i) - 0.01 * explicitGrad(U, i); });
       tdd.verify(deviation<1, 3>(Pi, ref) < 1e-26);
 
-      // An identically zero summand (e.g. the current of a model without doublets) keeps the sharing.
+      // An identically zero summand keeps the sharing.
       auto withZero = Pi - 0.01 * plaqGrad(U) - 0.5 * MakeVector(i, 1, NDim, MakeSU2(a, ZeroType()));
       static_assert(decltype(wholeOf<T, NDim, NDim>(withZero))::shares);
       Pi = withZero;

@@ -22,7 +22,6 @@
 #include "TempLat/lattice/algebra/helpers/postget.h"
 
 #include "TempLat/lattice/algebra/helpers/confirmspace.h"
-#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
 #include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
@@ -89,11 +88,7 @@ namespace TempLat
       PostGet::apply(mT);
     }
 
-    /** @brief Space/ghost confirmation by walking this SU(2) expression's own (linear) structure -
-     *  forwarded to both operands, mirroring the generic BinaryOperator. This lets an SU(2) assignment
-     *  confirm space/ghosts on the whole expression instead of building the exponential per-component
-     *  SU2Get expansion just for confirmation (see su2liealgebrafield.h / su2field.h operator=). */
-
+    /** @brief Space/ghost confirmation forwarded to the operands, see ConfirmGhosts and ConfirmSpace. */
     device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
       return ConfirmGhosts::apply(mR, reach) + ConfirmGhosts::apply(mT, reach);

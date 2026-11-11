@@ -19,7 +19,6 @@
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
 #include "TempLat/lattice/algebra/helpers/confirmspace.h"
-#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
 #include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
@@ -83,7 +82,7 @@ namespace TempLat
       PostGet::apply(mC);
     }
 
-    // Space/ghost confirmation forwarded to the 3 stored component expressions (see SU2Field operator=).
+    /** @brief Space/ghost confirmation forwarded to the wrapped expressions. */
     device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
       return ConfirmGhosts::apply(mA, reach) + ConfirmGhosts::apply(mB, reach) + ConfirmGhosts::apply(mC, reach);

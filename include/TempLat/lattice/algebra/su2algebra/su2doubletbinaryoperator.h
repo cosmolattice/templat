@@ -19,7 +19,6 @@
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
 #include "TempLat/lattice/algebra/helpers/confirmspace.h"
-#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
 #include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
@@ -71,8 +70,7 @@ namespace TempLat
         return nullptr;
     }
 
-    /** @brief Space/ghost confirmation forwarded to the operands, so that an assignment can walk the whole expression.
-     */
+    /** @brief Space/ghost confirmation forwarded to the operands, see ConfirmGhosts and ConfirmSpace. */
     device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
       return ConfirmGhosts::apply(mR, reach) + ConfirmGhosts::apply(mT, reach);

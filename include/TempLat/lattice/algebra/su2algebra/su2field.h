@@ -88,7 +88,7 @@ namespace TempLat
      *  prepareAssignment. */
     template <typename R> GhostReach onBeforeAssignment(R &&r)
     {
-      return prepareAssignment<T, NDim>(r, componentManagers(), fs[0].getLayout());
+      return prepareAssignment<T, NDim>(r, componentManagers(), mLayout);
     }
 
     template <typename R> void operator=(R &&r)
@@ -137,8 +137,8 @@ namespace TempLat
 
     inline auto getToolBox() const { return GetToolBox::get(fs[0]); }
 
-    // Ghost walk entry (see ConfirmGhosts), batched over the components; without a reach, unconditionally confirms
-    // the ghosts of all components.
+    /** @brief Ghost walk entry batched over the components, see ConfirmGhosts. Without a reach, updates the
+     *  ghosts of all components if they are stale. */
     device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
       return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers(), reach);
@@ -160,12 +160,7 @@ namespace TempLat
       ConfirmSpace::apply(fs[3], newLayout, spaceType);
     }
 
-    inline void updateGhosts()
-    {
-      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
-                                        fs[2].getMemoryManager().get(), fs[3].getMemoryManager().get()};
-      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
-    }
+    inline void updateGhosts() { MemoryManager<T, NDim>::updateGhostsBatch(componentManagers()); }
 
     template <typename... IDX>
       requires requires(Field<T, NDim> f, IDX... idx) {

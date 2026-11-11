@@ -6,7 +6,7 @@
 
 // Cost of the sweep for assignments that read their own target at neighbouring sites (phi = f(phi)),
 // against the same expression assigned to a separate field, and its dependence on the band width B
-// (planes per sweep step). Used to calibrate sweepBandWidth.
+// (planes per sweep step). Used to calibrate sweepBandWidth. -DSWEEP_NGRID sets the lattice size.
 
 #include <iostream>
 

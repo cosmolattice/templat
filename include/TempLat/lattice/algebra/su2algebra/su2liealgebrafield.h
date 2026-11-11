@@ -75,15 +75,16 @@ namespace TempLat
      *  prepareAssignment. */
     template <typename R> GhostReach onBeforeAssignment(R &&r)
     {
-      return prepareAssignment<T, NDim>(r, componentManagers(), fs[0].getLayout());
+      return prepareAssignment<T, NDim>(r, componentManagers(), mLayout);
     }
 
     template <typename R> void operator=(R &&r)
     {
       const GhostReach targetReach = onBeforeAssignment(r);
-      assignViews<1>("SU2AlgebraConfigViewAssign",
-                     device::array<decltype(fs[0].getView()), 3>{fs[0].getView(), fs[1].getView(), fs[2].getView()}, r,
-                     mLayout, targetReach, fs[0].toolBox()->mSweepBuffer);
+      assignViews<firstAssignedComponent>(
+          "SU2AlgebraConfigViewAssign",
+          device::array<decltype(fs[0].getView()), 3>{fs[0].getView(), fs[1].getView(), fs[2].getView()}, r, mLayout,
+          targetReach, fs[0].toolBox()->mSweepBuffer);
 
       fs[0].setGhostsAreStale();
       fs[1].setGhostsAreStale();
@@ -112,8 +113,8 @@ namespace TempLat
 
     inline auto getToolBox() const { return GetToolBox::get(fs[0]); }
 
-    // Ghost walk entry (see ConfirmGhosts), batched over the components; without a reach, unconditionally confirms
-    // the ghosts of all components.
+    /** @brief Ghost walk entry batched over the components, see ConfirmGhosts. Without a reach, updates the
+     *  ghosts of all components if they are stale. */
     device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
       return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers(), reach);
@@ -133,12 +134,7 @@ namespace TempLat
       ConfirmSpace::apply(fs[2], newLayout, spaceType);
     }
 
-    inline void updateGhosts()
-    {
-      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
-                                        fs[2].getMemoryManager().get()};
-      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
-    }
+    inline void updateGhosts() { MemoryManager<T, NDim>::updateGhostsBatch(componentManagers()); }
 
     using Getter = SU2Getter;
     static constexpr size_t SHIFTIND = 0;

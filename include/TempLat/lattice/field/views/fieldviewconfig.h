@@ -42,10 +42,10 @@ namespace TempLat
     using AbstractField<T, NDim>::mManager;
     using AbstractField<T, NDim>::toolBox;
 
-    ConfigView(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar)
-        : AbstractField<T, NDim>(name, toolBox, pLatPar), mDisableFFTBlocking(false)
+    ConfigView(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> pToolBox, LatticeParameters<T> pLatPar)
+        : AbstractField<T, NDim>(name, pToolBox, pLatPar), mDisableFFTBlocking(false)
     {
-      initFromToolBox(toolBox);
+      initFromToolBox(pToolBox);
     }
 
     auto getView() const { return mView; }
@@ -125,10 +125,10 @@ namespace TempLat
     std::string to_string() const { return mManager->getName() + "(x)"; }
 
   private:
-    void initFromToolBox(device::memory::host_ptr<MemoryToolBox<NDim>> toolBox)
+    void initFromToolBox(device::memory::host_ptr<MemoryToolBox<NDim>> pToolBox)
     {
-      if (toolBox != nullptr)
-        mLayout = toolBox->mLayouts.getConfigSpaceLayout();
+      if (pToolBox != nullptr)
+        mLayout = pToolBox->mLayouts.getConfigSpaceLayout();
       else
         throw FieldViewConfigMissingToolBox("A FieldViewConfig must be constructed with a valid MemoryToolBox.");
 
@@ -149,13 +149,8 @@ namespace TempLat
 
     LayoutStruct<NDim> mLayout;
 
-    // mView is the ONLY member the device kernel reads: eval() above is `return
-    // mView(idx...)` and nothing else. Everything else here is host-side bookkeeping that
-    // every expression node nevertheless deep-copies, because nodes store their operands by
-    // value with the deduced type. mRawView (written in the ctor, never read) and mHostView
-    // (declared, never even written) used to sit here and cost 80 B of every Field for
-    // nothing -- getRawHostView()/getFullNDHostView() go through mManager->, not through
-    // them.
+    // mView is the only member device kernels read. Expression nodes copy their operands by value, so every
+    // further member enlarges every node; keep host-side state in the memory manager.
     device::memory::NDViewUnmanaged<T, NDim> mView;
 
     device::IdxArray<NDim> memorySizes;

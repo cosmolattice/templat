@@ -69,7 +69,6 @@ namespace TempLat
   template <typename R, int... SHIFTS> class ExpressionShifter : public UnaryOperator<R>
   {
   public:
-    // Put public methods here. These should change very little over time.
     using UnaryOperator<R>::mR;
 
     ExpressionShifter(const R &pR) : UnaryOperator<R>(pR) {}
@@ -100,7 +99,6 @@ namespace TempLat
     static constexpr int N = _N > 0 ? _N : -_N;
     static constexpr int dir = _N > 0 ? 1 : -1;
 
-    // Put public methods here. These should change very little over time.
     using UnaryOperator<R>::mR;
 
     ExpressionShifterByOne(const R &pR) : UnaryOperator<R>(pR) {}

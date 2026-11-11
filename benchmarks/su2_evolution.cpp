@@ -42,6 +42,12 @@
  *
  * -DKICK_SCATTER_QMUL evaluates Ad() with two explicit SU(2) quaternion products instead of the
  * Rodrigues rotation -- slower, but an independent check of the rotation's sign convention.
+ *
+ * Other variants of the kick (default: one assignment per direction):
+ *   -DKICK_DEFUSED   one assignment per direction and transverse direction j
+ *   -DSU2_PLAQGRAD   all directions in one collection assignment with plaqGrad
+ *   -DSU2_FUSED      all directions in one collection assignment, also for the drift
+ * -DSU2_NGRID and -DSU2_NSTEPS set the lattice size and step count.
  */
 
 #include "TempLat/session/sessionguard.h"
@@ -59,9 +65,11 @@
 #include "TempLat/lattice/algebra/gaugealgebra/plaquettegradient.h"
 #include "TempLat/lattice/algebra/operators/operators.h"
 #include "TempLat/lattice/algebra/coordinates/spatialcoordinate.h"
+#include "TempLat/lattice/algebra/listoperators/listoperators.h"
 #include "TempLat/lattice/field/collections/fieldcollection.h"
 #include "TempLat/lattice/measuringtools/averager.h"
 #include "TempLat/util/rangeiteration/for_in_range.h"
+#include "TempLat/util/rangeiteration/make_list_tag.h"
 #include "TempLat/util/rangeiteration/sum_in_range.h"
 #include "TempLat/util/staticif.h"
 
@@ -72,8 +80,6 @@
 #include "TempLat/util/constexpr_for.h"
 #endif
 
-#include "TempLat/lattice/algebra/listoperators/listoperators.h"
-#include "TempLat/util/rangeiteration/make_list_tag.h"
 #include <cmath>
 #include <cstdio>
 
@@ -256,7 +262,7 @@ int main(int argc, char **argv)
         // All directions in one kernel, each forward plaquette computed once (P_ji = P_ij^dagger).
         Pi = Pi - dt * plaqGrad(U);
 #elif defined(SU2_FUSED)
-        // All directions in one kernel, written as CosmoLattice writes it: one collection assignment.
+        // All directions in one kernel, as one collection assignment of the explicit expression.
         Pi = Pi - dt * MakeVector(i, 1, NDim,
                                   Total(j, 1, NDim, IfElse(i != j, plaq(U, i, j) - plaqBack(U, i, j), ZeroType())));
 #else

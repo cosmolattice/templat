@@ -16,7 +16,6 @@
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
 #include "TempLat/lattice/algebra/helpers/confirmspace.h"
-#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
 #include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat

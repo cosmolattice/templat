@@ -11,7 +11,6 @@
 #include <utility>
 
 #include "TempLat/lattice/algebra/helpers/doeval.h"
-#include "TempLat/lattice/field/assignment/assignviews.h"
 #include "TempLat/lattice/algebra/helpers/istemplatgettable.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
 #include "TempLat/lattice/algebra/helpers/preget.h"
@@ -19,6 +18,7 @@
 #include "TempLat/lattice/algebra/listoperators/listmultiply.h"
 #include "TempLat/lattice/algebra/listoperators/listsubtract.h"
 #include "TempLat/lattice/algebra/listoperators/listunaryminus.h"
+#include "TempLat/lattice/field/assignment/assignviews.h"
 #include "TempLat/parallel/device.h"
 #include "TempLat/util/constexpr_for.h"
 
@@ -28,7 +28,7 @@ namespace TempLat
    *  plaqGrad. wholeOf(list) converts a list expression on the host: lists offering wholeList() share; sums,
    *  differences, negations and real multiples of lists combine member values component by component (widening e.g.
    *  integer zeros or float to double); any other list is evaluated member by member. A whole evaluation has size,
-   * evalWhole(idx...) (the array of member values) and shares (whether any part of it shares work).
+   *  evalWhole(idx...) (the array of member values) and shares (whether any part of it shares work).
    *
    *  Unit test: ctest -R test-plaquettegradient
    **/

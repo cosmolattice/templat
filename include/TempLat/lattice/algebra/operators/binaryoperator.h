@@ -11,7 +11,6 @@
 #include "TempLat/lattice/algebra/helpers/confirmspace.h"
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/algebra/helpers/getstring.h"
-#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
 #include "TempLat/lattice/algebra/spacestateinterface.h"
 #include "TempLat/util/containsspace.h"
 
@@ -62,9 +61,7 @@ namespace TempLat
       return ConfirmGhosts::apply(mR, reach) + ConfirmGhosts::apply(mT, reach);
     }
 
-    // if constexpr rather than a ternary: a ternary would need a common type across the three
-    // branches, and the `1.` fallback used to drag the result to double for every subtree --
-    // including one built entirely out of single-precision fields.
+    // if constexpr rather than a ternary, which would promote all branches to a common type (e.g. double).
     auto getDx() const
     {
       if constexpr (HasDx<R>)

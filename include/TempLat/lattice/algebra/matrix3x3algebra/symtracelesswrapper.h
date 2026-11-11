@@ -16,7 +16,6 @@
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
 #include "TempLat/lattice/algebra/helpers/confirmspace.h"
-#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
 #include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
@@ -63,7 +62,7 @@ namespace TempLat
 
     template <int N> auto operator()(Tag<N> t) const
     {
-      static_assert(N >= 0 && N <= 4, "Operator(): N must be 0 or 4 for SymTracelessWrapper");
+      static_assert(N >= 0 && N <= 4, "Operator(): N must be 0-4 for SymTracelessWrapper");
       return SymTracelessGet(t);
     }
 

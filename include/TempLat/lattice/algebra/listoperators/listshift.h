@@ -47,6 +47,10 @@ namespace TempLat
 
   template <typename R, int N> class ListShifterByOne : public ListUnaryOperator<R>
   {
+    static_assert(N != 0, "N cannot be 0.");
+    static constexpr size_t axis = (N > 0 ? N : -N) - 1;
+    static constexpr int dir = N > 0 ? 1 : -1;
+
   public:
     using ListUnaryOperator<R>::mR;
     ListShifterByOne(const R &pR) : ListUnaryOperator<R>(pR) {}
@@ -57,7 +61,7 @@ namespace TempLat
 
     template <int M> device::Idx confirmGhostsUpToDate(Tag<M> i, const GhostReach &reach) const
     {
-      return ConfirmGhosts::apply(mR, i, reach.shifted((N > 0 ? N : -N) - 1, N > 0 ? 1 : -1));
+      return ConfirmGhosts::apply(mR, i, reach.shifted(axis, dir));
     }
 
     static const size_t size = tuple_size<R>::value;

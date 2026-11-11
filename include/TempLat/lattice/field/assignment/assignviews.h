@@ -28,9 +28,8 @@ namespace TempLat
   /** @brief Number of planes evaluated per sweep step: about 8 sites per resident device thread, at least one
    *  plane and at most all of them. A positive requested value overrides the choice.
    *
-   *  The factor 8 comes from bench-sweep_assign (256^3, RTX 4070): heavy stencils keep fewer threads resident
-   *  than the device maximum, and the sweep time levels off only from about 8 sites per thread. On a CPU this
-   *  gives one plane. */
+   *  Heavy stencils keep fewer threads resident than the device maximum, so a band needs several sites per thread
+   *  to fill the device. On a CPU this gives one plane. */
   inline device::Idx sweepBandWidth(device::Idx planeArea, device::Idx nPlanes, device::Idx requested)
   {
     constexpr device::Idx waves = 8;
@@ -63,7 +62,8 @@ namespace TempLat
    *  site (ComponentList), unlike one sharing work between them (WholeAssignment). */
   template <typename R, size_t NDim>
   concept EvaluatesMembers =
-      FusesComponents<R> && AssignViewsDetail::evaluatesMembers<std::remove_cvref_t<R>>(std::make_index_sequence<NDim>());
+      FusesComponents<R> &&
+      AssignViewsDetail::evaluatesMembers<std::remove_cvref_t<R>>(std::make_index_sequence<NDim>());
 
   /** @brief Whether g assigns a collection of composite fields to NComp views, each member filling NComp / size. */
   template <typename R, size_t NComp> constexpr bool assignsComposites()
@@ -75,8 +75,7 @@ namespace TempLat
   }
 
   /** @brief Whether the kernel stores member by member: composites whose members can be evaluated one at a time.
-   *  That keeps a single member's intermediates live at a time, which on a CPU removes most register spills of e.g.
-   *  a fused gauge kick. */
+   *  That keeps a single member's intermediates live at a time, which on a CPU avoids most register spills. */
   template <typename R, size_t NComp, size_t NDim> constexpr bool storesPerMember()
   {
     return assignsComposites<R, NComp>() && EvaluatesMembers<R, NDim>;
@@ -102,8 +101,7 @@ namespace TempLat
     template <size_t first, typename View, size_t NComp, typename R> struct AssignKernel {
       static constexpr size_t NDim = View::rank;
       /** @brief Asks the iteration to inline this kernel into its loop, see KokkosNDLambdaWrapper. A collection of
-       *  composite fields needs it; for plain fields GCC inlines it anyway, and forcing costs ~4 % (fused N = 8 kick).
-       */
+       *  composite fields needs it; for plain fields GCC inlines it anyway, and forcing it is slightly slower. */
       static constexpr bool inlineIntoLoop = assignsComposites<R, NComp>();
       device::array<View, NComp> views;
       R g;
@@ -158,11 +156,13 @@ namespace TempLat
       }
     };
 
-    /** @brief A view of the same type and shape as v, on the memory at data. */
-    template <typename View> View sameShape(const View &v, typename View::value_type *data)
+    /** @brief A view of the same type as v, on the memory at data, with nPlanes planes along axis 0 and v's
+     *  extents along the others. */
+    template <typename View> View viewLike(const View &v, typename View::value_type *data, device::Idx nPlanes)
     {
       device::IdxArray<View::rank> extents;
-      for (size_t d = 0; d < View::rank; ++d)
+      extents[0] = nPlanes;
+      for (size_t d = 1; d < View::rank; ++d)
         extents[d] = v.extent(d);
       return device::apply([&](auto... n) { return View(data, n...); }, extents);
     }
@@ -201,13 +201,8 @@ namespace TempLat
         mPlaneStride = views[0].stride(0);
         auto *ringData = buffer.get<typename View::value_type>(NComp * nSlots * mPlaneStride);
         Views ring;
-        for (size_t c = 0; c < NComp; ++c) {
-          device::IdxArray<NDim> extents;
-          extents[0] = nSlots;
-          for (size_t d = 1; d < NDim; ++d)
-            extents[d] = views[c].extent(d);
-          ring[c] = device::apply([&](auto... n) { return View(ringData + c * nSlots * mPlaneStride, n...); }, extents);
-        }
+        for (size_t c = 0; c < NComp; ++c)
+          ring[c] = viewLike(views[c], ringData + c * nSlots * mPlaneStride, nSlots);
         mWriteBack = {views, ring, nSlots, layout.getNGhosts()};
       }
 
@@ -228,7 +223,7 @@ namespace TempLat
         const device::Idx shift = (b % mNBlocks) * mBand - (mLayout.getNGhosts() + firstPlane(b));
         Views target;
         for (size_t c = 0; c < NComp; ++c)
-          target[c] = sameShape(mViews[c], mWriteBack.ring[c].data() + shift * mPlaneStride);
+          target[c] = viewLike(mViews[c], mWriteBack.ring[c].data() + shift * mPlaneStride, mViews[c].extent(0));
         return target;
       }
 
@@ -253,13 +248,12 @@ namespace TempLat
    *
    *  If g reads the views only in place, the kernel runs once over the local block. Otherwise, or if a kernel
    *  storing member by member has a member reading another member's views (readsOtherMember, see
-   *  prepareCollectionAssignment), it sweeps along
-   *  axis 0, the slowest in memory, in bands of B adjacent planes. The kernel evaluates each band into a ring
-   *  buffer, never into the views, so every read sees old values: it is handed views of the same type and shape
-   *  whose data pointer is shifted to put the band into the ring. Before a band reuses ring planes, a separate
-   *  kernel writes their content back; that happens only once they lie below everything the band reads.
-   *  Reads above the band hit untouched planes, reads past the local block land on ghosts, which are never
-   *  written.
+   *  prepareCollectionAssignment), it sweeps along axis 0, the slowest in memory, in bands of B adjacent planes.
+   *  The kernel evaluates each band into a ring buffer, never into the views, so every read sees old values: it is
+   *  handed views of the same type and shape whose data pointer is shifted to put the band into the ring. Before a
+   *  band reuses ring planes, a separate kernel writes their content back; that happens only once they lie below
+   *  everything the band reads. Reads above the band hit untouched planes, reads past the local block land on
+   *  ghosts, which are never written.
    *
    *  The plain and the sweeping assignment share the kernel and its launch site; everything else does not depend
    *  on g. Extra memory: NComp * B * (1 + ceil(r / B)) planes, r being the downward reach along axis 0.
@@ -276,7 +270,6 @@ namespace TempLat
 
     PreGet::apply(g);
 
-    // One launch site, so that the plain and the sweeping assignment share all code depending on g.
     using Bands = AssignViewsDetail::Bands<View, NComp>;
     const bool sweep = !targetReach.isZero() || (storesPerMember<R, NComp, NDim>() && readsOtherMember);
     Bands bands = sweep ? Bands(views, layout, -targetReach.lo[0], buffer) : Bands(views, layout);

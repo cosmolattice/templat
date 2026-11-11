@@ -20,7 +20,6 @@
 #include "TempLat/lattice/algebra/helpers/postget.h"
 
 #include "TempLat/lattice/algebra/helpers/confirmspace.h"
-#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
 #include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2get.h"

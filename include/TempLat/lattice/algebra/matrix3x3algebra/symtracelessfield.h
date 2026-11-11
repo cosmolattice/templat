@@ -161,7 +161,7 @@ namespace TempLat
      *  prepareAssignment. */
     template <typename R> GhostReach onBeforeAssignment(R &&g)
     {
-      return prepareAssignment<T, NDim>(g, componentManagers(), m0.getLayout());
+      return prepareAssignment<T, NDim>(g, componentManagers(), mLayout);
     }
 
     template <typename R> void operator=(R &&g)
@@ -183,8 +183,8 @@ namespace TempLat
 
     std::string toString() const { return *mName; }
 
-    // Ghost walk entry (see ConfirmGhosts), batched over the components; without a reach, unconditionally confirms
-    // the ghosts of all components.
+    /** @brief Ghost walk entry batched over the components, see ConfirmGhosts. Without a reach, updates the
+     *  ghosts of all components if they are stale. */
     device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
       return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers(), reach);
@@ -210,13 +210,7 @@ namespace TempLat
     auto getDx() const { return m0.getDx(); }
     auto getKIR() const { return m0.getKIR(); }
 
-    void updateGhosts()
-    {
-      MemoryManager<T, NDim> *mgrs[] = {m0.getMemoryManager().get(), m1.getMemoryManager().get(),
-                                        m2.getMemoryManager().get(), m3.getMemoryManager().get(),
-                                        m4.getMemoryManager().get()};
-      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
-    }
+    void updateGhosts() { MemoryManager<T, NDim>::updateGhostsBatch(componentManagers()); }
 
     void setGhostsAreStale()
     {

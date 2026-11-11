@@ -17,8 +17,10 @@
 #include "TempLat/lattice/field/assignment/prepareassignment.h"
 #include "TempLat/lattice/field/assignment/wholelist.h"
 
+#include <array>
 #include <string>
 #include <tuple>
+#include <utility>
 
 namespace TempLat
 {
@@ -99,7 +101,7 @@ namespace TempLat
       static constexpr size_t value = K;
     };
 
-    /** @brief The fields an assignment of f writes, and the value component the first one receives. */
+    /** @brief The fields an assignment of f writes. */
     static auto assignedFieldsOf(const Arg &f)
     {
       if constexpr (requires { f.assignedFields(); })
@@ -107,6 +109,7 @@ namespace TempLat
       else
         return device::array<Arg, 1>{f};
     }
+    /** @brief The value component the first of the assigned fields receives. */
     static constexpr size_t firstAssignedComponent()
     {
       if constexpr (requires { Arg::firstAssignedComponent; })
@@ -118,19 +121,21 @@ namespace TempLat
     template <typename R, size_t... i> void assignAtOnce(R &r, std::index_sequence<i...>)
     {
       using nakedR = std::remove_reference_t<R>;
-      ComponentList<T, decltype(nakedR::Getter::get(r, Tag<int(i)>()))...> g(nakedR::Getter::get(r, Tag<int(i)>())...);
+      ComponentList<T, std::remove_cvref_t<decltype(nakedR::Getter::get(r, Tag<int(i)>()))>...> g(
+          nakedR::Getter::get(r, Tag<int(i)>())...);
 
       // Member m writes the K fields m * K + k.
       constexpr size_t K = FieldCount<std::remove_cvref_t<decltype(assignedFieldsOf(fs[0]))>>::value;
       const auto first = assignedFieldsOf(fs[0])[0];
       device::array<decltype(first.getView()), N * K> views;
       std::array<MemoryManager<T, NDim> *, N * K> managers;
-      for (size_t m = 0; m < N; ++m)
+      for (size_t m = 0; m < N; ++m) {
+        const auto fields = assignedFieldsOf(fs[m]);
         for (size_t k = 0; k < K; ++k) {
-          const auto f = assignedFieldsOf(fs[m])[k];
-          views[m * K + k] = f.getView();
-          managers[m * K + k] = f.getMemoryManager().get();
+          views[m * K + k] = fields[k].getView();
+          managers[m * K + k] = fields[k].getMemoryManager().get();
         }
+      }
 
       const auto &layout = first.getLayout();
       GhostReach targetReach;

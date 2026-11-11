@@ -9,7 +9,6 @@
 
 #include "TempLat/util/containsspace.h"
 #include "TempLat/lattice/algebra/spacestateinterface.h"
-#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
 #include "TempLat/lattice/algebra/helpers/getstring.h"
 #include "TempLat/lattice/algebra/helpers/gettoolbox.h"
 #include "TempLat/lattice/algebra/helpers/getvectorsize.h"

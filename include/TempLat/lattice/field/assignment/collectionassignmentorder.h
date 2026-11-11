@@ -155,7 +155,7 @@ namespace TempLat
    *  Before assigning, each right-hand side is walked with all members' fields marked as targets. Member g reading a
    *  target of member h is assigned before h. Members whose reads form a cycle (e.g. a swap) cannot be ordered: one
    *  of them is assigned into scratch and copied back at the end. Without reads across members, they are assigned
-   *  in order as before; the only cost is the walk. Member types whose written fields are unknown are assigned in
+   *  in order; the only cost is the walk. Member types whose written fields are unknown are assigned in
    *  order, unchecked.
    *
    *  Unit test: ctest -R test-collectionassignmentorder

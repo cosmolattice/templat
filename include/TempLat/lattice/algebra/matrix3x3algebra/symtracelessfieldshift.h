@@ -18,7 +18,7 @@ namespace TempLat
   /** @brief A class which implements spatial shifts for symmetric traceless algebra.
    *
    *
-   * Unit test: ctest -R test-complexfieldshift
+   * Unit test: ctest -R test-symtracelessshift
    **/
   template <typename R, int... N> class SymTracelessFieldShifter : public SymTracelessUnaryOperator<R>
   {
@@ -38,7 +38,7 @@ namespace TempLat
     template <int M1, int M2> auto SymTracelessGet(Tag<M1> t1, Tag<M2> t2) const
     {
       static_assert(M1 >= 1 && M1 <= 3 && M2 >= 1 && M2 <= 3,
-                    "SymTracelessFieldShifter: M1 and M2 must be 0-2 for SymTracelessFieldShifter");
+                    "SymTracelessFieldShifter: M1 and M2 must be 1-3 for SymTracelessFieldShifter");
       return shift<N...>(mR.SymTracelessGet(t1, t2));
     }
 
@@ -82,7 +82,7 @@ namespace TempLat
     template <int M1, int M2> auto SymTracelessGet(Tag<M1> t1, Tag<M2> t2) const
     {
       static_assert(M1 >= 1 && M1 <= 3 && M2 >= 1 && M2 <= 3,
-                    "SymTracelessFieldShifterByOne: M1 and M2 must be 0-2 for SymTracelessGet");
+                    "SymTracelessFieldShifterByOne: M1 and M2 must be 1-3 for SymTracelessGet");
       return shift<_N>(mR.SymTracelessGet(t1, t2));
     }
 

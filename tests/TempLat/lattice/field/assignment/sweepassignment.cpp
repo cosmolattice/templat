@@ -46,6 +46,25 @@ namespace TempLat
     };
     template <int N, int S, typename C> Rotated<N, S, C> rotated(const C &c) { return {c}; }
 
+    /** @brief A function of the coordinates without symmetry, so that a read at the wrong site shows up. */
+    template <typename X> auto asymmetric(const X &x, double k)
+    {
+      return k * x(1_c) + 10. * x(2_c) + 100. * x(3_c) + x(1_c) * x(2_c) * x(3_c) / k;
+    }
+
+    /** @brief Assigns ref = expr(copy) and f = expr(f), for the given band width (0: automatic). */
+    template <typename ToolBox, typename F, typename Expr>
+    void assignInAndOutOfPlace(const ToolBox &toolBox, device::Idx bandWidth, F &f, F &copy, F &ref, Expr &&expr)
+    {
+      toolBox->mSweepBuffer.setBandWidth(bandWidth);
+      ref = expr(copy);
+      f = expr(f);
+      toolBox->mSweepBuffer.setBandWidth(0);
+    }
+
+    /** @brief a and b agree exactly at every site. */
+    template <typename A, typename B> bool identical(const A &a, const B &b) { return average((a - b) * (a - b)) == 0; }
+
     /** @brief Checks phi = expr(phi) in place against ref = expr(copy of phi), for the given band width
      *  (0: automatic). */
     template <size_t NDim, typename Expr>
@@ -53,23 +72,16 @@ namespace TempLat
                            Expr &&expr)
     {
       SpatialCoordinate<NDim> x(toolBox);
-      Field<double, NDim> phi("phi", toolBox);
-      Field<double, NDim> copy("copy", toolBox);
-      Field<double, NDim> ref("ref", toolBox);
+      Field<double, NDim> phi("phi", toolBox), copy("copy", toolBox), ref("ref", toolBox);
 
-      // No symmetry, so that a read at the wrong site shows up.
       if constexpr (NDim == 3)
-        phi = x(1_c) + 10. * x(2_c) + 100. * x(3_c) + x(1_c) * x(2_c) * x(3_c);
+        phi = asymmetric(x, 1.);
       else
         phi = x(1_c) + 10. * x(2_c) + x(1_c) * x(1_c) * x(2_c);
       copy = phi;
 
-      toolBox->mSweepBuffer.setBandWidth(bandWidth);
-      ref = expr(copy);
-      phi = expr(phi);
-      toolBox->mSweepBuffer.setBandWidth(0);
-
-      return average((phi - ref) * (phi - ref)) == 0;
+      assignInAndOutOfPlace(toolBox, bandWidth, phi, copy, ref, expr);
+      return identical(phi, ref);
     }
 
     /** @brief As matchesOutOfPlace, for a composite field F with components first ... last. */
@@ -84,20 +96,16 @@ namespace TempLat
 
       constexpr_for<first, last + 1>([&](auto _c) {
         constexpr Tag<(int)decltype(_c)::value> c;
-        const double k = decltype(_c)::value + 1.;
-        f(c) = k * x(1_c) + 10. * x(2_c) + 100. * x(3_c) + x(1_c) * x(2_c) * x(3_c) / k;
+        f(c) = asymmetric(x, decltype(_c)::value + 1.);
         copy(c) = f(c);
       });
 
-      toolBox->mSweepBuffer.setBandWidth(bandWidth);
-      ref = expr(copy);
-      f = expr(f);
-      toolBox->mSweepBuffer.setBandWidth(0);
+      assignInAndOutOfPlace(toolBox, bandWidth, f, copy, ref, expr);
 
       bool matches = true;
       constexpr_for<first, last + 1>([&](auto _c) {
         constexpr Tag<(int)decltype(_c)::value> c;
-        matches = matches && average((f(c) - ref(c)) * (f(c) - ref(c))) == 0;
+        matches = matches && identical(f(c), ref(c));
       });
       return matches;
     }
@@ -111,18 +119,14 @@ namespace TempLat
       FieldCollection<Field<double, 3>, NComp> f("f", toolBox), copy("copy", toolBox), ref("ref", toolBox);
 
       constexpr_for<0, NComp>([&](auto c) {
-        const double k = decltype(c)::value + 1.;
-        f(c) = k * x(1_c) + 10. * x(2_c) + 100. * x(3_c) + x(1_c) * x(2_c) * x(3_c) / k;
+        f(c) = asymmetric(x, decltype(c)::value + 1.);
         copy(c) = f(c);
       });
 
-      toolBox->mSweepBuffer.setBandWidth(bandWidth);
-      ref = expr(copy);
-      f = expr(f);
-      toolBox->mSweepBuffer.setBandWidth(0);
+      assignInAndOutOfPlace(toolBox, bandWidth, f, copy, ref, expr);
 
       bool matches = true;
-      constexpr_for<0, NComp>([&](auto c) { matches = matches && average((f(c) - ref(c)) * (f(c) - ref(c))) == 0; });
+      constexpr_for<0, NComp>([&](auto c) { matches = matches && identical(f(c), ref(c)); });
       return matches;
     }
 
@@ -137,22 +141,18 @@ namespace TempLat
       constexpr_for<0, NMembers>([&](auto m) {
         constexpr_for<first, last + 1>([&](auto _c) {
           constexpr Tag<(int)decltype(_c)::value> c;
-          const double k = 10. * decltype(m)::value + decltype(_c)::value + 1.;
-          f(m)(c) = k * x(1_c) + 10. * x(2_c) + 100. * x(3_c) + x(1_c) * x(2_c) * x(3_c) / k;
+          f(m)(c) = asymmetric(x, 10. * decltype(m)::value + decltype(_c)::value + 1.);
           copy(m)(c) = f(m)(c);
         });
       });
 
-      toolBox->mSweepBuffer.setBandWidth(bandWidth);
-      ref = expr(copy);
-      f = expr(f);
-      toolBox->mSweepBuffer.setBandWidth(0);
+      assignInAndOutOfPlace(toolBox, bandWidth, f, copy, ref, expr);
 
       bool matches = true;
       constexpr_for<0, NMembers>([&](auto m) {
         constexpr_for<first, last + 1>([&](auto _c) {
           constexpr Tag<(int)decltype(_c)::value> c;
-          matches = matches && average((f(m)(c) - ref(m)(c)) * (f(m)(c) - ref(m)(c))) == 0;
+          matches = matches && identical(f(m)(c), ref(m)(c));
         });
       });
       return matches;
@@ -205,8 +205,6 @@ namespace TempLat
       using D = SU2Doublet<double, NDim>;
       using A = SU2LieAlgebraField<double, NDim>;
       using H = SymTracelessField<double, NDim>;
-      // A collection of composites is stored member by member, keeping one member's intermediates live at a time.
-      static_assert(EvaluatesMembers<ComponentList<device::array<double, 4>, U, U>, NDim>);
       auto complexExpr = [](const auto &f) { return shift<-1>(f) * shift<2>(f) + f; };
       auto su2Expr = [](const auto &f) { return shift<-1>(f) * dagger(shift<2>(f)); };
       auto sum = [](const auto &f) { return shift<-1>(f) + shift<1>(f); };
@@ -234,6 +232,10 @@ namespace TempLat
 
     // Collections of composite fields, assigned in a single kernel.
     {
+      // A collection of composites is stored member by member, keeping one member's intermediates live at a time.
+      static_assert(
+          EvaluatesMembers<ComponentList<device::array<double, 4>, SU2Field<double, NDim>, SU2Field<double, NDim>>,
+                           NDim>);
       using SweepAssignmentDetail::compositeCollectionMatchesOutOfPlace;
       auto sum = [](auto &f) { return shift<-1>(f) + shift<1>(f); };
       for (device::Idx b : {0, 3}) {

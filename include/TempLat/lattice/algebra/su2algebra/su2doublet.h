@@ -38,7 +38,7 @@ namespace TempLat
     static constexpr size_t NDim = _NDim;
 
     SU2Doublet(Field<T, NDim> f1, Field<T, NDim> f2, Field<T, NDim> f3, Field<T, NDim> f4)
-        : fs{{f1, f2, f3, f4}}, mName("NoName"), mLayout(f1.getToolBox()->mLayouts.getConfigSpaceLayout())
+        : mName("NoName"), fs{{f1, f2, f3, f4}}, mLayout(f1.getToolBox()->mLayouts.getConfigSpaceLayout())
     {
     }
     SU2Doublet(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox,
@@ -89,7 +89,7 @@ namespace TempLat
      *  prepareAssignment. */
     template <typename R> GhostReach onBeforeAssignment(R &&r)
     {
-      return prepareAssignment<T, NDim>(r, componentManagers(), fs[0].getLayout());
+      return prepareAssignment<T, NDim>(r, componentManagers(), mLayout);
     }
 
     template <typename R> void operator=(R &&r)
@@ -112,8 +112,8 @@ namespace TempLat
 
     device::memory::host_ptr<MemoryToolBox<NDim>> getToolBox() const { return GetToolBox::get(fs[0]); }
 
-    // Ghost walk entry (see ConfirmGhosts), batched over the components; without a reach, unconditionally confirms
-    // the ghosts of all components.
+    /** @brief Ghost walk entry batched over the components, see ConfirmGhosts. Without a reach, updates the
+     *  ghosts of all components if they are stale. */
     device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
       return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers(), reach);
@@ -138,12 +138,7 @@ namespace TempLat
     auto getDx() const { return GetDx::getDx(fs[0]); }
     auto getKIR() const { return GetKIR::getKIR(fs[0]); }
 
-    inline void updateGhosts()
-    {
-      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
-                                        fs[2].getMemoryManager().get(), fs[3].getMemoryManager().get()};
-      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
-    }
+    inline void updateGhosts() { MemoryManager<T, NDim>::updateGhostsBatch(componentManagers()); }
 
     using Getter = SU2DoubletGetter;
     static constexpr size_t size = 4;

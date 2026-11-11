@@ -7,6 +7,8 @@
 
 // File info: Main contributor(s): Franz R. Sattler, Year: 2026
 
+#include <string>
+#include <type_traits>
 #include <utility>
 
 #include "TempLat/lattice/algebra/constants/zerotype.h"

@@ -4,12 +4,13 @@
 
 // File info: Main contributor(s): Franz R. Sattler, Year: 2026
 
-/* Pure-gauge evolution of SU2_NGROUPS independent SU(2) gauge fields, stored as in CosmoLattice in a
- * VectorFieldCollection: does assigning all groups in one kernel pay off?
+/* Pure-gauge evolution of SU2_NGROUPS independent SU(2) gauge fields, stored in a VectorFieldCollection:
+ * does assigning all groups in one kernel pay off?
  *
- *   default            one kernel per group (VectorField assignment), as CosmoLattice's evolvers do
+ *   default            one kernel per group (VectorField assignment)
  *   -DGROUPS_FUSED     one kernel for all groups and directions, emulating a fused VectorFieldCollection assignment
  *   -DGROUPS_PLAQGRAD  one kernel per group with plaqGrad, for reference
+ *   -DSU2_NGRID, -DSU2_NSTEPS, -DSU2_NGROUPS set the lattice size, step count and number of groups.
  *
  * The kick is the one of su2_evolution.cpp, the drift U_i = exp(dt Pi_i) U_i.
  */

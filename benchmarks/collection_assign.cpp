@@ -5,9 +5,7 @@
 // File info: Main contributor(s): Franz R. Sattler, Year: 2026
 
 // Assigning a FieldCollection of N fields in one kernel (fc = expr) against one kernel per component, for an
-// O(N) drift and kick.
-
-#include <iostream>
+// O(N) drift and kick. -DCOLL_NGRID sets the lattice size.
 
 #include "TempLat/session/sessionguard.h"
 #include "TempLat/util/benchmark.h"

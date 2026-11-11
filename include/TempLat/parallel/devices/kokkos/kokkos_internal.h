@@ -211,6 +211,11 @@ namespace TempLat
     // Wrapping multidimensional device lambdas for use with Kokkos
     // ------------------------------------------------
 
+    /** @brief A functor asking to be inlined into the iteration loop (FUN::inlineIntoLoop). GCC otherwise calls a
+     *  large functor once per site, redoing all its index arithmetic. */
+    template <typename FUN>
+    concept InlinedIntoLoop = requires { requires FUN::inlineIntoLoop; };
+
     /**
      * @brief This is a functor which wraps a lambda.
      * Basically, this is necessary when one wants to call a variadic lambda on an NVIDIA GPU.
@@ -223,11 +228,6 @@ namespace TempLat
      * @tparam NDim Number of arguments taken
      * @tparam FUN The lambda to which we forward the indices
      */
-    /** @brief A functor asking to be inlined into the iteration loop (FUN::inlineIntoLoop). GCC otherwise calls a
-     *  large functor once per site, redoing all its index arithmetic. */
-    template <typename FUN>
-    concept InlinedIntoLoop = requires { requires FUN::inlineIntoLoop; };
-
     template <size_t NDim, typename FUN> struct KokkosNDLambdaWrapper {
       KokkosNDLambdaWrapper(const FUN &_fun) : fun(_fun) {};
 

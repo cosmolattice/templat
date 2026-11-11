@@ -20,7 +20,7 @@ namespace TempLat
   /** @brief The SU(2) element with components Re<x, i sigma_b c>, b = 0 ... 3, for doublets x and c.
    *
    *  Equals MakeSU2(b, Real(scalar_prod(x, i_sigma(b) * c))), which evaluates x and c once per component; this
-   *  evaluates them once. Matters when x is costly, e.g. a covariant shift U(x) phi(x + i) in a matter current.
+   *  evaluates them once. Matters when x is costly, e.g. a covariant shift U_i(n) phi(n + i).
    *
    *  Unit test: ctest -R test-su2doubletprojection
    **/

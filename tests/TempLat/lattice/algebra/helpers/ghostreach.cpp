@@ -107,11 +107,13 @@ namespace TempLat
       tdd.verify(DoesNotThrow<GhostDepthTooSmall>([&]() { chi = LatLapl(shift<1>(shift<-1>(phi))); }));
 
       // The message names the field.
+      bool namesField = false;
       try {
         chi = LatLapl(LatLapl(phi));
       } catch (const GhostDepthTooSmall &e) {
-        tdd.verify(std::string(e.what()).find("phi") != std::string::npos);
+        namesField = std::string(e.what()).find("phi") != std::string::npos;
       }
+      tdd.verify(namesField);
 
       // A point-wise read needs no exchange, even through two opposite shifts.
       phi = 2. * phi;
@@ -186,7 +188,7 @@ namespace TempLat
           [&]() { chi = multiplyTrace(M, ConstructMatrix3x3(phi, phi, phi, phi, phi, phi, phi, near, phi)); }));
     }
 
-    // Field collections, nGhost = 1. They assign component by component.
+    // Field collections, nGhost = 1.
     {
       FieldCollection<Field<double, NDim>, 2> fc("fc", toolBox1);
       FieldCollection<Field<double, NDim>, 2> gc("gc", toolBox1);

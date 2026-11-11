@@ -85,8 +85,7 @@ namespace TempLat
       PostGet::apply(g);
     }
 
-    // Space confirmation and ghost walk forwarded to the components, so that this leaf can be walked as part of a
-    // whole expression.
+    /** @brief Space/ghost confirmation forwarded to the components, see ConfirmGhosts and ConfirmSpace. */
     device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
       return ConfirmGhosts::apply(mR, reach) + ConfirmGhosts::apply(mI, reach);
