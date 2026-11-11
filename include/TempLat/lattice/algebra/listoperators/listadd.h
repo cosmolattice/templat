@@ -24,6 +24,8 @@ namespace TempLat
   template <typename R, typename T> class ListAddition : public ListBinaryOperator<R, T>
   {
   public:
+    using IsWholeListSum = void; // see wholeOf
+    static constexpr int wholeListSign = 1;
     using ListBinaryOperator<R, T>::mR;
     using ListBinaryOperator<R, T>::mT;
     ListAddition(const R &pR, const T &pT) : ListBinaryOperator<R, T>(pR, pT) {}

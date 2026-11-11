@@ -56,6 +56,7 @@
 #include "TempLat/lattice/algebra/su2algebra/scalarsu2multiplication.h"
 #include "TempLat/lattice/algebra/gaugealgebra/plaquette.h"
 #include "TempLat/lattice/algebra/gaugealgebra/plaquetteback.h"
+#include "TempLat/lattice/algebra/gaugealgebra/plaquettegradient.h"
 #include "TempLat/lattice/algebra/operators/operators.h"
 #include "TempLat/lattice/algebra/coordinates/spatialcoordinate.h"
 #include "TempLat/lattice/field/collections/fieldcollection.h"
@@ -251,6 +252,9 @@ int main(int argc, char **argv)
             }
           });
         });
+#elif defined(SU2_PLAQGRAD)
+        // All directions in one kernel, each forward plaquette computed once (P_ji = P_ij^dagger).
+        Pi = Pi - dt * plaqGrad(U);
 #elif defined(SU2_FUSED)
         // All directions in one kernel, written as CosmoLattice writes it: one collection assignment.
         Pi = Pi - dt * MakeVector(i, 1, NDim,

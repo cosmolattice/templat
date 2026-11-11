@@ -24,6 +24,7 @@ namespace TempLat
   template <typename R> class ListUnaryMinus : public ListUnaryOperator<R>
   {
   public:
+    using IsWholeListNegation = void; // see wholeOf
     using ListUnaryOperator<R>::mR;
     ListUnaryMinus(const R &pR) : ListUnaryOperator<R>(pR) {}
 

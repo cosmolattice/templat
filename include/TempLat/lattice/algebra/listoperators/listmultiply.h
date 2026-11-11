@@ -20,6 +20,7 @@ namespace TempLat
   template <typename R, typename T> class ListMultiplication : public ListBinaryOperator<R, T>
   {
   public:
+    using IsWholeListProduct = void; // see wholeOf
     using ListBinaryOperator<R, T>::mR;
     using ListBinaryOperator<R, T>::mT;
 

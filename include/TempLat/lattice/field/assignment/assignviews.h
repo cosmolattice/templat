@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <string>
 #include <type_traits>
+#include <utility>
 
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/algebra/helpers/ghostreach.h"
@@ -44,16 +45,41 @@ namespace TempLat
   template <typename R>
   concept FusesComponents = requires { requires std::remove_cvref_t<R>::fusesComponents; };
 
-  /** @brief Whether the kernel assigning g to NComp views stores member by member: a collection of composite fields,
-   *  each member filling NComp / size views. That keeps a single member's intermediates live at a time, which on a
-   *  CPU removes most register spills of e.g. a fused gauge kick. A collection of plain fields stores all members
-   *  at once. */
-  template <typename R, size_t NComp> constexpr bool storesPerMember()
+  namespace AssignViewsDetail
+  {
+    // A struct rather than an alias: nvcc collapses packs of an alias that does not visibly depend on its parameter.
+    template <size_t> struct AnIdxT {
+      using type = device::Idx;
+    };
+    template <size_t d> using AnIdx = typename AnIdxT<d>::type;
+
+    template <typename R, size_t... d> constexpr bool evaluatesMembers(std::index_sequence<d...>)
+    {
+      return requires(const R &g, AnIdx<d>... i) { g.template evalMember<0>(i...); };
+    }
+  } // namespace AssignViewsDetail
+
+  /** @brief A right-hand side of many fields whose members can be evaluated one at a time at an NDim-dimensional
+   *  site (ComponentList), unlike one sharing work between them (WholeAssignment). */
+  template <typename R, size_t NDim>
+  concept EvaluatesMembers =
+      FusesComponents<R> && AssignViewsDetail::evaluatesMembers<std::remove_cvref_t<R>>(std::make_index_sequence<NDim>());
+
+  /** @brief Whether g assigns a collection of composite fields to NComp views, each member filling NComp / size. */
+  template <typename R, size_t NComp> constexpr bool assignsComposites()
   {
     if constexpr (FusesComponents<R>)
       return NComp > std::remove_cvref_t<R>::size;
     else
       return false;
+  }
+
+  /** @brief Whether the kernel stores member by member: composites whose members can be evaluated one at a time.
+   *  That keeps a single member's intermediates live at a time, which on a CPU removes most register spills of e.g.
+   *  a fused gauge kick. */
+  template <typename R, size_t NComp, size_t NDim> constexpr bool storesPerMember()
+  {
+    return assignsComposites<R, NComp>() && EvaluatesMembers<R, NDim>;
   }
 
 #if defined(__GNUC__) && !defined(__CUDACC__) && !defined(__HIPCC__)
@@ -71,13 +97,14 @@ namespace TempLat
     }
 
     /** @brief The assignment kernel: stores component first + c of g's value at a site into views[c]; a scalar
-     *  value goes to views[0]. For a collection of composite fields (storesPerMember), member m fills
-     *  views[m * K + k] with component first + k of its value. */
+     *  value goes to views[0]. For a collection of composite fields, member m fills views[m * K + k] with component
+     *  first + k of its value. */
     template <size_t first, typename View, size_t NComp, typename R> struct AssignKernel {
       static constexpr size_t NDim = View::rank;
       /** @brief Asks the iteration to inline this kernel into its loop, see KokkosNDLambdaWrapper. A collection of
-       *  composite fields needs it; for plain fields GCC inlines it anyway, and forcing costs ~4 % (fused N = 8 kick). */
-      static constexpr bool inlineIntoLoop = storesPerMember<R, NComp>();
+       *  composite fields needs it; for plain fields GCC inlines it anyway, and forcing costs ~4 % (fused N = 8 kick).
+       */
+      static constexpr bool inlineIntoLoop = assignsComposites<R, NComp>();
       device::array<View, NComp> views;
       R g;
 
@@ -94,12 +121,16 @@ namespace TempLat
 
       template <typename... IDX> DEVICE_FORCEINLINE_FUNCTION void store(const IDX &...i) const
       {
-        if constexpr (storesPerMember<R, NComp>()) {
+        if constexpr (storesPerMember<R, NComp, NDim>()) {
           constexpr size_t K = NComp / R::size;
           constexpr_for<0, R::size>([&](auto m) {
             const auto value = g.template evalMember<decltype(m)::value>(i...);
             constexpr_for<0, K>([&](auto k) { views[decltype(m)::value * K + k](i...) = value[first + k]; });
           });
+        } else if constexpr (assignsComposites<R, NComp>()) {
+          constexpr size_t K = NComp / R::size;
+          const auto value = DoEval::eval(g, i...);
+          constexpr_for<0, NComp>([&](auto c) { views[c](i...) = value[c / K][first + c % K]; });
         } else {
           const auto value = DoEval::eval(g, i...);
           if constexpr (std::is_convertible_v<decltype(value), typename View::value_type>) {
@@ -247,10 +278,10 @@ namespace TempLat
 
     // One launch site, so that the plain and the sweeping assignment share all code depending on g.
     using Bands = AssignViewsDetail::Bands<View, NComp>;
-    const bool sweep = !targetReach.isZero() || (storesPerMember<R, NComp>() && readsOtherMember);
+    const bool sweep = !targetReach.isZero() || (storesPerMember<R, NComp, NDim>() && readsOtherMember);
     Bands bands = sweep ? Bands(views, layout, -targetReach.lo[0], buffer) : Bands(views, layout);
     // Row tiles help the many streams of a collection of plain fields; stencils of composites prefer Kokkos' tiles.
-    constexpr bool rowTiles = FusesComponents<R> && !storesPerMember<R, NComp>();
+    constexpr bool rowTiles = FusesComponents<R> && !assignsComposites<R, NComp>();
     for (device::Idx b = 0; b < bands.count(); ++b)
       device::iteration::foreach (name, layout, bands.firstPlane(b), bands.planes(b), Kernel{bands.prepare(b), g},
                                   rowTiles);

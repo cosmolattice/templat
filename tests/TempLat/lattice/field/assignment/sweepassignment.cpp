@@ -205,6 +205,8 @@ namespace TempLat
       using D = SU2Doublet<double, NDim>;
       using A = SU2LieAlgebraField<double, NDim>;
       using H = SymTracelessField<double, NDim>;
+      // A collection of composites is stored member by member, keeping one member's intermediates live at a time.
+      static_assert(EvaluatesMembers<ComponentList<device::array<double, 4>, U, U>, NDim>);
       auto complexExpr = [](const auto &f) { return shift<-1>(f) * shift<2>(f) + f; };
       auto su2Expr = [](const auto &f) { return shift<-1>(f) * dagger(shift<2>(f)); };
       auto sum = [](const auto &f) { return shift<-1>(f) + shift<1>(f); };

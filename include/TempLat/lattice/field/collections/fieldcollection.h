@@ -15,6 +15,7 @@
 #include "TempLat/lattice/field/assignment/assignviews.h"
 #include "TempLat/lattice/field/assignment/componentlist.h"
 #include "TempLat/lattice/field/assignment/prepareassignment.h"
+#include "TempLat/lattice/field/assignment/wholelist.h"
 
 #include <string>
 #include <tuple>
@@ -138,8 +139,14 @@ namespace TempLat
         targetReach = prepareAssignment<T, NDim>(g, managers, layout);
       else
         std::tie(targetReach, readsOtherMember) = prepareCollectionAssignment<T, NDim>(g, managers, K, layout);
-      assignViews<firstAssignedComponent()>("CollectionAssign", views, g, layout, targetReach,
-                                            first.toolBox()->mSweepBuffer, readsOtherMember);
+      if constexpr (wholeListShares<R>()) {
+        // Members share work (e.g. plaqGrad): all are evaluated before any is stored, so they may read each other.
+        auto whole = wholeOf<T, NDim, N>(r);
+        assignViews<firstAssignedComponent()>("CollectionAssign", views, WholeAssignment<decltype(whole)>{whole},
+                                              layout, targetReach, first.toolBox()->mSweepBuffer);
+      } else
+        assignViews<firstAssignedComponent()>("CollectionAssign", views, g, layout, targetReach,
+                                              first.toolBox()->mSweepBuffer, readsOtherMember);
       for (auto *m : managers)
         m->setGhostsAreStale();
     }
