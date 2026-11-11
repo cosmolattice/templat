@@ -53,6 +53,27 @@ namespace TempLat
     }
 
     /**
+     * @brief Projects a quaternion onto SU(2) by dividing all four components by their norm (keeps the sign of c0).
+     *
+     * @param res The element, modified in place. Must be an array of size 4.
+     */
+    template <typename ResArray>
+      requires requires(ResArray r) {
+        r[0];
+        r[1];
+        r[2];
+        r[3];
+      }
+    DEVICE_INLINE_FUNCTION static void normalize_inplace(ResArray &res)
+    {
+      const auto inv = 1 / device::sqrt(res[0] * res[0] + res[1] * res[1] + res[2] * res[2] + res[3] * res[3]);
+      res[0] *= inv;
+      res[1] *= inv;
+      res[2] *= inv;
+      res[3] *= inv;
+    }
+
+    /**
      * @brief Computes the exponential map for a given SU(2) algebra element.
      *
      * @param res The result array, which is modified in place. Must be an array of size 4.

@@ -15,6 +15,7 @@
 
 #include "TempLat/parallel/device.h"
 
+#include "TempLat/lattice/algebra/su2algebra/helpers/paulivectorsalgebra.h"
 #include "TempLat/lattice/algebra/su2algebra/su2binaryoperator.h"
 #include "TempLat/lattice/algebra/su2algebra/su2commutator.h"
 
@@ -22,8 +23,8 @@ namespace TempLat
 {
   /** @brief A class which implements a SU2 field (group).
    * We choose a representation with 4 real numbers per lattice site, c0, c1, c2, c3.
-   * These are subject to the unitarity constraint c0^2 + c1^2 + c2^2 + c3^2 = 1, which can be enforced by the
-   * unitarize() method.
+   * These are subject to the unitarity constraint c0^2 + c1^2 + c2^2 + c3^2 = 1, which unitarize() enforces by
+   * normalizing all four components.
    * A single link variable is then represented as U = c0 * I + i * (c1 * sigma1 + c2 * sigma2 + c3 * sigma3), where
    * sigma1, sigma2, sigma3 are the Pauli matrices.
    *
@@ -105,29 +106,34 @@ namespace TempLat
       fs[3].setGhostsAreStale();
     }
 
-    // Recompute c0 from c1,c2,c3 to enforce SU(2) unitarity constraint.
+    // Projects every link onto SU(2), c_mu -> c_mu / |c|, keeping the sign of c0.
     void unitarize()
     {
+      const auto view0 = fs[0].getView();
       const auto view1 = fs[1].getView();
       const auto view2 = fs[2].getView();
       const auto view3 = fs[3].getView();
-      const auto view0 = fs[0].getView();
 
       auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
       {
         device::apply(
             [&](const auto &...args) {
-              T c1 = view1(args...);
-              T c2 = view2(args...);
-              T c3 = view3(args...);
-              view0(args...) = sqrt(T(1) - c1 * c1 - c2 * c2 - c3 * c3);
+              device::array<T, 4> c{view0(args...), view1(args...), view2(args...), view3(args...)};
+              PauliVectorsAlgebra::normalize_inplace(c);
+              view0(args...) = c[0];
+              view1(args...) = c[1];
+              view2(args...) = c[2];
+              view3(args...) = c[3];
             },
             idx);
       };
       device::iteration::foreach ("SU2Unitarize", mLayout, functor);
 
       fs[0].setGhostsAreStale();
-      fs[0].updateGhosts();
+      fs[1].setGhostsAreStale();
+      fs[2].setGhostsAreStale();
+      fs[3].setGhostsAreStale();
+      updateGhosts();
     }
 
     std::string toString() const { return *mName; }

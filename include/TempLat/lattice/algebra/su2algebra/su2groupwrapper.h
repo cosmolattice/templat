@@ -11,9 +11,14 @@
 #include "TempLat/util/rangeiteration/tagliteral.h"
 #include "TempLat/util/rangeiteration/sum_in_range.h"
 #include "TempLat/lattice/algebra/su2algebra/su2operator.h"
+#include "TempLat/lattice/algebra/su2algebra/su2unaryoperator.h"
+#include "TempLat/lattice/algebra/su2algebra/helpers/hassu2get.h"
+#include "TempLat/lattice/algebra/su2algebra/helpers/paulivectorsalgebra.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2getgetreturntype.h"
 #include "TempLat/lattice/algebra/helpers/getstring.h"
 #include "TempLat/lattice/algebra/operators/power.h"
+#include "TempLat/lattice/algebra/operators/squareroot.h"
+#include "TempLat/lattice/algebra/operators/divide.h"
 
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/algebra/helpers/preget.h"
@@ -108,7 +113,8 @@ namespace TempLat
 
   /**
    * @vocab-summary Builds a genuine group element from three components, recovering $c_0$ from the unitarity
-   * constraint $c_0^2+c_1^2+c_2^2+c_3^2=1$ so that $\det U = 1$ holds by construction.
+   * constraint $c_0^2+c_1^2+c_2^2+c_3^2=1$ so that $\det U = 1$ holds by construction. Always gives $c_0 \geq 0$;
+   * to keep the sign of an existing element use toSU2.
    * @vocab-signature SU2GroupWrap(c1, c2, c3)
    **/
   template <class A, class B, class C> auto SU2GroupWrap(A &&pA, B &&pB, C &&pC)
@@ -116,11 +122,55 @@ namespace TempLat
     return SU2GroupWrapper<A, B, C>(pA, pB, pC);
   }
 
-  /**
-   * @vocab-summary Projects an SU(2)-valued expression onto the group by rebuilding it from its three vector
-   *   components.
+  /** @brief Projects an SU(2)-valued expression onto the group, c_mu -> c_mu / |c|.
+   *
+   * Unit test: ctest -R test-su2groupwrapper
    **/
-  template <class R> auto toSU2(R r) { return SU2GroupWrap(r.SU2Get(1_c), r.SU2Get(2_c), r.SU2Get(3_c)); }
+  template <typename R> class SU2Projector : public SU2UnaryOperator<R>
+  {
+  public:
+    using SU2UnaryOperator<R>::mR;
+
+    SU2Projector(const R &pR) : SU2UnaryOperator<R>(pR) {}
+
+    template <int N> auto SU2Get(Tag<N> t) const
+    {
+      static_assert(N >= 0 && N <= 3, "SU2Get: N must be between 0 and 3 for SU2Projector");
+      return mR.SU2Get(t) / sqrt(pow<2>(mR.SU2Get(0_c)) + pow<2>(mR.SU2Get(1_c)) + pow<2>(mR.SU2Get(2_c)) +
+                                 pow<2>(mR.SU2Get(3_c)));
+    }
+
+    template <int N> auto operator()(Tag<N> t) const
+    {
+      static_assert(N >= 0 && N <= 3, "Operator(): N must be between 0 and 3 for SU2Projector");
+      return SU2Get(t);
+    }
+
+    template <typename... IDX>
+      requires requires(std::decay_t<R> r, IDX... idx) {
+        requires IsVariadicIndex<IDX...>;
+        DoEval::eval(r, idx...);
+      }
+    DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
+    {
+      auto c = DoEval::eval(mR, idx...);
+      PauliVectorsAlgebra::normalize_inplace(c);
+      return c;
+    }
+
+    std::string toString() const { return "toSU2(" + GetString::get(mR) + ")"; }
+  };
+
+  /**
+   * @vocab-summary Projects an SU(2)-valued expression onto the group by normalizing all four components,
+   *   $c_\mu \to c_\mu / |c|$. Keeps the sign of $c_0$.
+   **/
+  template <class R>
+    requires HasSU2Get<R>
+  auto toSU2(const R &r)
+  {
+    return SU2Projector<R>(r);
+  }
 } // namespace TempLat
 
 #endif
