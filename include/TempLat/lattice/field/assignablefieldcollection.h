@@ -13,7 +13,6 @@
 #include "TempLat/lattice/field/assignment/collectionassignmentorder.h"
 #include "TempLat/util/shiftedindexsequence.h"
 #include "TempLat/util/foreach.h"
-#include "TempLat/util/concat.h"
 #include "TempLat/util/istuplelike.h"
 #include "TempLat/util/tuple_size.h"
 #include "TempLat/util/rangeiteration/for_in_range.h"
@@ -94,90 +93,6 @@ namespace TempLat
     template <typename R> void operator=(R &&g) {}
     static constexpr size_t size = 0;
   };
-
-  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int... I>
-  class CollectionBase : public AssignableCollectionBase<Q, Field<T, NDim>>
-  {
-  public:
-    using AssignableCollectionBase<Q, Field<T, NDim>>::operator=;
-
-    // Put public methods here. These should change very little over time.
-    template <class... Args>
-    CollectionBase(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox,
-                   LatticeParameters<T> pLatPar = LatticeParameters<T>())
-        : AssignableCollectionBase<Q, Args...>(
-              Args(name + std::to_string(I - std::get<0>(std::make_tuple(I...))), toolBox, pLatPar)...)
-    {
-    }
-
-    template <class... Args>
-    CollectionBase(Args... args)
-        : // This constructor is used to create composite structure such as SU(N) matrices, from fields.
-          AssignableCollectionBase<Q, Args...>(args...)
-    {
-    }
-
-  private:
-    /* Put all member variables and private methods here. These may change arbitrarily. */
-  };
-
-  template <class Q, typename T, size_t NDim,
-            CANONICALTYPE ISMOMENTUM> // Specialise to empty field collection, that does nothing. Useful to define
-                                      // general models for example, which may have some empty collections.
-  class CollectionBase<Q, T, NDim, ISMOMENTUM> : public AssignableCollectionBase<Q>
-  {
-  public:
-    // Put public methods here. These should change very little over time.
-    CollectionBase(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox,
-                   LatticeParameters<T> pLatPar = LatticeParameters<T>())
-    {
-    }
-  };
-
-  // Now we want to be able to use it like an array; we need to have a way to unpack an integer into a list.
-  // This comes from  http://spraetor.github.io/2016/01/02/template-integer-sequence.html
-  // Unpack the FieldCollection<T,N> in CollectionBase<T,0,1,2,...> in Olog(N) compile time.
-
-  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int Start, int End> struct CollectionHelper;
-
-  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int Start, int End>
-  using MakeSeqImpl_t = typename CollectionHelper<Q, T, NDim, ISMOMENTUM, Start, End>::type;
-
-  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int N>
-  using MakeSeq_t = typename CollectionHelper<Q, T, NDim, ISMOMENTUM, 0, N - 1>::type;
-
-  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int... I1s, int... I2s>
-  struct Concat<CollectionBase<Q, T, NDim, ISMOMENTUM, I1s...>, CollectionBase<Q, T, NDim, ISMOMENTUM, I2s...>> {
-    using type = CollectionBase<Q, T, NDim, ISMOMENTUM, I1s..., I2s...>;
-  };
-
-  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int Start, int End> struct CollectionHelper {
-    using type = Concat_t<MakeSeqImpl_t<Q, T, NDim, ISMOMENTUM, Start, (Start + End) / 2>,
-                          MakeSeqImpl_t<Q, T, NDim, ISMOMENTUM, (Start + End) / 2 + 1, End>>;
-  };
-
-  // break condition:
-  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int I>
-  struct CollectionHelper<Q, T, NDim, ISMOMENTUM, I, I> {
-    using type = CollectionBase<Q, T, NDim, ISMOMENTUM, I>;
-  };
-
-  // template <typename T, CANONICALTYPE ISMOMENTUM, int N, int SHIFT = 0>
-  // using FieldCollection = typename CollectionHelper<T,ISMOMENTUM, SHIFT,N+SHIFT-1>::type;
-
-  // This allows to switch between empty and non empty field collection.
-
-  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int N, int SHIFT, bool ENABLE>
-  struct CollectionSelector {
-    using type = CollectionBase<Q, T, NDim, ISMOMENTUM>;
-  };
-  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int N, int SHIFT>
-  struct CollectionSelector<Q, T, NDim, ISMOMENTUM, N, SHIFT, false> {
-    using type = typename CollectionHelper<Q, T, NDim, ISMOMENTUM, SHIFT, N + SHIFT - 1>::type;
-  };
-
-  template <class Q, typename T, size_t NDim, CANONICALTYPE ISMOMENTUM, int N, int SHIFT>
-  using Collection = typename CollectionSelector<Q, T, NDim, ISMOMENTUM, N, SHIFT, N == 0>::type;
 } // namespace TempLat
 
 #endif

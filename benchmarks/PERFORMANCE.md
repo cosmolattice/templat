@@ -100,27 +100,24 @@ plaqBack)` materializes all twelve four-link products in one expression; vectori
 quaternion component is a full zmm, and the live set does not fit in 32 registers. GCC spills it and
 reloads. (It is not unrolling: `-fno-unroll-loops` leaves all 3276 spills in place.)
 
-**The lever is to stop fusing so much.** Splitting the kick into one assignment per transverse
+**Stopping the fusion helps on one rank only.** Splitting the kick into one assignment per transverse
 direction — `for j != i: Pi(i) = Pi(i) - dt*(plaq(U,i,j) - plaqBack(U,i,j))` — trades one extra Π
-read+write for a live set that fits, and is **11–22% faster**, with `plaq`/`edrift` bit-identical.
-Spills drop 3276 -> 1500. `su2_evolution.cpp` **now does this by default**; `-DKICK_FUSED` restores the
-fused form for comparison.
+read+write for a live set that fits: spills drop 3276 -> 1500 and a single rank is **11–22% faster**,
+with `plaq`/`edrift` bit-identical (`-DKICK_DEFUSED` in `su2_evolution.cpp`):
 
 | kick, ns/site | fused | de-fused |
 |---|---|---|
 | 64³ | 46.9 | **41.9** |
 | 192³ | 55.9 | **43.4** |
 
-Do not over-split: one assignment per *term* (`kick_ladder` variant 5) drops spills further, to 1166,
-but is slower — the extra Π traffic then outweighs the spills it saves. There is an optimum and it is
-not at either end.
+At full node occupancy, however, de-fusing **loses 33–37%**: the kick is then bandwidth-bound, and the
+extra Π traffic costs more than the spills. The fused form therefore stays the default. Optimise this
+kernel for bytes, not for FLOPs or registers, and check any change on the full MPI rank ladder.
+Over-splitting (one assignment per *term*, `kick_ladder` variant 5) is slower still.
 
-**This applies to CosmoLattice, and probably more so.** `CosmoInterface/evolvers/kernels/su2kernels.h`
-builds `-normGrad * (GradSU2 - GradSU2Back) - normSU2Source * SU2Source`, where `GradSU2` and
-`GradSU2Back` are each a `Total(j, ...)` over plaquettes, and the evolvers apply it as a single
-`piSU2(n) += (w * dt) * SU2Kernels::get(model, n)`. That is the fused shape with an *extra* source term
-in the live set. Not yet measured there — but it is the same expression pathology, and the same
-de-fusing should apply.
+What does reduce both bytes and arithmetic is `plaqGrad(U)`: it evaluates all directions of the kick in
+one kernel and computes each forward plaquette once, using P_ji = P_ij^†, so 9 instead of 12 four-link
+products per site. CosmoLattice's SU(2) kernel uses it.
 
 Closing the rest of the gap means shrinking the live set *inside* the plaquette evaluation — a fused
 primitive that accumulates the algebra components without materializing every intermediate quaternion
@@ -179,7 +176,8 @@ note about `shared_ptr` leaves above. The current fix hoists the dimension *with
 
 ## 4. Where the time goes now
 
-- The **kick is compute-bound** (~98% of its time is arithmetic, not memory traffic) and is ~85% of a
+- On one rank the **kick is compute-bound** (~98% of its time is arithmetic, not memory traffic; at full
+  node occupancy it is bandwidth-bound, see section 2) and is ~85% of a
   leapfrog step. It was the right thing to attack, and vectorization was the right lever.
 - The **drift is bandwidth-bound**, and is now ~15% of the step. Its exp map (`su2algebra/helpers/
   paulivectorsalgebra.h`) contains an `a > 1e-15` sinc guard — a data-dependent branch in the loop
@@ -194,6 +192,43 @@ note about `shared_ptr` leaves above. The current fix hoists the dimension *with
   expression-template assignment is its own fork/join, so the thread team is re-formed per kernel.
 - The FFT forces a 2D pencil decomposition, which constrains the domain decomposition independently
   of any of the above.
+
+---
+
+## 5. Why the vectorized dispatch is opt-in (`-DTEMPLAT_VECTORIZED_MDRANGE`)
+
+A/B of the two dispatches (one binary per macro, same source, interleaved reps) on PC2 Noctua 2
+(2x EPYC 7763), pure-gauge SU(2) leapfrog. Kick, ns/site/step; min–max envelopes disjoint over 3 reps:
+
+| N   | ranks | vectorized | legacy | winner           |
+|-----|-------|------------|--------|------------------|
+| 384 | 16    | 9.82       | 11.89  | vectorized +21%  |
+| 384 | 32    | 9.23       | 8.67   | legacy +6.4%     |
+| 384 | 64    | 4.22       | 4.03   | legacy +4.7%     |
+| 384 | 128   | 2.25       | 2.13   | legacy +5.5%     |
+| 768 | 128   | 2.36       | 2.26   | legacy +4.6%     |
+| 768 | 256   | 1.20       | 1.14   | legacy +5.3%     |
+
+The controlling variable is **node occupancy**, not lattice size or volume per rank: 384³ at 16 ranks
+and 768³ at 128 ranks have the same 96×96×384 local box, and the vectorized dispatch wins the first by
+21% and loses the second by 4.6%. Below ~25% occupancy the kick is compute-bound and removing
+instructions pays; at full occupancy it is DRAM-bound and only the dispatch's residual cost shows.
+Production runs fill nodes, so legacy is the default.
+
+- The penalty is confined to stencil kernels; the drift (site-local) is a dead heat at every occupancy.
+- It is not the inner sweep outgrowing cache: at 128 ranks, doubling the contiguous extent 384 → 768
+  does not worsen it (5.5% → 4.6%).
+
+**Open: choosing per launch.** Neither path dominates, so the dispatch could be picked at run time
+from occupancy = `ThreadSettings::getMPILocalSize() * getMaxThreadCount()` / cores per node. Before
+doing so:
+1. *Compile time.* Both wrappers would be instantiated for every kernel (an SU2Axion TU is already
+   ~162 s, mostly backend inlining). Only neighbour-reading kernels need both paths.
+2. *Threshold.* The data brackets the crossover between 12.5% and 25% occupancy on one machine; it
+   moves with bytes per core and is unmeasured elsewhere (e.g. Otus, 2x EPYC 9655).
+3. *Core count.* `hardware_concurrency()` counts logical CPUs and ignores cgroup limits.
+
+Keep an explicit override either way. The GPU is unaffected: the vectorized branch is CPU only.
 
 ---
 

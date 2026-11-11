@@ -17,10 +17,6 @@
 #endif
 #include "TempLat/parallel/devices/kokkos/kokkos_p2p.h"
 
-#elif defined(DEVICE_STD)
-
-#include "TempLat/parallel/devices/std/std_memory.h"
-
 #else
 
 static_assert(false, "No device memory backend selected.");

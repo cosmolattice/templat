@@ -267,8 +267,7 @@ namespace TempLat
      * Kokkos' MDRange tiles all NDim dimensions, and its innermost tile loop is one the vectorizer
      * gives up on -- it has runtime bounds and no independence guarantee, so GCC emits scalar code
      * for every lattice kernel. Handing the last (unit-stride) dimension back to a plain loop that
-     * carries TEMPLAT_ASSUME_INDEPENDENT is what lets it vectorize: measured on the SU(2) kick, 125
-     * -> 46 ns/site, and 8 -> 8064 packed FP instructions. See benchmarks/PERFORMANCE.md.
+     * carries TEMPLAT_ASSUME_INDEPENDENT is what lets it vectorize, see benchmarks/PERFORMANCE.md.
      *
      * The functor is copied once, here at construction; the inner loop must not copy it again. The
      * expression trees it holds are NOT cheap to copy (their leaves carry a shared_ptr to the memory

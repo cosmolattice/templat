@@ -27,12 +27,9 @@ endforeach()
 # Nothing else in the suite can see this. A scalar kernel is correct, just ~2.5x slow, so it passes
 # every test we have -- which is how a 100%-scalar SU(2) kick survived. See PERFORMANCE.md.
 #
-# The vectorized dispatch is no longer the default (it loses ~5% on the kick at full node
-# occupancy -- see the long comment in parallel/devices/kokkos/kokkos_iteration.h), so this test
-# needs its own opt-in build: against the default binary it would find no inner-loop kernels at all
-# and fail for the wrong reason. The path is still worth guarding precisely because we intend to
-# come back to it -- an unused code path that silently stops vectorizing is one that cannot be
-# evaluated when it is picked up again.
+# The vectorized dispatch is opt-in (PERFORMANCE.md, section 5), so this test needs its own build with
+# it enabled: against the default binary it would find no inner-loop kernels and fail for the wrong
+# reason. It still guards the path, so that it can be evaluated again when it is picked up.
 # ##############################################################################
 
 if(TEMPLAT_TEST

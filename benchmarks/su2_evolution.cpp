@@ -245,12 +245,8 @@ int main(int argc, char **argv)
                   idx);
             });
 #elif defined(KICK_DEFUSED)
-        // Accumulate one transverse direction at a time. The fused expression below keeps all 12
-        // four-link products live at once, which does not fit in the register file, so it spills
-        // (3276 stack-touching vector moves against 1500 here) -- and de-fusing duly wins 11-20% ON A
-        // SINGLE RANK. It LOSES 33-37% at full machine occupancy, because the extra Pi read+write per
-        // j is memory traffic, and at scale the kick is bandwidth-bound, not compute-bound. Kept only
-        // to reproduce that: this is a trap, see benchmarks/PERFORMANCE.md section 2.
+        // One transverse direction at a time: fewer registers live, faster on one rank, slower at full
+        // occupancy (more memory traffic). See benchmarks/PERFORMANCE.md, section 2.
         for_in_range<1, NDim + 1>([&](auto i) {
           for_in_range<1, NDim + 1>([&](auto j) {
             if constexpr (decltype(i)::value != decltype(j)::value) {
@@ -266,9 +262,8 @@ int main(int argc, char **argv)
         Pi = Pi - dt * MakeVector(i, 1, NDim,
                                   Total(j, 1, NDim, IfElse(i != j, plaq(U, i, j) - plaqBack(U, i, j), ZeroType())));
 #else
-        // The fused kick. It spills registers and is ~11-20% slower on one rank -- and it is still the
-        // right default, because it moves the least memory, and every core beyond the first is fighting
-        // for DRAM bandwidth. Optimise this kernel for BYTES, not for FLOPs or registers.
+        // The fused kick, per direction: spills registers, but moves the least memory, which is what counts
+        // at full occupancy (benchmarks/PERFORMANCE.md, section 2).
         for_in_range<1, NDim + 1>([&](auto i) {
           Pi(i) = Pi(i) - dt * Total(j, 1, NDim,
                                      IfElse(i != j, plaq(U, i, j) - plaqBack(U, i, j), ZeroType()));
