@@ -8,6 +8,7 @@
 // File info: Main contributor(s): Franz R. Sattler, Year: 2026
 
 #include <span>
+#include <utility>
 
 #include "TempLat/lattice/algebra/helpers/confirmspace.h"
 #include "TempLat/lattice/algebra/helpers/ghostreach.h"
@@ -41,6 +42,37 @@ namespace TempLat
     for (auto *m : targets)
       m->flagHostMirrorOutdated();
     return targetReach;
+  }
+
+  /** @brief As prepareAssignment, for a collection assigning all members in one kernel (see ComponentList), member m
+   *  writing targets [m * fieldsPerMember, (m + 1) * fieldsPerMember). Walks each member separately, and also
+   *  returns whether some member reads a target of another member: a kernel storing member by member would then
+   *  read overwritten values.
+   *
+   *  Unit test: ctest -R test-sweepassignment
+   **/
+  template <typename T, size_t NDim, typename R>
+  std::pair<GhostReach, bool> prepareCollectionAssignment(R &g, std::span<MemoryManager<T, NDim> *const> targets,
+                                                          size_t fieldsPerMember, const LayoutStruct<NDim> &layout)
+  {
+    for (auto *m : targets)
+      m->confirmConfigSpace();
+    ConfirmSpace::apply(g, layout, SpaceStateType::Configuration);
+
+    GhostReach targetReach;
+    bool readsOtherMember = false;
+    size_t member = 0;
+    g.forEachMember([&](auto &r) {
+      typename MemoryManager<T, NDim>::AssignmentTargetGuard guard(targets);
+      GhostsHunter::apply(r);
+      targetReach |= guard.targetReach();
+      for (size_t i = 0; i < targets.size(); ++i)
+        readsOtherMember = readsOtherMember || (i / fieldsPerMember != member && guard.wasRead(i));
+      ++member;
+    });
+    for (auto *m : targets)
+      m->flagHostMirrorOutdated();
+    return {targetReach, readsOtherMember};
   }
 } // namespace TempLat
 

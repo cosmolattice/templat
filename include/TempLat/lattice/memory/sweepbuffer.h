@@ -32,8 +32,9 @@ namespace TempLat
       if (bytes > mData.size()) {
         if (!isAllocated() && MPICommReference::worldRank() == 0)
           sayShort << "TempLat warning: an assignment reads its own target at neighbouring sites (e.g. "
-                      "phi = LatLapl(phi)). It is evaluated plane by plane, using a scratch buffer of "
-                   << (bytes + 1023) / 1024 << " kB. Printed once per MemoryToolBox.\n";
+                      "phi = LatLapl(phi)), or a collection member reads another member. It is evaluated plane "
+                      "by plane, using a scratch buffer of "
+                   << (bytes + 1023) / 1024 / 1024 / 1024 << " GB.\n";
         mData = device::memory::NDView<char, 1>("SweepBuffer", bytes);
       }
       return reinterpret_cast<T *>(mData.data());

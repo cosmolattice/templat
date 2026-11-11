@@ -86,11 +86,12 @@ namespace TempLat::device_kokkos::iteration
 the default, so -DTEMPLAT_LEGACY_MDRANGE is redundant; drop it, or drop the vectorized one."
 #endif
   // 2b. foreach: LayoutStruct, restricted to the planes [firstPlane, firstPlane + nPlanes) of axis 0. Dispatches
-  // like 2., with policies of the same type, so a functor used by both is instantiated once.
+  // like 2., with policies of the same type, so a functor used by both is instantiated once. rowTiles: see
+  // getLocalKokkosPolicy.
   template <size_t NDim, typename Functor>
     requires requires(Functor functor) { functor(device_kokkos::IdxArray<NDim>{}); }
   void foreach (const std::string &name, const LayoutStruct<NDim> &mLayout, device_kokkos::Idx firstPlane,
-                device_kokkos::Idx nPlanes, const Functor &functor)
+                device_kokkos::Idx nPlanes, const Functor &functor, bool rowTiles = false)
   {
 #ifdef TEMPLAT_VECTORIZED_MDRANGE
     if constexpr (!device_kokkos::reverse_access_pattern && NDim >= 2) {
@@ -102,7 +103,7 @@ the default, so -DTEMPLAT_LEGACY_MDRANGE is redundant; drop it, or drop the vect
     } else
 #endif
     {
-      Kokkos::parallel_for(name, device_kokkos::getLocalKokkosPolicy(mLayout, firstPlane, nPlanes),
+      Kokkos::parallel_for(name, device_kokkos::getLocalKokkosPolicy(mLayout, firstPlane, nPlanes, rowTiles),
                            device_kokkos::KokkosNDLambdaWrapper<NDim, Functor>(functor));
     }
   }

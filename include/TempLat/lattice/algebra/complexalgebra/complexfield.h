@@ -84,6 +84,11 @@ namespace TempLat
 
     ComplexFieldFourierView<T, NDim> inFourierSpace() { return {mR.inFourierSpace(), mI.inFourierSpace()}; }
 
+    /** @brief The fields an assignment writes; they receive components 0 and 1 of the value. Lets collections assign
+     *  all members in one kernel, see FieldCollection::operator=. */
+    auto assignedFields() const { return device::array<Field<T, NDim>, 2>{mR, mI}; }
+    static constexpr size_t firstAssignedComponent = 0;
+
     /** @brief Prepares the right-hand side g for the single assignment kernel writing all components, see
      *  prepareAssignment. */
     template <typename R> GhostReach onBeforeAssignment(R &&g)

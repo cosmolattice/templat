@@ -38,6 +38,30 @@ namespace TempLat
     return std::clamp<device::Idx>(width, 1, nPlanes);
   }
 
+  /** @brief A right-hand side evaluating many fields per site: a whole collection, see ComponentList. On a CPU, its
+   *  kernel inlines everything it calls; GCC otherwise calls the member expressions per site and recomputes the
+   *  index arithmetic of every field access. */
+  template <typename R>
+  concept FusesComponents = requires { requires std::remove_cvref_t<R>::fusesComponents; };
+
+  /** @brief Whether the kernel assigning g to NComp views stores member by member: a collection of composite fields,
+   *  each member filling NComp / size views. That keeps a single member's intermediates live at a time, which on a
+   *  CPU removes most register spills of e.g. a fused gauge kick. A collection of plain fields stores all members
+   *  at once. */
+  template <typename R, size_t NComp> constexpr bool storesPerMember()
+  {
+    if constexpr (FusesComponents<R>)
+      return NComp > std::remove_cvref_t<R>::size;
+    else
+      return false;
+  }
+
+#if defined(__GNUC__) && !defined(__CUDACC__) && !defined(__HIPCC__)
+#define TEMPLAT_INLINE_CALLEES [[gnu::flatten]]
+#else
+#define TEMPLAT_INLINE_CALLEES
+#endif
+
   namespace AssignViewsDetail
   {
     template <typename View, size_t NDim>
@@ -47,24 +71,43 @@ namespace TempLat
     }
 
     /** @brief The assignment kernel: stores component first + c of g's value at a site into views[c]; a scalar
-     *  value goes to views[0]. */
+     *  value goes to views[0]. For a collection of composite fields (storesPerMember), member m fills
+     *  views[m * K + k] with component first + k of its value. */
     template <size_t first, typename View, size_t NComp, typename R> struct AssignKernel {
       static constexpr size_t NDim = View::rank;
+      /** @brief Asks the iteration to inline this kernel into its loop, see KokkosNDLambdaWrapper. A collection of
+       *  composite fields needs it; for plain fields GCC inlines it anyway, and forcing costs ~4 % (fused N = 8 kick). */
+      static constexpr bool inlineIntoLoop = storesPerMember<R, NComp>();
       device::array<View, NComp> views;
       R g;
 
       DEVICE_INLINE_FUNCTION void operator()(const device::IdxArray<NDim> &idx) const
+        requires(!FusesComponents<R>)
       {
-        device::apply(
-            [&](const auto &...i) {
-              const auto value = DoEval::eval(g, i...);
-              if constexpr (std::is_convertible_v<decltype(value), typename View::value_type>) {
-                static_assert(NComp == 1 && first == 0, "A scalar value fills a single view.");
-                views[0](i...) = value;
-              } else
-                constexpr_for<0, NComp>([&](auto c) { views[c](i...) = value[first + c]; });
-            },
-            idx);
+        device::apply([&](const auto &...i) { store(i...); }, idx);
+      }
+      TEMPLAT_INLINE_CALLEES DEVICE_FORCEINLINE_FUNCTION void operator()(const device::IdxArray<NDim> &idx) const
+        requires FusesComponents<R>
+      {
+        device::apply([&](const auto &...i) { store(i...); }, idx);
+      }
+
+      template <typename... IDX> DEVICE_FORCEINLINE_FUNCTION void store(const IDX &...i) const
+      {
+        if constexpr (storesPerMember<R, NComp>()) {
+          constexpr size_t K = NComp / R::size;
+          constexpr_for<0, R::size>([&](auto m) {
+            const auto value = g.template evalMember<decltype(m)::value>(i...);
+            constexpr_for<0, K>([&](auto k) { views[decltype(m)::value * K + k](i...) = value[first + k]; });
+          });
+        } else {
+          const auto value = DoEval::eval(g, i...);
+          if constexpr (std::is_convertible_v<decltype(value), typename View::value_type>) {
+            static_assert(NComp == 1 && first == 0, "A scalar value fills a single view.");
+            views[0](i...) = value;
+          } else
+            constexpr_for<0, NComp>([&](auto c) { views[c](i...) = value[first + c]; });
+        }
       }
     };
 
@@ -132,8 +175,7 @@ namespace TempLat
           extents[0] = nSlots;
           for (size_t d = 1; d < NDim; ++d)
             extents[d] = views[c].extent(d);
-          ring[c] = device::apply([&](auto... n) { return View(ringData + c * nSlots * mPlaneStride, n...); },
-                                  extents);
+          ring[c] = device::apply([&](auto... n) { return View(ringData + c * nSlots * mPlaneStride, n...); }, extents);
         }
         mWriteBack = {views, ring, nSlots, layout.getNGhosts()};
       }
@@ -178,7 +220,9 @@ namespace TempLat
    *  g's value, a scalar value goes to views[0]. targetReach is the range of offsets at which g reads the views,
    *  see prepareAssignment.
    *
-   *  If g reads the views only in place, the kernel runs once over the local block. Otherwise it sweeps along
+   *  If g reads the views only in place, the kernel runs once over the local block. Otherwise, or if a kernel
+   *  storing member by member has a member reading another member's views (readsOtherMember, see
+   *  prepareCollectionAssignment), it sweeps along
    *  axis 0, the slowest in memory, in bands of B adjacent planes. The kernel evaluates each band into a ring
    *  buffer, never into the views, so every read sees old values: it is handed views of the same type and shape
    *  whose data pointer is shifted to put the band into the ring. Before a band reuses ring planes, a separate
@@ -194,7 +238,8 @@ namespace TempLat
    **/
   template <size_t first = 0, typename View, size_t NComp, typename R, size_t NDim>
   void assignViews(const std::string &name, const device::array<View, NComp> &views, R &&g,
-                   const LayoutStruct<NDim> &layout, const GhostReach &targetReach, SweepBuffer &buffer)
+                   const LayoutStruct<NDim> &layout, const GhostReach &targetReach, SweepBuffer &buffer,
+                   bool readsOtherMember = false)
   {
     using Kernel = AssignViewsDetail::AssignKernel<first, View, NComp, std::remove_cvref_t<R>>;
 
@@ -202,9 +247,13 @@ namespace TempLat
 
     // One launch site, so that the plain and the sweeping assignment share all code depending on g.
     using Bands = AssignViewsDetail::Bands<View, NComp>;
-    Bands bands = targetReach.isZero() ? Bands(views, layout) : Bands(views, layout, -targetReach.lo[0], buffer);
+    const bool sweep = !targetReach.isZero() || (storesPerMember<R, NComp>() && readsOtherMember);
+    Bands bands = sweep ? Bands(views, layout, -targetReach.lo[0], buffer) : Bands(views, layout);
+    // Row tiles help the many streams of a collection of plain fields; stencils of composites prefer Kokkos' tiles.
+    constexpr bool rowTiles = FusesComponents<R> && !storesPerMember<R, NComp>();
     for (device::Idx b = 0; b < bands.count(); ++b)
-      device::iteration::foreach (name, layout, bands.firstPlane(b), bands.planes(b), Kernel{bands.prepare(b), g});
+      device::iteration::foreach (name, layout, bands.firstPlane(b), bands.planes(b), Kernel{bands.prepare(b), g},
+                                  rowTiles);
     bands.finish();
 
     PostGet::apply(g);

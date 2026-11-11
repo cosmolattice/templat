@@ -121,6 +121,7 @@
 #include "TempLat/lattice/field/assignablefieldcollection.h"
 #include "TempLat/lattice/field/assignment/prepareassignment.h"
 #include "TempLat/lattice/field/assignment/assignviews.h"
+#include "TempLat/lattice/field/assignment/componentlist.h"
 #include "TempLat/lattice/field/collections/fieldcollection.h"
 #include "TempLat/lattice/field/collections/vectorfield.h"
 #include "TempLat/lattice/field/collections/vectorfieldcollection.h"

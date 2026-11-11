@@ -41,9 +41,12 @@ namespace TempLat
     // Getting the policies for iteration
     // ------------------------------------------------
 
-    /** @brief Policy over the planes [firstPlane, firstPlane + nPlanes) of axis 0 of the layout's local block. */
+    /** @brief Policy over the planes [firstPlane, firstPlane + nPlanes) of axis 0 of the layout's local block. With
+     *  rowTiles, a CPU walks the rows in order instead of in Kokkos' tiles of 2 x 2 rows, which alternate between
+     *  two planes and so double the number of memory streams. The policy type does not depend on it. */
     template <size_t NDim>
-    auto getLocalKokkosPolicy(const LayoutStruct<NDim> &layout, device_kokkos::Idx firstPlane, device_kokkos::Idx nPlanes)
+    auto getLocalKokkosPolicy(const LayoutStruct<NDim> &layout, device_kokkos::Idx firstPlane,
+                              device_kokkos::Idx nPlanes, bool rowTiles = false)
     {
       Kokkos::Array<uint64_t, NDim> start_iteration;
       Kokkos::Array<uint64_t, NDim> stop_iteration;
@@ -64,7 +67,12 @@ namespace TempLat
       if constexpr (NDim == 1) {
         return Kokkos::RangePolicy<DefaultExecutionSpace>(start_iteration[0], stop_iteration[0]);
       } else {
-        return Kokkos::MDRangePolicy<DefaultExecutionSpace, Kokkos::Rank<NDim>>(start_iteration, stop_iteration);
+        // Tile sizes 0 leave the choice to Kokkos: on a CPU, tiles of 2 x 2 rows.
+        Kokkos::Array<uint64_t, NDim> tile{};
+        if (rowTiles && !device_kokkos::reverse_access_pattern)
+          for (size_t d = 0; d + 1 < NDim; ++d)
+            tile[d] = 1;
+        return Kokkos::MDRangePolicy<DefaultExecutionSpace, Kokkos::Rank<NDim>>(start_iteration, stop_iteration, tile);
       }
     }
 
@@ -215,12 +223,28 @@ namespace TempLat
      * @tparam NDim Number of arguments taken
      * @tparam FUN The lambda to which we forward the indices
      */
+    /** @brief A functor asking to be inlined into the iteration loop (FUN::inlineIntoLoop). GCC otherwise calls a
+     *  large functor once per site, redoing all its index arithmetic. */
+    template <typename FUN>
+    concept InlinedIntoLoop = requires { requires FUN::inlineIntoLoop; };
+
     template <size_t NDim, typename FUN> struct KokkosNDLambdaWrapper {
       KokkosNDLambdaWrapper(const FUN &_fun) : fun(_fun) {};
 
       template <typename... Args>
-        requires(sizeof...(Args) == NDim)
+        requires(sizeof...(Args) == NDim && !InlinedIntoLoop<FUN>)
       DEVICE_INLINE_FUNCTION void operator()(const Args &...args) const
+      {
+        call(args...);
+      }
+      template <typename... Args>
+        requires(sizeof...(Args) == NDim && InlinedIntoLoop<FUN>)
+      DEVICE_FORCEINLINE_FUNCTION void operator()(const Args &...args) const
+      {
+        call(args...);
+      }
+
+      template <typename... Args> DEVICE_FORCEINLINE_FUNCTION void call(const Args &...args) const
       {
         // What's going on here: on GPU, it is beneficial to reverse the memory access pattern, for coalesced access.
         // However, we do not want to impose this on the level of the memory layouts. In particular, this would

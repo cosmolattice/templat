@@ -66,6 +66,11 @@ namespace TempLat
       return fs[M - 1];
     }
 
+    /** @brief The fields an assignment writes; they receive components 1 ... 3 of the value. Lets collections assign
+     *  all members in one kernel, see FieldCollection::operator=. */
+    const auto &assignedFields() const { return fs; }
+    static constexpr size_t firstAssignedComponent = 1;
+
     /** @brief Prepares the right-hand side r for the single assignment kernel writing all components, see
      *  prepareAssignment. */
     template <typename R> GhostReach onBeforeAssignment(R &&r)

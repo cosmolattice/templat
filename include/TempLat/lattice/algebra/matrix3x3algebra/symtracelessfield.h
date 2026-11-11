@@ -152,6 +152,11 @@ namespace TempLat
       return {m0.inFourierSpace(), m1.inFourierSpace(), m2.inFourierSpace(), m3.inFourierSpace(), m4.inFourierSpace()};
     }
 
+    /** @brief The fields an assignment writes; they receive components 0 ... 4 of the value. Lets collections assign
+     *  all members in one kernel, see FieldCollection::operator=. */
+    auto assignedFields() const { return device::array<Field<T, NDim>, 5>{m0, m1, m2, m3, m4}; }
+    static constexpr size_t firstAssignedComponent = 0;
+
     /** @brief Prepares the right-hand side g for the single assignment kernel writing all components, see
      *  prepareAssignment. */
     template <typename R> GhostReach onBeforeAssignment(R &&g)

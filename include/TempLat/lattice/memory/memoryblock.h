@@ -36,14 +36,14 @@ namespace TempLat
     /** @brief Constructor with a size to allocate. */
     MemoryBlock(size_t size) : mSize(size), mHostMirrorOutdated(true)
     {
-      mData = device::memory::NDView<T, 1>("MemoryBlock", mSize);
+      mData = allocateStaggered(mSize);
       zero();
     }
 
     void allocate(size_t size)
     {
       this->mSize = size;
-      if (mData.size() != size) mData = device::memory::NDView<T, 1>("MemoryBlock", mSize);
+      if (mData.size() != size) mData = allocateStaggered(mSize);
       zero();
     }
 
@@ -191,6 +191,22 @@ namespace TempLat
     mutable HostView mHostMirror;
     static constexpr size_t TSIZE = sizeof(T);
     mutable bool mHostMirrorOutdated = true;
+
+    /** @brief Allocates size elements. On a CPU, successive blocks start at different offsets modulo 4 kB: blocks
+     *  of equal size are otherwise aligned alike, so the same site of all fields falls into the same cache set,
+     *  and a kernel streaming more fields than the cache has ways thrashes. */
+    static DeviceView allocateStaggered(size_t size)
+    {
+#ifdef DEVICE_CPU
+      static size_t count = 0;
+      constexpr size_t line = 64, nOffsets = 4096 / line;
+      const size_t pad = (count++ % nOffsets) * line / sizeof(T);
+      DeviceView padded("MemoryBlock", size + pad);
+      return device::memory::subview(padded, std::make_pair(pad, pad + size));
+#else
+      return DeviceView("MemoryBlock", size);
+#endif
+    }
 
     DEVICE_INLINE_FUNCTION
     void checkBounds(device::Idx i) const

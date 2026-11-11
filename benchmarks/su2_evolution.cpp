@@ -71,6 +71,8 @@
 #include "TempLat/util/constexpr_for.h"
 #endif
 
+#include "TempLat/lattice/algebra/listoperators/listoperators.h"
+#include "TempLat/util/rangeiteration/make_list_tag.h"
 #include <cmath>
 #include <cstdio>
 
@@ -249,6 +251,10 @@ int main(int argc, char **argv)
             }
           });
         });
+#elif defined(SU2_FUSED)
+        // All directions in one kernel, written as CosmoLattice writes it: one collection assignment.
+        Pi = Pi - dt * MakeVector(i, 1, NDim,
+                                  Total(j, 1, NDim, IfElse(i != j, plaq(U, i, j) - plaqBack(U, i, j), ZeroType())));
 #else
         // The fused kick. It spills registers and is ~11-20% slower on one rank -- and it is still the
         // right default, because it moves the least memory, and every core beyond the first is fighting
@@ -261,7 +267,11 @@ int main(int argc, char **argv)
         device::iteration::fence();
       });
       measurer.measure("U drift", [&]() {
+#if defined(SU2_FUSED)
+        U = MakeVector(i, 1, NDim, exp(dt * Pi(i)) * U(i));
+#else
         for_in_range<1, NDim + 1>([&](auto i) { U(i) = exp(dt * Pi(i)) * U(i); });
+#endif
         device::iteration::fence();
       });
     }

@@ -217,6 +217,7 @@ namespace TempLat
      *  needs no ghosts; otherwise throws if the ghost layers are too shallow, then confirms the ghosts. */
     device::Idx confirmGhostsUpToDate(const GhostReach &reach)
     {
+      if (mIsAssignmentTarget) mTargetRead = true;
       if (reach.isZero()) return 0;
       checkShiftedRead(reach);
       return confirmGhostsUpToDate();
@@ -268,6 +269,8 @@ namespace TempLat
     static device::Idx confirmGhostsUpToDateBatch(std::span<MemoryManager<T, NDim> *const> mgrs,
                                                   const GhostReach &reach)
     {
+      for (auto *m : mgrs)
+        if (m->mIsAssignmentTarget) m->mTargetRead = true;
       if (reach.isZero()) return 0;
       for (auto *m : mgrs)
         m->checkShiftedRead(reach);
@@ -341,8 +344,9 @@ namespace TempLat
       {
         mSaved.reserve(managers.size());
         for (auto *m : managers) {
-          mSaved.push_back({m, m->mIsAssignmentTarget, m->mTargetReach});
+          mSaved.push_back({m, m->mIsAssignmentTarget, m->mTargetRead, m->mTargetReach});
           m->mIsAssignmentTarget = true;
+          m->mTargetRead = false;
           m->mTargetReach = GhostReach{};
         }
       }
@@ -351,11 +355,15 @@ namespace TempLat
         // Reverse order, so a manager listed twice (fields sharing memory) gets its original state back.
         for (auto it = mSaved.rbegin(); it != mSaved.rend(); ++it) {
           it->manager->mIsAssignmentTarget = it->isTarget;
+          it->manager->mTargetRead = it->wasRead;
           it->manager->mTargetReach = it->reach;
         }
       }
       AssignmentTargetGuard(const AssignmentTargetGuard &) = delete;
       AssignmentTargetGuard &operator=(const AssignmentTargetGuard &) = delete;
+
+      /** @brief Whether the i-th target was read, at any offset including 0. */
+      bool wasRead(size_t i) const { return mSaved[i].manager->mTargetRead; }
 
       /** @brief The smallest range containing 0 and every offset at which a target was read. */
       GhostReach targetReach() const
@@ -369,7 +377,7 @@ namespace TempLat
     private:
       struct Saved {
         MemoryManager *manager;
-        bool isTarget;
+        bool isTarget, wasRead;
         GhostReach reach;
       };
       std::vector<Saved> mSaved;
@@ -396,7 +404,7 @@ namespace TempLat
     GhostStateKeeper mGhostStateKeeper;
     BCSpec<NDim> mBCSpec;
 
-    bool mIsAssignmentTarget = false;
+    bool mIsAssignmentTarget = false, mTargetRead = false;
     GhostReach mTargetReach;
   };
 

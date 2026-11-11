@@ -16,6 +16,9 @@
 #include "TempLat/lattice/algebra/su2algebra/su2algebra.h"
 #include "TempLat/lattice/algebra/matrix3x3algebra/matrix3x3algebra.h"
 #include "TempLat/util/constexpr_for.h"
+#include "TempLat/lattice/field/collections/fieldcollection.h"
+#include "TempLat/lattice/algebra/listoperators/listoperators.h"
+#include "TempLat/lattice/algebra/listoperators/norm.h"
 
 namespace TempLat
 {
@@ -28,6 +31,21 @@ namespace TempLat
 
   namespace SweepAssignmentDetail
   {
+    /** @brief The list whose member m is member m + 1 (mod N) of the collection c, shifted by S along axis 0. */
+    template <int N, int S, typename C> struct Rotated {
+      C c;
+      static constexpr size_t size = N;
+      using Getter = GetComponent;
+      template <int M> auto getComp(Tag<M>) const
+      {
+        if constexpr (S == 0)
+          return c.getComp(Tag<(M + 1) % N>());
+        else
+          return shift<S>(c.getComp(Tag<(M + 1) % N>()));
+      }
+    };
+    template <int N, int S, typename C> Rotated<N, S, C> rotated(const C &c) { return {c}; }
+
     /** @brief Checks phi = expr(phi) in place against ref = expr(copy of phi), for the given band width
      *  (0: automatic). */
     template <size_t NDim, typename Expr>
@@ -56,8 +74,8 @@ namespace TempLat
 
     /** @brief As matchesOutOfPlace, for a composite field F with components first ... last. */
     template <typename F, int first, int last, typename Expr>
-    bool compositeMatchesOutOfPlace(const device::memory::host_ptr<MemoryToolBox<3>> &toolBox,
-                                    device::Idx bandWidth, Expr &&expr)
+    bool compositeMatchesOutOfPlace(const device::memory::host_ptr<MemoryToolBox<3>> &toolBox, device::Idx bandWidth,
+                                    Expr &&expr)
     {
       SpatialCoordinate<3> x(toolBox);
       F f("f", toolBox, LatticeParameters<double>());
@@ -80,6 +98,62 @@ namespace TempLat
       constexpr_for<first, last + 1>([&](auto _c) {
         constexpr Tag<(int)decltype(_c)::value> c;
         matches = matches && average((f(c) - ref(c)) * (f(c) - ref(c))) == 0;
+      });
+      return matches;
+    }
+
+    /** @brief As matchesOutOfPlace, for a collection of NComp fields. */
+    template <int NComp, typename Expr>
+    bool collectionMatchesOutOfPlace(const device::memory::host_ptr<MemoryToolBox<3>> &toolBox, device::Idx bandWidth,
+                                     Expr &&expr)
+    {
+      SpatialCoordinate<3> x(toolBox);
+      FieldCollection<Field<double, 3>, NComp> f("f", toolBox), copy("copy", toolBox), ref("ref", toolBox);
+
+      constexpr_for<0, NComp>([&](auto c) {
+        const double k = decltype(c)::value + 1.;
+        f(c) = k * x(1_c) + 10. * x(2_c) + 100. * x(3_c) + x(1_c) * x(2_c) * x(3_c) / k;
+        copy(c) = f(c);
+      });
+
+      toolBox->mSweepBuffer.setBandWidth(bandWidth);
+      ref = expr(copy);
+      f = expr(f);
+      toolBox->mSweepBuffer.setBandWidth(0);
+
+      bool matches = true;
+      constexpr_for<0, NComp>([&](auto c) { matches = matches && average((f(c) - ref(c)) * (f(c) - ref(c))) == 0; });
+      return matches;
+    }
+
+    /** @brief As matchesOutOfPlace, for a collection of NMembers composite fields F with components first ... last. */
+    template <typename F, int NMembers, int first, int last, typename Expr>
+    bool compositeCollectionMatchesOutOfPlace(const device::memory::host_ptr<MemoryToolBox<3>> &toolBox,
+                                              device::Idx bandWidth, Expr &&expr)
+    {
+      SpatialCoordinate<3> x(toolBox);
+      FieldCollection<F, NMembers> f("f", toolBox), copy("copy", toolBox), ref("ref", toolBox);
+
+      constexpr_for<0, NMembers>([&](auto m) {
+        constexpr_for<first, last + 1>([&](auto _c) {
+          constexpr Tag<(int)decltype(_c)::value> c;
+          const double k = 10. * decltype(m)::value + decltype(_c)::value + 1.;
+          f(m)(c) = k * x(1_c) + 10. * x(2_c) + 100. * x(3_c) + x(1_c) * x(2_c) * x(3_c) / k;
+          copy(m)(c) = f(m)(c);
+        });
+      });
+
+      toolBox->mSweepBuffer.setBandWidth(bandWidth);
+      ref = expr(copy);
+      f = expr(f);
+      toolBox->mSweepBuffer.setBandWidth(0);
+
+      bool matches = true;
+      constexpr_for<0, NMembers>([&](auto m) {
+        constexpr_for<first, last + 1>([&](auto _c) {
+          constexpr Tag<(int)decltype(_c)::value> c;
+          matches = matches && average((f(m)(c) - ref(m)(c)) * (f(m)(c) - ref(m)(c))) == 0;
+        });
       });
       return matches;
     }
@@ -141,6 +215,47 @@ namespace TempLat
         tdd.verify(compositeMatchesOutOfPlace<D, 0, 3>(toolBox, b, sum));
         tdd.verify(compositeMatchesOutOfPlace<A, 1, 3>(toolBox, b, sum));
         tdd.verify(compositeMatchesOutOfPlace<H, 0, 4>(toolBox, b, symExpr));
+      }
+    }
+
+    // Collections, assigned in a single kernel: components read each other in place and at neighbouring sites.
+    {
+      using SweepAssignmentDetail::collectionMatchesOutOfPlace;
+      auto pointCross = [](auto &f) { return f * (1. + 1e-6 * norm2(f)); };
+      auto shiftedCross = [](auto &f) { return f + 1e-6 * shift<-1>(norm2(f)) - LatLapl(f); };
+      for (device::Idx b : {0, 3}) {
+        tdd.verify(collectionMatchesOutOfPlace<2>(toolBox, b, shiftedCross));
+        tdd.verify(collectionMatchesOutOfPlace<3>(toolBox, b, pointCross));
+        tdd.verify(collectionMatchesOutOfPlace<3>(toolBox, b, shiftedCross));
+      }
+    }
+
+    // Collections of composite fields, assigned in a single kernel.
+    {
+      using SweepAssignmentDetail::compositeCollectionMatchesOutOfPlace;
+      auto sum = [](auto &f) { return shift<-1>(f) + shift<1>(f); };
+      for (device::Idx b : {0, 3}) {
+        tdd.verify(compositeCollectionMatchesOutOfPlace<SU2Field<double, NDim>, 2, 0, 3>(toolBox, b, sum));
+        tdd.verify(compositeCollectionMatchesOutOfPlace<SU2LieAlgebraField<double, NDim>, 3, 1, 3>(toolBox, b, sum));
+      }
+    }
+
+    // Members reading each other, in place and at neighbouring sites.
+    {
+      using SweepAssignmentDetail::collectionMatchesOutOfPlace;
+      using SweepAssignmentDetail::compositeCollectionMatchesOutOfPlace;
+      using SweepAssignmentDetail::rotated;
+      auto inPlace = [](auto &f) { return rotated<3, 0>(f); };
+      auto shifted = [](auto &f) { return rotated<3, -1>(f); };
+      for (device::Idx b : {0, 3}) {
+        tdd.verify(collectionMatchesOutOfPlace<3>(toolBox, b, inPlace));
+        tdd.verify(collectionMatchesOutOfPlace<3>(toolBox, b, shifted));
+        tdd.verify(compositeCollectionMatchesOutOfPlace<SU2Field<double, NDim>, 3, 0, 3>(toolBox, b, inPlace));
+        tdd.verify(compositeCollectionMatchesOutOfPlace<SU2Field<double, NDim>, 3, 0, 3>(toolBox, b, shifted));
+        tdd.verify(
+            compositeCollectionMatchesOutOfPlace<SU2LieAlgebraField<double, NDim>, 3, 1, 3>(toolBox, b, inPlace));
+        tdd.verify(
+            compositeCollectionMatchesOutOfPlace<SU2LieAlgebraField<double, NDim>, 3, 1, 3>(toolBox, b, shifted));
       }
     }
 
