@@ -66,36 +66,25 @@ namespace TempLat
       return fs[M - 1];
     }
 
+    /** @brief The fields an assignment writes; they receive components 1 ... 3 of the value. Lets collections assign
+     *  all members in one kernel, see FieldCollection::operator=. */
+    const auto &assignedFields() const { return fs; }
+    static constexpr size_t firstAssignedComponent = 1;
+
+    /** @brief Prepares the right-hand side r for the single assignment kernel writing all components, see
+     *  prepareAssignment. */
+    template <typename R> GhostReach onBeforeAssignment(R &&r)
+    {
+      return prepareAssignment<T, NDim>(r, componentManagers(), mLayout);
+    }
+
     template <typename R> void operator=(R &&r)
     {
-      // Confirm config-space / ghost requirements by walking the WHOLE SU(2) expression r (linear),
-      // instead of building r.SU2Get(k) per component (the exponential per-component expansion built
-      // only for confirmation, then discarded - values use the fused DoEval::eval below). One call per
-      // target component is kept (onBeforeAssignment also confirms the target field fs[k]).
-      fs[0].onBeforeAssignment(r);
-      fs[1].onBeforeAssignment(r);
-      fs[2].onBeforeAssignment(r);
-
-      PreGet::apply(r);
-
-      const auto view1 = fs[0].getView();
-      const auto view2 = fs[1].getView();
-      const auto view3 = fs[2].getView();
-
-      auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
-      {
-        device::apply(
-            [&](const auto &...args) {
-              auto result = DoEval::eval(r, args...);
-              view1(args...) = result[1];
-              view2(args...) = result[2];
-              view3(args...) = result[3];
-            },
-            idx);
-      };
-      device::iteration::foreach ("SU2AlgebraConfigViewAssign", mLayout, functor);
-
-      PostGet::apply(r);
+      const GhostReach targetReach = onBeforeAssignment(r);
+      assignViews<firstAssignedComponent>(
+          "SU2AlgebraConfigViewAssign",
+          device::array<decltype(fs[0].getView()), 3>{fs[0].getView(), fs[1].getView(), fs[2].getView()}, r, mLayout,
+          targetReach, fs[0].toolBox()->mSweepBuffer);
 
       fs[0].setGhostsAreStale();
       fs[1].setGhostsAreStale();
@@ -124,18 +113,19 @@ namespace TempLat
 
     inline auto getToolBox() const { return GetToolBox::get(fs[0]); }
 
-    // Space/ghost confirmation forwarded to the 3 algebra component fields (see operator=).
-    void doWeNeedGhosts() const
+    /** @brief Ghost walk entry batched over the components, see ConfirmGhosts. Without a reach, updates the
+     *  ghosts of all components if they are stale. */
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
-      GhostsHunter::apply(fs[0]);
-      GhostsHunter::apply(fs[1]);
-      GhostsHunter::apply(fs[2]);
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers(), reach);
     }
     device::Idx confirmGhostsUpToDate() const
     {
-      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
-                                        fs[2].getMemoryManager().get()};
-      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(mgrs);
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers());
+    }
+    std::array<MemoryManager<T, NDim> *, 3> componentManagers() const
+    {
+      return {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(), fs[2].getMemoryManager().get()};
     }
     void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
@@ -144,12 +134,7 @@ namespace TempLat
       ConfirmSpace::apply(fs[2], newLayout, spaceType);
     }
 
-    inline void updateGhosts()
-    {
-      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
-                                        fs[2].getMemoryManager().get()};
-      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
-    }
+    inline void updateGhosts() { MemoryManager<T, NDim>::updateGhostsBatch(componentManagers()); }
 
     using Getter = SU2Getter;
     static constexpr size_t SHIFTIND = 0;

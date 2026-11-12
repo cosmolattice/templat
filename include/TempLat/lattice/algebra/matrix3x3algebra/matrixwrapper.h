@@ -14,6 +14,8 @@
 
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
 {
@@ -97,6 +99,27 @@ namespace TempLat
       result[7] = DoEval::eval(mR32, idx...);
       result[8] = DoEval::eval(mR33, idx...);
       return result;
+    }
+
+    /** @brief Space/ghost confirmation forwarded to the wrapped expressions. */
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR11, reach) + ConfirmGhosts::apply(mR12, reach) + ConfirmGhosts::apply(mR13, reach) +
+             ConfirmGhosts::apply(mR21, reach) + ConfirmGhosts::apply(mR22, reach) + ConfirmGhosts::apply(mR23, reach) +
+             ConfirmGhosts::apply(mR31, reach) + ConfirmGhosts::apply(mR32, reach) + ConfirmGhosts::apply(mR33, reach);
+    }
+    template <size_t LayoutNDim>
+    void confirmSpace(const LayoutStruct<LayoutNDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mR11, newLayout, spaceType);
+      ConfirmSpace::apply(mR12, newLayout, spaceType);
+      ConfirmSpace::apply(mR13, newLayout, spaceType);
+      ConfirmSpace::apply(mR21, newLayout, spaceType);
+      ConfirmSpace::apply(mR22, newLayout, spaceType);
+      ConfirmSpace::apply(mR23, newLayout, spaceType);
+      ConfirmSpace::apply(mR31, newLayout, spaceType);
+      ConfirmSpace::apply(mR32, newLayout, spaceType);
+      ConfirmSpace::apply(mR33, newLayout, spaceType);
     }
 
     void preGet()

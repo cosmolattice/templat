@@ -18,7 +18,7 @@
  *                     no Kokkos. Performance probe only (own arrays, not bit-compared).
  *   -DKICK_VARIANT=4  the fused kick split into one assignment per transverse direction j. The fused
  *                     expression's live set does not fit in the register file, so it SPILLS -- this
- *                     is what the remaining gap to the ceiling is made of. 12-20% faster than 0.
+ *                     is what the remaining gap to the ceiling is made of. Faster than 0 on one rank.
  *   -DKICK_VARIANT=5  split further, one assignment per term. Over-splitting: the extra Pi traffic
  *                     costs more than the spills it saves. Slower than 4.
  *

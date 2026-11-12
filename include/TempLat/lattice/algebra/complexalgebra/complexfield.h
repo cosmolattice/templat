@@ -15,6 +15,8 @@
 #include "TempLat/lattice/algebra/complexalgebra/complexwrapper.h"
 #include "TempLat/lattice/algebra/complexalgebra/complexfieldfourierview.h"
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 #include <memory>
 
 namespace TempLat
@@ -35,7 +37,8 @@ namespace TempLat
     static constexpr size_t NDim = _NDim;
 
     ComplexField(Field<T, NDim> f1, Field<T, NDim> f2)
-        : mR(f1), mI(f2), mName("complex(" + f1.getName() + ", " + f2.getName() + ")"),
+        : mR(f1), mI(f2),
+          mName("complex(" + f1.getMemoryManager()->getName() + ", " + f2.getMemoryManager()->getName() + ")"),
           mToolBox(mR.getToolBox() == nullptr ? mI.getToolBox() : mR.getToolBox()),
           mLayout(mToolBox->mLayouts.getConfigSpaceLayout())
     {
@@ -81,32 +84,23 @@ namespace TempLat
 
     ComplexFieldFourierView<T, NDim> inFourierSpace() { return {mR.inFourierSpace(), mI.inFourierSpace()}; }
 
+    /** @brief The fields an assignment writes; they receive components 0 and 1 of the value. Lets collections assign
+     *  all members in one kernel, see FieldCollection::operator=. */
+    auto assignedFields() const { return device::array<Field<T, NDim>, 2>{mR, mI}; }
+    static constexpr size_t firstAssignedComponent = 0;
+
+    /** @brief Prepares the right-hand side g for the single assignment kernel writing all components, see
+     *  prepareAssignment. */
+    template <typename R> GhostReach onBeforeAssignment(R &&g)
+    {
+      return prepareAssignment<T, NDim>(g, componentManagers(), mLayout);
+    }
+
     template <typename R> void operator=(R &&g)
     {
-      const auto &gR = ComplexFieldGetter::get(g, 0_c);
-      const auto &gI = ComplexFieldGetter::get(g, 1_c);
-
-      mR.onBeforeAssignment(gR);
-      mI.onBeforeAssignment(gI);
-
-      PreGet::apply(g);
-
-      const auto viewR = mR.getView();
-      const auto viewI = mI.getView();
-
-      auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
-      {
-        device::apply(
-            [&](auto &&...args) {
-              auto result = DoEval::eval(g, args...);
-              viewR(args...) = result[0];
-              viewI(args...) = result[1];
-            },
-            idx);
-      };
-      device::iteration::foreach ("ComplexConfigViewAssign", mLayout, functor);
-
-      PostGet::apply(g);
+      const GhostReach targetReach = onBeforeAssignment(g);
+      assignViews("ComplexConfigViewAssign", device::array<decltype(mR.getView()), 2>{mR.getView(), mI.getView()}, g,
+                  mLayout, targetReach, mR.toolBox()->mSweepBuffer);
 
       mR.setGhostsAreStale();
       mI.setGhostsAreStale();
@@ -116,14 +110,30 @@ namespace TempLat
 
     std::string toString() const { return *mName; }
 
+    /** @brief Ghost walk entry batched over the components, see ConfirmGhosts. Without a reach, updates the
+     *  ghosts of all components if they are stale. */
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers(), reach);
+    }
+    device::Idx confirmGhostsUpToDate() const
+    {
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers());
+    }
+    std::array<MemoryManager<T, NDim> *, 2> componentManagers() const
+    {
+      return {mR.getMemoryManager().get(), mI.getMemoryManager().get()};
+    }
+    void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mR, newLayout, spaceType);
+      ConfirmSpace::apply(mI, newLayout, spaceType);
+    }
+
     auto getDx() const { return mR.getDx(); }
     auto getKIR() const { return mR.getKIR(); }
 
-    void updateGhosts()
-    {
-      MemoryManager<T, NDim> *mgrs[] = {mR.getMemoryManager().get(), mI.getMemoryManager().get()};
-      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
-    }
+    void updateGhosts() { MemoryManager<T, NDim>::updateGhostsBatch(componentManagers()); }
 
     void setGhostsAreStale()
     {

@@ -15,6 +15,8 @@
 #include "TempLat/lattice/algebra/matrix3x3algebra/symtracelesswrapper.h"
 #include "TempLat/lattice/algebra/matrix3x3algebra/symtracelessfieldfourierview.h"
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 #include <memory>
 
 namespace TempLat
@@ -38,9 +40,11 @@ namespace TempLat
     static constexpr size_t NDim = _NDim;
 
     SymTracelessField(Field<T, NDim> f0, Field<T, NDim> f1, Field<T, NDim> f2, Field<T, NDim> f3, Field<T, NDim> f4)
-        : m0(f0), m1(f1), m2(f2), m3(f3), m4(f4), mName("symtraceless(" + f0.getName() + ", " + f1.getName() + ", " +
-                                                        f2.getName() + ", " + f3.getName() + ", " + f4.getName() + ")"),
-          mToolBox(m1.getToolBox() == nullptr ? m1.getToolBox() : m0.getToolBox()),
+        : m0(f0), m1(f1), m2(f2), m3(f3), m4(f4),
+          mName("symtraceless(" + f0.getMemoryManager()->getName() + ", " + f1.getMemoryManager()->getName() + ", " +
+                f2.getMemoryManager()->getName() + ", " + f3.getMemoryManager()->getName() + ", " +
+                f4.getMemoryManager()->getName() + ")"),
+          mToolBox(m0.getToolBox() == nullptr ? m1.getToolBox() : m0.getToolBox()),
           mLayout(mToolBox->mLayouts.getConfigSpaceLayout())
     {
     }
@@ -148,44 +152,25 @@ namespace TempLat
       return {m0.inFourierSpace(), m1.inFourierSpace(), m2.inFourierSpace(), m3.inFourierSpace(), m4.inFourierSpace()};
     }
 
+    /** @brief The fields an assignment writes; they receive components 0 ... 4 of the value. Lets collections assign
+     *  all members in one kernel, see FieldCollection::operator=. */
+    auto assignedFields() const { return device::array<Field<T, NDim>, 5>{m0, m1, m2, m3, m4}; }
+    static constexpr size_t firstAssignedComponent = 0;
+
+    /** @brief Prepares the right-hand side g for the single assignment kernel writing all components, see
+     *  prepareAssignment. */
+    template <typename R> GhostReach onBeforeAssignment(R &&g)
+    {
+      return prepareAssignment<T, NDim>(g, componentManagers(), mLayout);
+    }
+
     template <typename R> void operator=(R &&g)
     {
-      const auto &g0 = SymTracelessGetter::get(g, 0_c);
-      const auto &g1 = SymTracelessGetter::get(g, 1_c);
-      const auto &g2 = SymTracelessGetter::get(g, 2_c);
-      const auto &g3 = SymTracelessGetter::get(g, 3_c);
-      const auto &g4 = SymTracelessGetter::get(g, 4_c);
-
-      m0.onBeforeAssignment(g0);
-      m1.onBeforeAssignment(g1);
-      m2.onBeforeAssignment(g2);
-      m3.onBeforeAssignment(g3);
-      m4.onBeforeAssignment(g4);
-
-      PreGet::apply(g);
-
-      const auto view0 = m0.getView();
-      const auto view1 = m1.getView();
-      const auto view2 = m2.getView();
-      const auto view3 = m3.getView();
-      const auto view4 = m4.getView();
-
-      auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
-      {
-        device::apply(
-            [&](auto &&...args) {
-              auto result = DoEval::eval(g, args...);
-              view0(args...) = result[0];
-              view1(args...) = result[1];
-              view2(args...) = result[2];
-              view3(args...) = result[3];
-              view4(args...) = result[4];
-            },
-            idx);
-      };
-      device::iteration::foreach ("SymTracelessConfigViewAssign", mLayout, functor);
-
-      PostGet::apply(g);
+      const GhostReach targetReach = onBeforeAssignment(g);
+      assignViews("SymTracelessConfigViewAssign",
+                  device::array<decltype(m0.getView()), 5>{m0.getView(), m1.getView(), m2.getView(), m3.getView(),
+                                                           m4.getView()},
+                  g, mLayout, targetReach, m0.toolBox()->mSweepBuffer);
 
       m0.setGhostsAreStale();
       m1.setGhostsAreStale();
@@ -198,16 +183,34 @@ namespace TempLat
 
     std::string toString() const { return *mName; }
 
+    /** @brief Ghost walk entry batched over the components, see ConfirmGhosts. Without a reach, updates the
+     *  ghosts of all components if they are stale. */
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers(), reach);
+    }
+    device::Idx confirmGhostsUpToDate() const
+    {
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers());
+    }
+    std::array<MemoryManager<T, NDim> *, 5> componentManagers() const
+    {
+      return {m0.getMemoryManager().get(), m1.getMemoryManager().get(), m2.getMemoryManager().get(),
+              m3.getMemoryManager().get(), m4.getMemoryManager().get()};
+    }
+    void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(m0, newLayout, spaceType);
+      ConfirmSpace::apply(m1, newLayout, spaceType);
+      ConfirmSpace::apply(m2, newLayout, spaceType);
+      ConfirmSpace::apply(m3, newLayout, spaceType);
+      ConfirmSpace::apply(m4, newLayout, spaceType);
+    }
+
     auto getDx() const { return m0.getDx(); }
     auto getKIR() const { return m0.getKIR(); }
 
-    void updateGhosts()
-    {
-      MemoryManager<T, NDim> *mgrs[] = {m0.getMemoryManager().get(), m1.getMemoryManager().get(),
-                                        m2.getMemoryManager().get(), m3.getMemoryManager().get(),
-                                        m4.getMemoryManager().get()};
-      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
-    }
+    void updateGhosts() { MemoryManager<T, NDim>::updateGhostsBatch(componentManagers()); }
 
     void setGhostsAreStale()
     {

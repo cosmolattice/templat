@@ -24,6 +24,8 @@ namespace TempLat
   template <typename R, typename T> class ListAddition : public ListBinaryOperator<R, T>
   {
   public:
+    using IsWholeListSum = void; // see wholeOf
+    static constexpr int wholeListSign = 1;
     using ListBinaryOperator<R, T>::mR;
     using ListBinaryOperator<R, T>::mT;
     ListAddition(const R &pR, const T &pT) : ListBinaryOperator<R, T>(pR, pT) {}
@@ -32,11 +34,6 @@ namespace TempLat
 
     virtual std::string operatorString() const override { return "+"; }
 
-    template <int N> void doWeNeedGhosts(Tag<N> i)
-    {
-      GhostsHunter::apply(mR, i);
-      GhostsHunter::apply(mT, i);
-    }
     static const size_t size = static_max<tuple_size<R>::value, tuple_size<T>::value>::value;
   };
 

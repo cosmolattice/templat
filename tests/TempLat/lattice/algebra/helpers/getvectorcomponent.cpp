@@ -43,10 +43,12 @@ namespace TempLat
     test2.confirmSpace(toolBox->mLayouts.getConfigSpaceLayout(), SpaceStateType::Configuration);
     tdd.verify(fc[2_c].isFourierSpace() == false);
 
+    // The ghost walk reaches only the selected component.
+    const GhostReach shiftedRead = GhostReach{}.shifted(0, 1);
     fc[1_c].setGhostsAreStale();
-    test2.confirmGhostsUpToDate();
+    test2.confirmGhostsUpToDate(shiftedRead);
     tdd.verify(fc[1_c].areGhostsStale() == true);
-    test1.confirmGhostsUpToDate();
+    test1.confirmGhostsUpToDate(shiftedRead);
     tdd.verify(fc[1_c].areGhostsStale() == false);
 
     tdd.verify(test1.toString() == "abcdefg_1(x)");

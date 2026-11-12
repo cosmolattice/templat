@@ -340,7 +340,7 @@
   <pre class="snip">ComplexField&lt;T, NDim&gt; psi(<span class="s">&quot;psi&quot;</span>, toolBox);</pre>
   <p>A complex scalar field, stored as two real components.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="ComplexField">ComplexField</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfield.h#L29">complexfield.h</a> · <code>ctest -R test-complexfield</code></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfield.h#L31">complexfield.h</a> · <code>ctest -R test-complexfield</code></p>
 </article>
 <article class="card vocab" id="op-U1Field" data-name="u1field" data-tags="ComplexField">
   <h3><a href="#op-U1Field">U1Field</a></h3>
@@ -368,14 +368,14 @@
   <pre class="snip">SU2Doublet&lt;T, NDim&gt; phi(<span class="s">&quot;phi&quot;</span>, toolBox);</pre>
   <p>An $SU(2)$ (Higgs) doublet: two complex components, stored as four reals.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Doublet">SU2Doublet</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doublet.h#L30">su2doublet.h</a> · <code>ctest -R test-su2doublet</code></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doublet.h#L32">su2doublet.h</a> · <code>ctest -R test-su2doublet</code></p>
 </article>
 <article class="card vocab" id="op-SymTracelessField" data-name="symtracelessfield" data-tags="SymTraceless">
   <h3><a href="#op-SymTracelessField">SymTracelessField</a></h3>
   <pre class="snip">SymTracelessField&lt;T, NDim&gt; hij(<span class="s">&quot;hij&quot;</span>, toolBox);</pre>
   <p>A real symmetric traceless $3\times3$ matrix field, stored as its five independent components. The type used for gravitational waves.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SymTraceless">SymTraceless</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelessfield.h#L31">symtracelessfield.h</a> · <code>ctest -R test-symtracelessfield</code></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelessfield.h#L33">symtracelessfield.h</a> · <code>ctest -R test-symtracelessfield</code></p>
 </article>
 <!-- /GENERATED: TYPES -->
         </div>
@@ -407,14 +407,14 @@
   <pre class="snip">FieldCollection&lt;FieldType, N&gt; coll(<span class="s">&quot;coll&quot;</span>, toolBox);</pre>
   <p>$N$ fields of any one type under a single tag-indexed name.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Collection">Collection</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/field/collections/fieldcollection.h#L30">fieldcollection.h</a> · <code>ctest -R test-fieldcollection</code></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/field/collections/fieldcollection.h#L37">fieldcollection.h</a> · <code>ctest -R test-fieldcollection</code></p>
 </article>
 <article class="card vocab" id="op-VectorFieldCollection" data-name="vectorfieldcollection" data-tags="Collection">
   <h3><a href="#op-VectorFieldCollection">VectorFieldCollection</a></h3>
   <pre class="snip">VectorFieldCollection&lt;FieldType, N&gt; Ws(<span class="s">&quot;Ws&quot;</span>, toolBox);</pre>
   <p>$N$ vector fields under one name; the two containers nest, as for a collection of gauge fields.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Collection">Collection</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/field/collections/vectorfieldcollection.h#L27">vectorfieldcollection.h</a> · <code>ctest -R test-vectorfieldcollection</code></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/field/collections/vectorfieldcollection.h#L31">vectorfieldcollection.h</a> · <code>ctest -R test-vectorfieldcollection</code></p>
 </article>
 </div>
 
@@ -425,56 +425,56 @@
   <pre class="snip">CField(re, im)</pre>
   <p>Bundles two existing real Fields into one complex field, sharing their memory rather than copying it.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="ComplexField">ComplexField</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfield.h#L157">complexfield.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfield.h#L167">complexfield.h</a></p>
 </article>
 <article class="card vocab" id="op-Complexify" data-name="complexify" data-tags="ComplexField">
   <h3><a href="#op-Complexify">Complexify</a></h3>
   <pre class="snip">Complexify(re, im)</pre>
   <p>Builds a complex expression from a real and an imaginary expression. Lightweight: it stores nothing and owns no memory.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="ComplexField">ComplexField</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexwrapper.h#L82">complexwrapper.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexwrapper.h#L96">complexwrapper.h</a></p>
 </article>
 <article class="card vocab" id="op-SU2Wrap" data-name="su2wrap" data-tags="SU2Field">
   <h3><a href="#op-SU2Wrap">SU2Wrap</a></h3>
   <pre class="snip">SU2Wrap(c0, c1, c2, c3) SU2Wrap(f)</pre>
   <p>Builds an SU(2)-valued expression from four component expressions, or from a lambda of the component tag. Nothing is stored: the result is a leaf in the expression tree.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2wrapper.h#L124">su2wrapper.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2wrapper.h#L116">su2wrapper.h</a></p>
 </article>
 <article class="card vocab" id="op-SU2DoubletWrap" data-name="su2doubletwrap" data-tags="SU2Doublet SU2Field">
   <h3><a href="#op-SU2DoubletWrap">SU2DoubletWrap</a></h3>
   <pre class="snip">SU2DoubletWrap(a, b, c, d) SU2DoubletWrap(f)</pre>
   <p>Builds a doublet expression from four component expressions, or from a lambda of the component tag.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Doublet">SU2Doublet</button><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doubletwrapper.h#L85">su2doubletwrapper.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doubletwrapper.h#L120">su2doubletwrapper.h</a></p>
 </article>
 <article class="card vocab" id="op-ConstructMatrix3x3" data-name="constructmatrix3x3" data-tags="Matrix3x3">
   <h3><a href="#op-ConstructMatrix3x3">ConstructMatrix3x3</a></h3>
   <pre class="snip">ConstructMatrix3x3(m11, m12, m13, m21, m22, m23, m31, m32, m33)</pre>
   <p>Builds a general $3\times3$ matrix expression, given row by row. Entries set to ZeroType are pruned from the tree at compile time.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Matrix3x3">Matrix3x3</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/matrixwrapper.h#L155">matrixwrapper.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/matrixwrapper.h#L178">matrixwrapper.h</a></p>
 </article>
 <article class="card vocab" id="op-ConstructSym" data-name="constructsym" data-tags="Sym3x3">
   <h3><a href="#op-ConstructSym">ConstructSym</a></h3>
   <pre class="snip">ConstructSym(s11, s12, s13, s22, s23, s33)</pre>
   <p>Builds a symmetric $3\times3$ matrix expression from its upper triangle.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Sym3x3">Sym3x3</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symwrapper.h#L131">symwrapper.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symwrapper.h#L150">symwrapper.h</a></p>
 </article>
 <article class="card vocab" id="op-ConstructHerm" data-name="constructherm" data-tags="Herm3x3">
   <h3><a href="#op-ConstructHerm">ConstructHerm</a></h3>
   <pre class="snip">ConstructHerm(h11, h12, h13, h22, h23, h33)</pre>
   <p>Builds a hermitian $3\times3$ matrix expression from its upper triangle; the lower triangle is the conjugate.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Herm3x3">Herm3x3</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/hermwrapper.h#L141">hermwrapper.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/hermwrapper.h#L160">hermwrapper.h</a></p>
 </article>
 <article class="card vocab" id="op-ConstructSymTraceless" data-name="constructsymtraceless" data-tags="SymTraceless">
   <h3><a href="#op-ConstructSymTraceless">ConstructSymTraceless</a></h3>
   <pre class="snip">ConstructSymTraceless(t11, t12, t13, t22, t23, t33)</pre>
   <p>Builds a symmetric $3\times3$ expression whose trace is subtracted on evaluation, so the result is traceless by construction.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SymTraceless">SymTraceless</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelesswrapper.h#L135">symtracelesswrapper.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelesswrapper.h#L154">symtracelesswrapper.h</a></p>
 </article>
 <article class="card vocab" id="op-MakeVector" data-name="makevector" data-tags="Collection">
   <h3><a href="#op-MakeVector">MakeVector</a></h3>
@@ -496,14 +496,14 @@
   <pre class="snip">MakeSU2(a, expr)</pre>
   <p>Builds an SU(2) expression whose component `a` is the given expression, written once and instantiated for $a=0\dots3$.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2wrapper.h#L136">su2wrapper.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2wrapper.h#L128">su2wrapper.h</a></p>
 </article>
 <article class="card vocab" id="op-MakeSU2Doublet" data-name="makesu2doublet" data-tags="SU2Doublet">
   <h3><a href="#op-MakeSU2Doublet">MakeSU2Doublet</a></h3>
   <pre class="snip">MakeSU2Doublet(a, expr)</pre>
   <p>Builds a doublet expression whose component `a` is the given expression.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Doublet">SU2Doublet</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doubletwrapper.h#L97">su2doubletwrapper.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doubletwrapper.h#L132">su2doubletwrapper.h</a></p>
 </article>
 <!-- /GENERATED: CONTAINERS -->
         </div>
@@ -527,10 +527,10 @@
 
           <div class="chips" id="vocabTags" role="group" aria-label="Filter by participating type">
             <!-- GENERATED: TAGS -->
-<button type="button" class="chip" id="vocabClear" data-tag="">All <span class="n">93</span></button>
-<button type="button" class="chip" data-tag="Field" aria-pressed="false" title="Real scalar fields and generic scalar-valued expressions">Field <span class="n">44</span></button>
-<button type="button" class="chip" data-tag="ComplexField" aria-pressed="false" title="Complex fields, and U1Field which is an alias of them">ComplexField <span class="n">29</span></button>
-<button type="button" class="chip" data-tag="SU2Field" aria-pressed="false" title="SU(2) group elements and su(2) Lie-algebra elements">SU2Field <span class="n">28</span></button>
+<button type="button" class="chip" id="vocabClear" data-tag="">All <span class="n">109</span></button>
+<button type="button" class="chip" data-tag="Field" aria-pressed="false" title="Real scalar fields and generic scalar-valued expressions">Field <span class="n">58</span></button>
+<button type="button" class="chip" data-tag="ComplexField" aria-pressed="false" title="Complex fields, and U1Field which is an alias of them">ComplexField <span class="n">30</span></button>
+<button type="button" class="chip" data-tag="SU2Field" aria-pressed="false" title="SU(2) group elements and su(2) Lie-algebra elements">SU2Field <span class="n">30</span></button>
 <button type="button" class="chip" data-tag="SU2Doublet" aria-pressed="false" title="SU(2) (Higgs) doublets">SU2Doublet <span class="n">9</span></button>
 <button type="button" class="chip" data-tag="Matrix3x3" aria-pressed="false" title="General 3x3 matrix expressions">Matrix3x3 <span class="n">2</span></button>
 <button type="button" class="chip" data-tag="Sym3x3" aria-pressed="false" title="Symmetric 3x3 matrix expressions">Sym3x3 <span class="n">2</span></button>
@@ -555,7 +555,7 @@
   <pre class="snip">a + b</pre>
   <p>Element-wise sum. Every algebra defines its own, so the operands may be numbers, scalar or complex fields, SU(2) elements, doublets, 3x3 matrices or collections.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="ComplexField">ComplexField</button><button type="button" class="tag" data-tag="Collection">Collection</button><button type="button" class="tag" data-tag="SymTraceless">SymTraceless</button><button type="button" class="tag" data-tag="Field">Field</button><button type="button" class="tag" data-tag="SU2Doublet">SU2Doublet</button><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfieldadd.h#L61">complexfieldadd.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listadd.h#L43">listadd.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelessadd.h#L84">symtracelessadd.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/add.h#L57">add.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doubletsum.h#L61">su2doubletsum.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2sum.h#L62">su2sum.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/measuringtools/projectionhelpers/radialprojectionresult.h#L248">radialprojectionresult.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/measuringtools/projectionhelpers/unbinnedradialprojectionresult.h#L237">unbinnedradialprojectionresult.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfieldadd.h#L61">complexfieldadd.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listadd.h#L40">listadd.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelessadd.h#L84">symtracelessadd.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/add.h#L57">add.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doubletsum.h#L61">su2doubletsum.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2sum.h#L62">su2sum.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/measuringtools/projectionhelpers/radialprojectionresult.h#L248">radialprojectionresult.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/measuringtools/projectionhelpers/unbinnedradialprojectionresult.h#L237">unbinnedradialprojectionresult.h</a></p>
 </article>
 <article class="card vocab" id="op-operator-minus" data-name="operator-" data-tags="ComplexField Collection SymTraceless Field SU2Doublet SU2Field">
   <h3><a href="#op-operator-minus">operator-</a></h3>
@@ -563,28 +563,28 @@
 -a</pre>
   <p>Element-wise difference; the unary form negates. Defined for every algebra.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="ComplexField">ComplexField</button><button type="button" class="tag" data-tag="Collection">Collection</button><button type="button" class="tag" data-tag="SymTraceless">SymTraceless</button><button type="button" class="tag" data-tag="Field">Field</button><button type="button" class="tag" data-tag="SU2Doublet">SU2Doublet</button><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfieldsubtract.h#L57">complexfieldsubtract.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listsubtract.h#L42">listsubtract.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listunaryminus.h#L37">listunaryminus.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelesssubtract.h#L79">symtracelesssubtract.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/subtract.h#L54">subtract.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/unaryminus.h#L52">unaryminus.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doubletsubtract.h#L61">su2doubletsubtract.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2subtract.h#L65">su2subtract.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfieldsubtract.h#L57">complexfieldsubtract.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listsubtract.h#L39">listsubtract.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listunaryminus.h#L37">listunaryminus.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelesssubtract.h#L79">symtracelesssubtract.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/subtract.h#L54">subtract.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/unaryminus.h#L52">unaryminus.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doubletsubtract.h#L61">su2doubletsubtract.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2subtract.h#L65">su2subtract.h</a></p>
 </article>
 <article class="card vocab" id="op-operator-star" data-name="operator*" data-tags="ComplexField Number Collection Herm3x3 SymTraceless Matrix3x3 Sym3x3 Field SU2Doublet SU2Field">
   <h3><a href="#op-operator-star">operator*</a></h3>
   <pre class="snip">a * b</pre>
   <p>Product of two expressions. The meaning follows the operands: numbers and fields multiply point-wise, SU(2) elements compose as quaternions, matrices contract, collections multiply component-wise.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="ComplexField">ComplexField</button><button type="button" class="tag" data-tag="Number">Number</button><button type="button" class="tag" data-tag="Collection">Collection</button><button type="button" class="tag" data-tag="Herm3x3">Herm3x3</button><button type="button" class="tag" data-tag="SymTraceless">SymTraceless</button><button type="button" class="tag" data-tag="Matrix3x3">Matrix3x3</button><button type="button" class="tag" data-tag="Sym3x3">Sym3x3</button><button type="button" class="tag" data-tag="Field">Field</button><button type="button" class="tag" data-tag="SU2Doublet">SU2Doublet</button><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfieldmultiply.h#L69">complexfieldmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/scalarcomplexmultiply.h#L61">scalarcomplexmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listmultiply.h#L39">listmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/hermsymtracelessmultiply.h#L120">hermsymtracelessmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/matrixmatrixmultiply.h#L115">matrixmatrixmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/scalarsymtracelessmultiply.h#L74">scalarsymtracelessmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symsymtracelessmultiply.h#L119">symsymtracelessmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/multiply.h#L89">multiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/complexfieldsu2doubletmultiply.h#L65">complexfieldsu2doubletmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/scalarsu2multiplication.h#L66">scalarsu2multiplication.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2multiply.h#L82">su2multiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2su2doubletmultiply.h#L82">su2su2doubletmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/measuringtools/projectionhelpers/radialprojectionresult.h#L259">radialprojectionresult.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/measuringtools/projectionhelpers/unbinnedradialprojectionresult.h#L249">unbinnedradialprojectionresult.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfieldmultiply.h#L69">complexfieldmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/scalarcomplexmultiply.h#L61">scalarcomplexmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listmultiply.h#L35">listmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/hermsymtracelessmultiply.h#L120">hermsymtracelessmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/matrixmatrixmultiply.h#L115">matrixmatrixmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/scalarsymtracelessmultiply.h#L74">scalarsymtracelessmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symsymtracelessmultiply.h#L119">symsymtracelessmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/multiply.h#L89">multiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/complexfieldsu2doubletmultiply.h#L65">complexfieldsu2doubletmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/scalarsu2multiplication.h#L66">scalarsu2multiplication.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2multiply.h#L82">su2multiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2su2doubletmultiply.h#L82">su2su2doubletmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/measuringtools/projectionhelpers/radialprojectionresult.h#L259">radialprojectionresult.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/measuringtools/projectionhelpers/unbinnedradialprojectionresult.h#L249">unbinnedradialprojectionresult.h</a></p>
 </article>
 <article class="card vocab" id="op-operator-slash" data-name="operator/" data-tags="ComplexField Number Collection SymTraceless Field SU2Doublet">
   <h3><a href="#op-operator-slash">operator/</a></h3>
   <pre class="snip">a / b</pre>
   <p>Element-wise division.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="ComplexField">ComplexField</button><button type="button" class="tag" data-tag="Number">Number</button><button type="button" class="tag" data-tag="Collection">Collection</button><button type="button" class="tag" data-tag="SymTraceless">SymTraceless</button><button type="button" class="tag" data-tag="Field">Field</button><button type="button" class="tag" data-tag="SU2Doublet">SU2Doublet</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/scalarcomplexmultiply.h#L75">scalarcomplexmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listdivide.h#L39">listdivide.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/scalarsymtracelessmultiply.h#L88">scalarsymtracelessmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/divide.h#L98">divide.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/complexfieldsu2doubletmultiply.h#L95">complexfieldsu2doubletmultiply.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/scalarcomplexmultiply.h#L75">scalarcomplexmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listdivide.h#L34">listdivide.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/scalarsymtracelessmultiply.h#L88">scalarsymtracelessmultiply.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/divide.h#L98">divide.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/complexfieldsu2doubletmultiply.h#L95">complexfieldsu2doubletmultiply.h</a></p>
 </article>
 <article class="card vocab" id="op-abs" data-name="abs" data-tags="Collection Field">
   <h3><a href="#op-abs">abs</a></h3>
   <pre class="snip">abs(r)</pre>
   <p>Absolute value, element-wise.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Collection">Collection</button><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listabsolutevalue.h#L39">listabsolutevalue.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/absolutevalue.h#L68">absolutevalue.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listabsolutevalue.h#L37">listabsolutevalue.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/absolutevalue.h#L68">absolutevalue.h</a></p>
 </article>
 <article class="card vocab" id="op-acos" data-name="acos" data-tags="Field">
   <h3><a href="#op-acos">acos</a></h3>
@@ -629,6 +629,27 @@ arg(r, t)</pre>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
   <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/asinh.h#L56">asinh.h</a></p>
 </article>
+<article class="card vocab" id="op-assignMembersInOrder" data-name="assignmembersinorder" data-tags="Field">
+  <h3><a href="#op-assignMembersInOrder">assignMembersInOrder</a></h3>
+  <pre class="snip">assignMembersInOrder(target, rhs, scratch)</pre>
+  <p>Assigns member j of a list to member j of a collection, j = 0 ... N - 1, one member at a time, such that no member&#x27;s right-hand side reads a target already overwritten. target(Tag&lt;j&gt;()) gives member j, rhs(Tag&lt;j&gt;()) the right-hand side, scratch(Tag&lt;j&gt;()) an object of the same type as member j.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/field/assignment/collectionassignmentorder.h#L163">collectionassignmentorder.h</a> · <code>ctest -R test-collectionassignmentorder</code></p>
+</article>
+<article class="card vocab" id="op-assignsComposites" data-name="assignscomposites" data-tags="Field">
+  <h3><a href="#op-assignsComposites">assignsComposites</a></h3>
+  <pre class="snip">assignsComposites(R, NComp)</pre>
+  <p>Whether g assigns a collection of composite fields to NComp views, each member filling NComp / size.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/field/assignment/assignviews.h#L69">assignviews.h</a></p>
+</article>
+<article class="card vocab" id="op-assignViews" data-name="assignviews" data-tags="Field">
+  <h3><a href="#op-assignViews">assignViews</a></h3>
+  <pre class="snip">assignViews(name, views, g, layout, targetReach, buffer, false)</pre>
+  <p>Assigns g to the component views of a field, as one kernel: views[c] receives component first + c of g&#x27;s value, a scalar value goes to views[0]. targetReach is the range of offsets at which g reads the views, see prepareAssignment.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/field/assignment/assignviews.h#L264">assignviews.h</a> · <code>ctest -R test-sweepassignment</code></p>
+</article>
 <article class="card vocab" id="op-average" data-name="average" data-tags="Field">
   <h3><a href="#op-average">average</a></h3>
   <pre class="snip">average(expr) average(expr, space)</pre>
@@ -648,7 +669,7 @@ arg(r, t)</pre>
   <pre class="snip">backDiff(expr, mu)</pre>
   <p>Backward finite difference $\big(f(x) - f(x-\hat e_\mu)\big)/dx$ along direction `mu`.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/backdiff.h#L71">backdiff.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/backdiff.h#L74">backdiff.h</a></p>
 </article>
 <article class="card vocab" id="op-BackwardCovariantDerivative" data-name="backwardcovariantderivative" data-tags="SU2Field ComplexField">
   <h3><a href="#op-BackwardCovariantDerivative">BackwardCovariantDerivative</a></h3>
@@ -711,7 +732,7 @@ arg(r, t)</pre>
   <pre class="snip">conj(r)</pre>
   <p>Complex conjugate, element-wise. Excluded for complex field types (HasComplexFieldGet) which have their own conj overload.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="ComplexField">ComplexField</button><button type="button" class="tag" data-tag="Collection">Collection</button><button type="button" class="tag" data-tag="SymTraceless">SymTraceless</button><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfieldconjugate.h#L53">complexfieldconjugate.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listcomplexconjugate.h#L39">listcomplexconjugate.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelessconjugate.h#L83">symtracelessconjugate.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/complexconjugate.h#L59">complexconjugate.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfieldconjugate.h#L53">complexfieldconjugate.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listcomplexconjugate.h#L38">listcomplexconjugate.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelessconjugate.h#L83">symtracelessconjugate.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/complexconjugate.h#L59">complexconjugate.h</a></p>
 </article>
 <article class="card vocab" id="op-cos" data-name="cos" data-tags="Field">
   <h3><a href="#op-cos">cos</a></h3>
@@ -762,6 +783,13 @@ arg(r, t)</pre>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Collection">Collection</button></p>
   <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/vectordotter.h#L88">vectordotter.h</a></p>
 </article>
+<article class="card vocab" id="op-doubletProjection" data-name="doubletprojection" data-tags="SU2Field">
+  <h3><a href="#op-doubletProjection">doubletProjection</a></h3>
+  <pre class="snip">doubletProjection(x, c)</pre>
+  <p>The SU(2) element $\mathrm{Re}\langle x, i\sigma_b c\rangle$, $b = 0 \ldots 3$, of two doublets, e.g. the bilinear in the SU(2) current. Evaluates $x$ and $c$ once.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doubletprojection.h#L64">su2doubletprojection.h</a></p>
+</article>
 <article class="card vocab" id="op-electricField2" data-name="electricfield2" data-tags="Collection">
   <h3><a href="#op-electricField2">electricField2</a></h3>
   <pre class="snip">electricField2(Es) electricField2(Es, i)</pre>
@@ -769,12 +797,26 @@ arg(r, t)</pre>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Collection">Collection</button></p>
   <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/axionalgebra/electricfield2.h#L18">electricfield2.h</a></p>
 </article>
+<article class="card vocab" id="op-evalShifted" data-name="evalshifted" data-tags="Field">
+  <h3><a href="#op-evalShifted">evalShifted</a></h3>
+  <pre class="snip">evalShifted(r, idx)</pre>
+  <p>The I-th component of the shift vector (SHIFTS..., 0, 0, ...).</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/shift.h#L42">shift.h</a></p>
+</article>
+<article class="card vocab" id="op-evalShiftedImpl" data-name="evalshiftedimpl" data-tags="Field">
+  <h3><a href="#op-evalShiftedImpl">evalShiftedImpl</a></h3>
+  <pre class="snip">evalShiftedImpl(r, x, idx)</pre>
+  <p>Evaluates r at idx + (SHIFTS...). The indices are made signed first: they may be unsigned (e.g. in CUDA builds) and the shifts negative.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/shift.h#L35">shift.h</a></p>
+</article>
 <article class="card vocab" id="op-exp" data-name="exp" data-tags="Collection Field SU2Field">
   <h3><a href="#op-exp">exp</a></h3>
   <pre class="snip">exp(r)</pre>
   <p>Exponential $e^x$, element-wise.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Collection">Collection</button><button type="button" class="tag" data-tag="Field">Field</button><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listexponential.h#L37">listexponential.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/exponential.h#L61">exponential.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2expmap.h#L77">su2expmap.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listexponential.h#L36">listexponential.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/exponential.h#L61">exponential.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2expmap.h#L77">su2expmap.h</a></p>
 </article>
 <article class="card vocab" id="op-expinv" data-name="expinv" data-tags="SU2Field">
   <h3><a href="#op-expinv">expinv</a></h3>
@@ -809,21 +851,21 @@ arg(r, t)</pre>
   <pre class="snip">forwDiff(expr, mu)</pre>
   <p>Forward finite difference $\big(f(x+\hat e_\mu) - f(x)\big)/dx$ along direction `mu`.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/forwdiff.h#L71">forwdiff.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/forwdiff.h#L74">forwdiff.h</a></p>
 </article>
 <article class="card vocab" id="op-forwDij" data-name="forwdij" data-tags="Field">
   <h3><a href="#op-forwDij">forwDij</a></h3>
   <pre class="snip">forwDij&lt;dir&gt;(expr)</pre>
   <p>Forward two-point *sum* $\big(f(x) + f(x+\hat e_\mu)\big)/dx$ — the averaging counterpart of forwDiff, used where a gauge-covariant discretisation needs the sum rather than the difference.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/forwdij.h#L72">forwdij.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/forwdij.h#L75">forwdij.h</a></p>
 </article>
 <article class="card vocab" id="op-Grad2" data-name="grad2" data-tags="Field">
   <h3><a href="#op-Grad2">Grad2</a></h3>
   <pre class="snip">Grad2(pR)</pre>
   <p>Squared norm of the forward gradient, $(\nabla\phi)^2$ — the gradient energy term, as one fused expression.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/normgradientsquare.h#L76">normgradientsquare.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/normgradientsquare.h#L79">normgradientsquare.h</a></p>
 </article>
 <article class="card vocab" id="op-HalfType" data-name="halftype" data-tags="Number">
   <h3><a href="#op-HalfType">HalfType</a></h3>
@@ -865,21 +907,21 @@ arg(r, t)</pre>
   <pre class="snip">LatForwardGrad(pR)</pre>
   <p>Forward gradient, as a vector expression with one forwDiff component per dimension.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/latticeforwardgradient.h#L114">latticeforwardgradient.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/latticeforwardgradient.h#L121">latticeforwardgradient.h</a></p>
 </article>
 <article class="card vocab" id="op-LatLapl" data-name="latlapl" data-tags="Collection Field">
   <h3><a href="#op-LatLapl">LatLapl</a></h3>
   <pre class="snip">LatLapl(expr)</pre>
   <p>Lattice Laplacian: the standard $2d+1$-point stencil, using the operand&#x27;s own $dx$. Applied component-wise to a collection.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Collection">Collection</button><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listlaplacian.h#L43">listlaplacian.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/latticelaplacian.h#L82">latticelaplacian.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listlaplacian.h#L46">listlaplacian.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/latticelaplacian.h#L86">latticelaplacian.h</a></p>
 </article>
 <article class="card vocab" id="op-log" data-name="log" data-tags="Collection Field">
   <h3><a href="#op-log">log</a></h3>
   <pre class="snip">log(r)</pre>
   <p>Natural logarithm, element-wise.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Collection">Collection</button><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listlog.h#L37">listlog.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/log.h#L63">log.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listlog.h#L36">listlog.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/log.h#L63">log.h</a></p>
 </article>
 <article class="card vocab" id="op-magneticField" data-name="magneticfield" data-tags="SU2Field ComplexField">
   <h3><a href="#op-magneticField">magneticField</a></h3>
@@ -937,14 +979,14 @@ magneticFieldCtr(As)</pre>
   <pre class="snip">neutDiff(expr, mu)</pre>
   <p>Centred finite difference $\big(f(x+\hat e_\mu) - f(x-\hat e_\mu)\big)/2dx$, accurate to $O(dx^2)$.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/neutdiff.h#L74">neutdiff.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/neutdiff.h#L77">neutdiff.h</a></p>
 </article>
 <article class="card vocab" id="op-neutDij" data-name="neutdij" data-tags="Field">
   <h3><a href="#op-neutDij">neutDij</a></h3>
   <pre class="snip">neutDij&lt;dir&gt;(expr)</pre>
   <p>Centred two-point sum $\big(f(x+\hat e_\mu) + f(x-\hat e_\mu)\big)/2dx$, the averaging counterpart of neutDiff.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/neutdij.h#L74">neutdij.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/spatialderivatives/neutdij.h#L77">neutdij.h</a></p>
 </article>
 <article class="card vocab" id="op-nonabelianclover" data-name="nonabelianclover" data-tags="SU2Field ComplexField">
   <h3><a href="#op-nonabelianclover">nonabelianclover</a></h3>
@@ -995,12 +1037,33 @@ magneticFieldCtr(As)</pre>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Field">SU2Field</button><button type="button" class="tag" data-tag="ComplexField">ComplexField</button></p>
   <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/gaugealgebra/plaquetteback.h#L27">plaquetteback.h</a> · <code>ctest -R test-plaquetteback</code></p>
 </article>
+<article class="card vocab" id="op-plaqGrad" data-name="plaqgrad" data-tags="SU2Field ComplexField">
+  <h3><a href="#op-plaqGrad">plaqGrad</a></h3>
+  <pre class="snip">plaqGrad(Us)</pre>
+  <p>The list over directions $i$ of $\sum_{j\neq i}[P_{ij}(x) - P^{\rm back}_{ij}(x)]$, the plaquettes containing $U_i(x)$: up to normalization the gradient of the plaquette action, i.e. the lattice $D_j F_{ji}$. Assigned to a collection, each forward plaquette is computed once.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Field">SU2Field</button><button type="button" class="tag" data-tag="ComplexField">ComplexField</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/gaugealgebra/plaquettegradient.h#L141">plaquettegradient.h</a></p>
+</article>
 <article class="card vocab" id="op-pow" data-name="pow" data-tags="Collection Field">
   <h3><a href="#op-pow">pow</a></h3>
   <pre class="snip">pow&lt;N&gt;(x) pow(x, y)</pre>
   <p>Raises an expression to a power. $x^N$ with a compile-time exponent unrolls into repeated multiplication; the two-argument form is general. $N=0$ folds to OneType and $N=1$ to the operand itself, at compile time.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Collection">Collection</button><button type="button" class="tag" data-tag="Field">Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listpower.h#L42">listpower.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/power.h#L107">power.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listpower.h#L37">listpower.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/power.h#L107">power.h</a></p>
+</article>
+<article class="card vocab" id="op-prepareAssignment" data-name="prepareassignment" data-tags="Field">
+  <h3><a href="#op-prepareAssignment">prepareAssignment</a></h3>
+  <pre class="snip">prepareAssignment(g, targets, layout)</pre>
+  <p>Prepares the right-hand side g of an assignment that writes the fields of targets in one kernel: brings the targets and g to configuration space and walks g once to update its ghosts. Returns the range of offsets (including 0) at which g reads any target; if non-zero, assigning g in place would read already overwritten values.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/field/assignment/prepareassignment.h#L28">prepareassignment.h</a> · <code>ctest -R test-assignmentaliasing</code></p>
+</article>
+<article class="card vocab" id="op-prepareCollectionAssignment" data-name="preparecollectionassignment" data-tags="Field">
+  <h3><a href="#op-prepareCollectionAssignment">prepareCollectionAssignment</a></h3>
+  <pre class="snip">prepareCollectionAssignment(g, targets, fieldsPerMember, layout)</pre>
+  <p>As prepareAssignment, for a collection assigning all members in one kernel (see ComponentList), member m writing targets [m * fieldsPerMember, (m + 1) * fieldsPerMember). Walks each member separately, and also returns whether some member reads a target of another member: a kernel storing member by member would then read overwritten values.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/field/assignment/prepareassignment.h#L54">prepareassignment.h</a> · <code>ctest -R test-sweepassignment</code></p>
 </article>
 <article class="card vocab" id="op-projectRadially" data-name="projectradially" data-tags="Field">
   <h3><a href="#op-projectRadially">projectRadially</a></h3>
@@ -1079,7 +1142,28 @@ projectRadially(instance, false)</pre>
   <p>Reads an expression at a site offset by a constant lattice vector: `shift(phi, 1_c)` is $\phi(x+\hat e_1)$. Every finite-difference operator is built from it, and it is what tells TempLat which ghost cells to exchange.</p>
   <pre class="snip">auto p = (Us(mu) * shift(Us(nu), mu)) * dagger(shift(Us(mu), nu)) * dagger(Us(nu));</pre>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="ComplexField">ComplexField</button><button type="button" class="tag" data-tag="Collection">Collection</button><button type="button" class="tag" data-tag="SymTraceless">SymTraceless</button><button type="button" class="tag" data-tag="Field">Field</button><button type="button" class="tag" data-tag="SU2Doublet">SU2Doublet</button><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfieldshift.h#L98">complexfieldshift.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listshift.h#L57">listshift.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelessfieldshift.h#L112">symtracelessfieldshift.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/shift.h#L97">shift.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doubletshift.h#L91">su2doubletshift.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2shift.h#L91">su2shift.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/complexalgebra/complexfieldshift.h#L94">complexfieldshift.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listshift.h#L70">listshift.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/matrix3x3algebra/symtracelessfieldshift.h#L108">symtracelessfieldshift.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/shift.h#L132">shift.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2doubletshift.h#L94">su2doubletshift.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2shift.h#L86">su2shift.h</a></p>
+</article>
+<article class="card vocab" id="op-shiftComponent" data-name="shiftcomponent" data-tags="Field">
+  <h3><a href="#op-shiftComponent">shiftComponent</a></h3>
+  <pre class="snip">shiftComponent(I, SHIFTS)</pre>
+  <p>The I-th component of the shift vector (SHIFTS..., 0, 0, ...).</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/shift.h#L24">shift.h</a></p>
+</article>
+<article class="card vocab" id="op-shiftedReach" data-name="shiftedreach" data-tags="Field">
+  <h3><a href="#op-shiftedReach">shiftedReach</a></h3>
+  <pre class="snip">shiftedReach(reach)</pre>
+  <p>Reach offset by the shift vector (SHIFTS...), see GhostReach.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/shift.h#L49">shift.h</a></p>
+</article>
+<article class="card vocab" id="op-shiftSuffix" data-name="shiftsuffix" data-tags="Field">
+  <h3><a href="#op-shiftSuffix">shiftSuffix</a></h3>
+  <pre class="snip">shiftSuffix(SHIFTS)</pre>
+  <p>The suffix &quot;_(s1,s2,...)&quot; naming shift&lt;s1,s2,...&gt; in expression strings.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/shift.h#L57">shift.h</a></p>
 </article>
 <article class="card vocab" id="op-sin" data-name="sin" data-tags="Field">
   <h3><a href="#op-sin">sin</a></h3>
@@ -1109,6 +1193,13 @@ projectRadially(instance, false)</pre>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Collection">Collection</button><button type="button" class="tag" data-tag="Field">Field</button></p>
   <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/listoperators/listsquareroot.h#L15">listsquareroot.h</a> · <a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/operators/squareroot.h#L66">squareroot.h</a></p>
 </article>
+<article class="card vocab" id="op-storesPerMember" data-name="storespermember" data-tags="Field">
+  <h3><a href="#op-storesPerMember">storesPerMember</a></h3>
+  <pre class="snip">storesPerMember(R, NComp, NDim)</pre>
+  <p>Whether the kernel stores member by member: composites whose members can be evaluated one at a time. That keeps a single member&#x27;s intermediates live at a time, which on a CPU avoids most register spills.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/field/assignment/assignviews.h#L79">assignviews.h</a></p>
+</article>
 <article class="card vocab" id="op-su2average" data-name="su2average" data-tags="SU2Field">
   <h3><a href="#op-su2average">su2average</a></h3>
   <pre class="snip">su2average(instance, Configuration)</pre>
@@ -1135,7 +1226,14 @@ projectRadially(instance, false)</pre>
   <pre class="snip">SU2GroupWrap(c1, c2, c3)</pre>
   <p>Builds a genuine group element from three components, recovering $c_0$ from the unitarity constraint $c_0^2+c_1^2+c_2^2+c_3^2=1$ so that $\det U = 1$ holds by construction.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2groupwrapper.h#L121">su2groupwrapper.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2groupwrapper.h#L114">su2groupwrapper.h</a></p>
+</article>
+<article class="card vocab" id="op-sweepBandWidth" data-name="sweepbandwidth" data-tags="Field">
+  <h3><a href="#op-sweepBandWidth">sweepBandWidth</a></h3>
+  <pre class="snip">sweepBandWidth(planeArea, nPlanes, requested)</pre>
+  <p>Number of planes evaluated per sweep step: about 8 sites per resident device thread, at least one plane and at most all of them. A positive requested value overrides the choice.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/field/assignment/assignviews.h#L33">assignviews.h</a></p>
 </article>
 <article class="card vocab" id="op-symTracelessFieldAsFourier" data-name="symtracelessfieldasfourier" data-tags="SymTraceless Fourier">
   <h3><a href="#op-symTracelessFieldAsFourier">symTracelessFieldAsFourier</a></h3>
@@ -1156,7 +1254,7 @@ projectRadially(instance, false)</pre>
   <pre class="snip">toSU2(r)</pre>
   <p>Projects an SU(2)-valued expression onto the group by rebuilding it from its three vector components.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="SU2Field">SU2Field</button></p>
-  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2groupwrapper.h#L130">su2groupwrapper.h</a></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/su2algebra/su2groupwrapper.h#L123">su2groupwrapper.h</a></p>
 </article>
 <article class="card vocab" id="op-total" data-name="total" data-tags="Collection">
   <h3><a href="#op-total">total</a></h3>
@@ -1200,6 +1298,20 @@ projectRadially(instance, false)</pre>
   <p>The Fourier coordinate of the current site, as an expression. Exposes the individual components and `norm()` / `norm2()`. Throws if evaluated in configuration space.</p>
   <p class="vocab-meta"><button type="button" class="tag" data-tag="Fourier">Fourier</button></p>
   <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/algebra/coordinates/wavenumber.h#L30">wavenumber.h</a> · <code>ctest -R test-wavenumber</code></p>
+</article>
+<article class="card vocab" id="op-wholeListShares" data-name="wholelistshares" data-tags="Field">
+  <h3><a href="#op-wholeListShares">wholeListShares</a></h3>
+  <pre class="snip">wholeListShares(L)</pre>
+  <p>Whether the whole evaluation of a list of type L shares work, i.e. contains a list offering wholeList. Decided from the type alone, so that lists without one never build a whole evaluation.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/field/assignment/wholelist.h#L192">wholelist.h</a></p>
+</article>
+<article class="card vocab" id="op-wholeOf" data-name="wholeof" data-tags="Field">
+  <h3><a href="#op-wholeOf">wholeOf</a></h3>
+  <pre class="snip">wholeOf(l)</pre>
+  <p>The whole evaluation of the list l of size N with NDim-dimensional members; T is the field type.</p>
+  <p class="vocab-meta"><button type="button" class="tag" data-tag="Field">Field</button></p>
+  <p class="vocab-src"><a href="https://github.com/cosmolattice/templat/blob/main/include/TempLat/lattice/field/assignment/wholelist.h#L223">wholelist.h</a></p>
 </article>
 <article class="card vocab" id="op-ZeroType" data-name="zerotype" data-tags="Number">
   <h3><a href="#op-ZeroType">ZeroType</a></h3>

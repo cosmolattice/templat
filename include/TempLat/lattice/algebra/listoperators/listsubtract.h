@@ -24,6 +24,8 @@ namespace TempLat
   template <typename R, typename T> class ListSubtraction : public ListBinaryOperator<R, T>
   {
   public:
+    using IsWholeListSum = void; // see wholeOf
+    static constexpr int wholeListSign = -1;
     using ListBinaryOperator<R, T>::mR;
     using ListBinaryOperator<R, T>::mT;
     ListSubtraction(const R &pR, const T &pT) : ListBinaryOperator<R, T>(pR, pT) {}
@@ -31,11 +33,6 @@ namespace TempLat
     template <int N> auto getComp(Tag<N> t) { return GetComponent::get(mR, t) - GetComponent::get(mT, t); }
 
     virtual std::string operatorString() const { return "-"; }
-    template <int N> void doWeNeedGhosts(Tag<N> i)
-    {
-      GhostsHunter::apply(mR, i);
-      GhostsHunter::apply(mT, i);
-    }
     static const size_t size = static_max<tuple_size<R>::value, tuple_size<T>::value>::value;
   };
 

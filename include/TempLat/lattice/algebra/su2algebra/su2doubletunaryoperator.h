@@ -17,6 +17,8 @@
 
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
 {
@@ -34,6 +36,14 @@ namespace TempLat
 
     /** @brief Override this method in your derived class, to have an easy implementation of your toString method. */
     virtual std::string operatorString() const { return " "; }
+
+    /** @brief Space/ghost confirmation forwarded to the operand, see ConfirmGhosts and ConfirmSpace. */
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const { return ConfirmGhosts::apply(mR, reach); }
+    template <size_t LayoutNDim>
+    void confirmSpace(const LayoutStruct<LayoutNDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mR, newLayout, spaceType);
+    }
 
     void preGet() { PreGet::apply(mR); }
 

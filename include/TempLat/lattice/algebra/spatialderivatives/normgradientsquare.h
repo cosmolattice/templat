@@ -38,7 +38,10 @@ namespace TempLat
 
     std::string toString() const { return "|Grad(" + GetString::get(mR) + ")|^2"; }
 
-    void doWeNeedGhosts() const { mR.confirmGhostsUpToDate(); }
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, reach.widenedAll(NDim, 0, 1));
+    }
 
     template <typename... IDX>
       requires requires(std::decay_t<R> r, IDX... idx) {

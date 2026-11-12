@@ -24,7 +24,7 @@ namespace TempLat
     A(1_c) = 0.2;
     A(2_c) = 0.3;
     A(3_c) = 0.4;
-    A.unitarize();
+    A(0_c) = std::sqrt(1.0 - 0.2 * 0.2 - 0.3 * 0.3 - 0.4 * 0.4);
 
     auto average = su2average(A);
 

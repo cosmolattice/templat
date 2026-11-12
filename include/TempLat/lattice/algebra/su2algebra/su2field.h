@@ -15,6 +15,7 @@
 
 #include "TempLat/parallel/device.h"
 
+#include "TempLat/lattice/algebra/su2algebra/helpers/paulivectorsalgebra.h"
 #include "TempLat/lattice/algebra/su2algebra/su2binaryoperator.h"
 #include "TempLat/lattice/algebra/su2algebra/su2commutator.h"
 
@@ -22,8 +23,8 @@ namespace TempLat
 {
   /** @brief A class which implements a SU2 field (group).
    * We choose a representation with 4 real numbers per lattice site, c0, c1, c2, c3.
-   * These are subject to the unitarity constraint c0^2 + c1^2 + c2^2 + c3^2 = 1, which can be enforced by the
-   * unitarize() method.
+   * These are subject to the unitarity constraint c0^2 + c1^2 + c2^2 + c3^2 = 1, which unitarize() enforces by
+   * normalizing all four components.
    * A single link variable is then represented as U = c0 * I + i * (c1 * sigma1 + c2 * sigma2 + c3 * sigma3), where
    * sigma1, sigma2, sigma3 are the Pauli matrices.
    *
@@ -79,39 +80,25 @@ namespace TempLat
       return fs[M];
     }
 
+    /** @brief The fields an assignment writes; they receive components 0 ... 3 of the value. Lets collections assign
+     *  all members in one kernel, see FieldCollection::operator=. */
+    const auto &assignedFields() const { return fs; }
+    static constexpr size_t firstAssignedComponent = 0;
+
+    /** @brief Prepares the right-hand side r for the single assignment kernel writing all components, see
+     *  prepareAssignment. */
+    template <typename R> GhostReach onBeforeAssignment(R &&r)
+    {
+      return prepareAssignment<T, NDim>(r, componentManagers(), mLayout);
+    }
+
     template <typename R> void operator=(R &&r)
     {
-      // Confirm config-space / ghost requirements by walking the WHOLE SU(2) expression r (linear in its
-      // structure), instead of building r.SU2Get(k) per component (the exponential per-component
-      // expansion, instantiated only to be walked then discarded). One call per target component is
-      // kept: onBeforeAssignment also confirms the target field fs[k] and flags its host mirror.
-      fs[0].onBeforeAssignment(r);
-      fs[1].onBeforeAssignment(r);
-      fs[2].onBeforeAssignment(r);
-      fs[3].onBeforeAssignment(r);
-
-      PreGet::apply(r);
-
-      const auto view0 = fs[0].getView();
-      const auto view1 = fs[1].getView();
-      const auto view2 = fs[2].getView();
-      const auto view3 = fs[3].getView();
-
-      auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
-      {
-        device::apply(
-            [&](const auto &...args) {
-              auto result = DoEval::eval(r, args...);
-              view0(args...) = result[0];
-              view1(args...) = result[1];
-              view2(args...) = result[2];
-              view3(args...) = result[3];
-            },
-            idx);
-      };
-      device::iteration::foreach ("SU2ConfigViewAssign", mLayout, functor);
-
-      PostGet::apply(r);
+      const GhostReach targetReach = onBeforeAssignment(r);
+      assignViews("SU2ConfigViewAssign",
+                  device::array<decltype(fs[0].getView()), 4>{fs[0].getView(), fs[1].getView(), fs[2].getView(),
+                                                              fs[3].getView()},
+                  r, mLayout, targetReach, fs[0].toolBox()->mSweepBuffer);
 
       fs[0].setGhostsAreStale();
       fs[1].setGhostsAreStale();
@@ -119,29 +106,34 @@ namespace TempLat
       fs[3].setGhostsAreStale();
     }
 
-    // Recompute c0 from c1,c2,c3 to enforce SU(2) unitarity constraint.
+    // Projects every link onto SU(2), c_mu -> c_mu / |c|, keeping the sign of c0.
     void unitarize()
     {
+      const auto view0 = fs[0].getView();
       const auto view1 = fs[1].getView();
       const auto view2 = fs[2].getView();
       const auto view3 = fs[3].getView();
-      const auto view0 = fs[0].getView();
 
       auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
       {
         device::apply(
             [&](const auto &...args) {
-              T c1 = view1(args...);
-              T c2 = view2(args...);
-              T c3 = view3(args...);
-              view0(args...) = sqrt(T(1) - c1 * c1 - c2 * c2 - c3 * c3);
+              device::array<T, 4> c{view0(args...), view1(args...), view2(args...), view3(args...)};
+              PauliVectorsAlgebra::normalize_inplace(c);
+              view0(args...) = c[0];
+              view1(args...) = c[1];
+              view2(args...) = c[2];
+              view3(args...) = c[3];
             },
             idx);
       };
       device::iteration::foreach ("SU2Unitarize", mLayout, functor);
 
       fs[0].setGhostsAreStale();
-      fs[0].updateGhosts();
+      fs[1].setGhostsAreStale();
+      fs[2].setGhostsAreStale();
+      fs[3].setGhostsAreStale();
+      updateGhosts();
     }
 
     std::string toString() const { return *mName; }
@@ -151,21 +143,20 @@ namespace TempLat
 
     inline auto getToolBox() const { return GetToolBox::get(fs[0]); }
 
-    // Space/ghost confirmation forwarded to the 4 component fields, so this leaf can be walked as a whole
-    // SU(2) expression (see operator=). GhostsHunter::apply on a Field is a no-op (matches the prior
-    // per-component path where r.SU2Get(k) was the bare field fs[k]).
-    void doWeNeedGhosts() const
+    /** @brief Ghost walk entry batched over the components, see ConfirmGhosts. Without a reach, updates the
+     *  ghosts of all components if they are stale. */
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
     {
-      GhostsHunter::apply(fs[0]);
-      GhostsHunter::apply(fs[1]);
-      GhostsHunter::apply(fs[2]);
-      GhostsHunter::apply(fs[3]);
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers(), reach);
     }
     device::Idx confirmGhostsUpToDate() const
     {
-      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
-                                        fs[2].getMemoryManager().get(), fs[3].getMemoryManager().get()};
-      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(mgrs);
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers());
+    }
+    std::array<MemoryManager<T, NDim> *, 4> componentManagers() const
+    {
+      return {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(), fs[2].getMemoryManager().get(),
+              fs[3].getMemoryManager().get()};
     }
     void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
@@ -175,12 +166,7 @@ namespace TempLat
       ConfirmSpace::apply(fs[3], newLayout, spaceType);
     }
 
-    inline void updateGhosts()
-    {
-      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
-                                        fs[2].getMemoryManager().get(), fs[3].getMemoryManager().get()};
-      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
-    }
+    inline void updateGhosts() { MemoryManager<T, NDim>::updateGhostsBatch(componentManagers()); }
 
     template <typename... IDX>
       requires requires(Field<T, NDim> f, IDX... idx) {

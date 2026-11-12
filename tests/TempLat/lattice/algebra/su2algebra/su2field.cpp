@@ -71,20 +71,34 @@ namespace TempLat
       tdd.verify(all_true);
     }
 
-    // Test unitarize: set c1=0.5, c2=0.5, c3=0.5, then unitarize should give c0 = sqrt(1 - 0.75) = 0.5
+    // unitarize() projects onto SU(2), c_mu -> c_mu / |c|: it keeps the sign of c0 and stays finite when
+    // c1^2 + c2^2 + c3^2 > 1.
     {
       SU2Field<double, NDim> uField("uTest", toolBox, LatticeParameters<double>());
-      uField(1_c) = 0.5;
-      uField(2_c) = 0.5;
-      uField(3_c) = 0.5;
-      uField.unitarize();
+      auto checkUnitarize = [&](std::array<double, 4> in, std::array<double, 4> expected, double tol) {
+        uField(0_c) = in[0];
+        uField(1_c) = in[1];
+        uField(2_c) = in[2];
+        uField(3_c) = in[3];
+        uField.unitarize();
 
-      auto c0 = uField(0_c);
-      auto c0_view = c0.getLocalNDHostView();
-      bool all_close = true;
-      double expected = sqrt(1.0 - 0.75);
-      NDLoop<NDim>(c0_view, [&](const auto... idx) { all_close &= (std::abs(c0_view(idx...) - expected) < 1e-14); });
-      tdd.verify(all_close);
+        const auto v0 = uField(0_c).getLocalNDHostView();
+        const auto v1 = uField(1_c).getLocalNDHostView();
+        const auto v2 = uField(2_c).getLocalNDHostView();
+        const auto v3 = uField(3_c).getLocalNDHostView();
+        bool all_close = true;
+        NDLoop<NDim>(v0, [&](const auto... idx) {
+          const double c[4] = {v0(idx...), v1(idx...), v2(idx...), v3(idx...)};
+          for (int m = 0; m < 4; ++m)
+            all_close &= std::isfinite(c[m]) && std::abs(c[m] - expected[m]) < tol;
+        });
+        return all_close;
+      };
+
+      tdd.verify(checkUnitarize({-1, 0, 0, 0}, {-1, 0, 0, 0}, 1e-15));
+      const double s = 1 + 1e-6;
+      tdd.verify(checkUnitarize({-0.5 * s, 0.5 * s, 0.5 * s, 0.5 * s}, {-0.5, 0.5, 0.5, 0.5}, 1e-13));
+      tdd.verify(checkUnitarize({0, 1 + 1e-12, 0, 0}, {0, 1, 0, 0}, 1e-14));
     }
   }
 

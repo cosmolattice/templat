@@ -12,8 +12,15 @@
 #include "TempLat/lattice/algebra/helpers/getgetreturntype.h"
 #include "TempLat/lattice/algebra/helpers/getfloattype.h"
 #include "TempLat/lattice/algebra/helpers/getndim.h"
+#include "TempLat/lattice/field/assignment/assignviews.h"
+#include "TempLat/lattice/field/assignment/componentlist.h"
+#include "TempLat/lattice/field/assignment/prepareassignment.h"
+#include "TempLat/lattice/field/assignment/wholelist.h"
 
+#include <array>
 #include <string>
+#include <tuple>
+#include <utility>
 
 namespace TempLat
 {
@@ -60,12 +67,19 @@ namespace TempLat
       return fs[t - Tag<SHIFTIND>()];
     }
 
-    template <int M> auto getComp(Tag<M> t) { return fs[t]; }
+    template <int M> auto getComp(Tag<M> t) const { return fs[t]; }
 
+    /** @brief Assigns the list r. Collections of plain fields, and of composite fields exposing assignedFields, assign
+     *  all members in one kernel, so that members may read each other, see assignViews; others assign member by
+     *  member. */
     template <typename R> void operator=(R &&r)
     {
-      for_in_range<0, std::remove_reference<R>::type::size>(
-          [&](auto i) { (*this).getComp(i) = std::remove_reference<R>::type::Getter::get(r, i); });
+      using nakedR = std::remove_reference_t<R>;
+      if constexpr (nakedR::size == N &&
+                    (requires(const Arg &a) { a.getView(); } || requires(const Arg &a) { a.assignedFields(); }))
+        assignAtOnce(r, std::make_index_sequence<N>());
+      else
+        for_in_range<0, nakedR::size>([&](auto i) { (*this).getComp(i) = nakedR::Getter::get(r, i); });
     }
 
     template <typename R> void operator+=(R &&r) { (*this) = (*this) + r; }
@@ -82,6 +96,66 @@ namespace TempLat
     static constexpr size_t size = N;
 
   private:
+    template <typename A> struct FieldCount;
+    template <typename F, size_t K> struct FieldCount<device::array<F, K>> {
+      static constexpr size_t value = K;
+    };
+
+    /** @brief The fields an assignment of f writes. */
+    static auto assignedFieldsOf(const Arg &f)
+    {
+      if constexpr (requires { f.assignedFields(); })
+        return f.assignedFields();
+      else
+        return device::array<Arg, 1>{f};
+    }
+    /** @brief The value component the first of the assigned fields receives. */
+    static constexpr size_t firstAssignedComponent()
+    {
+      if constexpr (requires { Arg::firstAssignedComponent; })
+        return Arg::firstAssignedComponent;
+      else
+        return 0;
+    }
+
+    template <typename R, size_t... i> void assignAtOnce(R &r, std::index_sequence<i...>)
+    {
+      using nakedR = std::remove_reference_t<R>;
+      ComponentList<T, std::remove_cvref_t<decltype(nakedR::Getter::get(r, Tag<int(i)>()))>...> g(
+          nakedR::Getter::get(r, Tag<int(i)>())...);
+
+      // Member m writes the K fields m * K + k.
+      constexpr size_t K = FieldCount<std::remove_cvref_t<decltype(assignedFieldsOf(fs[0]))>>::value;
+      const auto first = assignedFieldsOf(fs[0])[0];
+      device::array<decltype(first.getView()), N * K> views;
+      std::array<MemoryManager<T, NDim> *, N * K> managers;
+      for (size_t m = 0; m < N; ++m) {
+        const auto fields = assignedFieldsOf(fs[m]);
+        for (size_t k = 0; k < K; ++k) {
+          views[m * K + k] = fields[k].getView();
+          managers[m * K + k] = fields[k].getMemoryManager().get();
+        }
+      }
+
+      const auto &layout = first.getLayout();
+      GhostReach targetReach;
+      bool readsOtherMember = false;
+      if constexpr (K == 1)
+        targetReach = prepareAssignment<T, NDim>(g, managers, layout);
+      else
+        std::tie(targetReach, readsOtherMember) = prepareCollectionAssignment<T, NDim>(g, managers, K, layout);
+      if constexpr (wholeListShares<R>()) {
+        // Members share work (e.g. plaqGrad): all are evaluated before any is stored, so they may read each other.
+        auto whole = wholeOf<T, NDim, N>(r);
+        assignViews<firstAssignedComponent()>("CollectionAssign", views, WholeAssignment<decltype(whole)>{whole},
+                                              layout, targetReach, first.toolBox()->mSweepBuffer);
+      } else
+        assignViews<firstAssignedComponent()>("CollectionAssign", views, g, layout, targetReach,
+                                              first.toolBox()->mSweepBuffer, readsOtherMember);
+      for (auto *m : managers)
+        m->setGhostsAreStale();
+    }
+
     std::vector<Arg> fs;
   };
 } // namespace TempLat

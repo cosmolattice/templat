@@ -11,6 +11,8 @@
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/algebra/helpers/ghostshunter.h"
 #include "TempLat/lattice/field/abstractfield.h"
+#include "TempLat/lattice/field/assignment/prepareassignment.h"
+#include "TempLat/lattice/field/assignment/assignviews.h"
 #include "TempLat/lattice/memory/memorylayouts/layoutstruct.h"
 
 #include "TempLat/lattice/algebra/helpers/preget.h"
@@ -40,27 +42,21 @@ namespace TempLat
     using AbstractField<T, NDim>::mManager;
     using AbstractField<T, NDim>::toolBox;
 
-    ConfigView(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox, LatticeParameters<T> pLatPar)
-        : AbstractField<T, NDim>(name, toolBox, pLatPar), mDisableFFTBlocking(false)
+    ConfigView(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> pToolBox, LatticeParameters<T> pLatPar)
+        : AbstractField<T, NDim>(name, pToolBox, pLatPar), mDisableFFTBlocking(false)
     {
-      initFromToolBox(toolBox);
+      initFromToolBox(pToolBox);
     }
 
     auto getView() const { return mView; }
 
+    /** @brief Assigns g. If g reads this field at neighbouring sites, a plane-by-plane sweep keeps those reads
+     *  on the old values, see assignViews. */
     template <typename R> void assign(R &&g)
     {
-      onBeforeAssignment(g);
-
-      PreGet::apply(g);
-
-      auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
-      {
-        device::apply([&](auto &&...args) { mView(args...) = DoEval::eval(g, args...); }, idx);
-      };
-      device::iteration::foreach ("ConfigViewAssign", mLayout, functor);
-
-      PostGet::apply(g);
+      const GhostReach targetReach = onBeforeAssignment(g);
+      assignViews("ConfigViewAssign", device::array<decltype(mView), 1>{mView}, g, mLayout, targetReach,
+                  toolBox()->mSweepBuffer);
 
       mManager->setGhostsAreStale();
     }
@@ -119,24 +115,20 @@ namespace TempLat
       return mView(idx...);
     }
 
-    template <typename R> void onBeforeAssignment(R &&g)
+    /** @brief Prepares the right-hand side g for evaluation, see prepareAssignment. */
+    template <typename R> GhostReach onBeforeAssignment(R &&g)
     {
-      /* likewise, make sure we are in configuration space (here the FFT may be fired!). */
-      mManager->confirmConfigSpace();
-
-      ConfirmSpace::apply(g, mLayout, SpaceStateType::Configuration);
-
-      GhostsHunter::apply(g);
-      mManager->flagHostMirrorOutdated();
+      MemoryManager<T, NDim> *target[] = {mManager.get()};
+      return prepareAssignment<T, NDim>(g, target, mLayout);
     }
 
     std::string to_string() const { return mManager->getName() + "(x)"; }
 
   private:
-    void initFromToolBox(device::memory::host_ptr<MemoryToolBox<NDim>> toolBox)
+    void initFromToolBox(device::memory::host_ptr<MemoryToolBox<NDim>> pToolBox)
     {
-      if (toolBox != nullptr)
-        mLayout = toolBox->mLayouts.getConfigSpaceLayout();
+      if (pToolBox != nullptr)
+        mLayout = pToolBox->mLayouts.getConfigSpaceLayout();
       else
         throw FieldViewConfigMissingToolBox("A FieldViewConfig must be constructed with a valid MemoryToolBox.");
 
@@ -157,13 +149,8 @@ namespace TempLat
 
     LayoutStruct<NDim> mLayout;
 
-    // mView is the ONLY member the device kernel reads: eval() above is `return
-    // mView(idx...)` and nothing else. Everything else here is host-side bookkeeping that
-    // every expression node nevertheless deep-copies, because nodes store their operands by
-    // value with the deduced type. mRawView (written in the ctor, never read) and mHostView
-    // (declared, never even written) used to sit here and cost 80 B of every Field for
-    // nothing -- getRawHostView()/getFullNDHostView() go through mManager->, not through
-    // them.
+    // mView is the only member device kernels read. Expression nodes copy their operands by value, so every
+    // further member enlarges every node; keep host-side state in the memory manager.
     device::memory::NDViewUnmanaged<T, NDim> mView;
 
     device::IdxArray<NDim> memorySizes;

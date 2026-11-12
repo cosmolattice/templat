@@ -11,6 +11,8 @@
 #include "TempLat/lattice/algebra/helpers/getdx.h"
 #include "TempLat/lattice/algebra/helpers/getkir.h"
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 #include "TempLat/lattice/field/assignablefieldcollection.h"
 #include "TempLat/lattice/algebra/su2algebra/helpers/su2doubletget.h"
 #include "TempLat/util/rangeiteration/make_list_tag.h"
@@ -36,7 +38,7 @@ namespace TempLat
     static constexpr size_t NDim = _NDim;
 
     SU2Doublet(Field<T, NDim> f1, Field<T, NDim> f2, Field<T, NDim> f3, Field<T, NDim> f4)
-        : fs{{f1, f2, f3, f4}}, mName("NoName"), mLayout(f1.getToolBox()->mLayouts.getConfigSpaceLayout())
+        : mName("NoName"), fs{{f1, f2, f3, f4}}, mLayout(f1.getToolBox()->mLayouts.getConfigSpaceLayout())
     {
     }
     SU2Doublet(std::string name, device::memory::host_ptr<MemoryToolBox<NDim>> toolBox,
@@ -78,32 +80,25 @@ namespace TempLat
       return fs[t];
     }
 
+    /** @brief The fields an assignment writes; they receive components 0 ... 3 of the value. Lets collections assign
+     *  all members in one kernel, see FieldCollection::operator=. */
+    const auto &assignedFields() const { return fs; }
+    static constexpr size_t firstAssignedComponent = 0;
+
+    /** @brief Prepares the right-hand side r for the single assignment kernel writing all components, see
+     *  prepareAssignment. */
+    template <typename R> GhostReach onBeforeAssignment(R &&r)
+    {
+      return prepareAssignment<T, NDim>(r, componentManagers(), mLayout);
+    }
+
     template <typename R> void operator=(R &&r)
     {
-      fs[0].onBeforeAssignment(std::decay_t<R>::Getter::get(r, 0_c));
-      fs[1].onBeforeAssignment(std::decay_t<R>::Getter::get(r, 1_c));
-      fs[2].onBeforeAssignment(std::decay_t<R>::Getter::get(r, 2_c));
-      fs[3].onBeforeAssignment(std::decay_t<R>::Getter::get(r, 3_c));
-
-      PreGet::apply(r);
-
-      const auto views = device::make_tuple(fs[0].getView(), fs[1].getView(), fs[2].getView(), fs[3].getView());
-
-      auto functor = DEVICE_CLASS_LAMBDA(const device::IdxArray<NDim> &idx)
-      {
-        device::apply(
-            [&](auto &&...args) {
-              auto result = DoEval::eval(r, args...);
-              constexpr_for<0, size>([&](auto _i) {
-                constexpr size_t i = decltype(_i)::value;
-                device::get<i>(views)(args...) = result[i];
-              });
-            },
-            idx);
-      };
-      device::iteration::foreach ("SU2DoubleConfigViewAssign", mLayout, functor);
-
-      PostGet::apply(r);
+      const GhostReach targetReach = onBeforeAssignment(r);
+      assignViews("SU2DoubleConfigViewAssign",
+                  device::array<decltype(fs[0].getView()), 4>{fs[0].getView(), fs[1].getView(), fs[2].getView(),
+                                                              fs[3].getView()},
+                  r, mLayout, targetReach, fs[0].toolBox()->mSweepBuffer);
 
       fs[0].setGhostsAreStale();
       fs[1].setGhostsAreStale();
@@ -117,15 +112,33 @@ namespace TempLat
 
     device::memory::host_ptr<MemoryToolBox<NDim>> getToolBox() const { return GetToolBox::get(fs[0]); }
 
+    /** @brief Ghost walk entry batched over the components, see ConfirmGhosts. Without a reach, updates the
+     *  ghosts of all components if they are stale. */
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers(), reach);
+    }
+    device::Idx confirmGhostsUpToDate() const
+    {
+      return MemoryManager<T, NDim>::confirmGhostsUpToDateBatch(componentManagers());
+    }
+    std::array<MemoryManager<T, NDim> *, 4> componentManagers() const
+    {
+      return {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(), fs[2].getMemoryManager().get(),
+              fs[3].getMemoryManager().get()};
+    }
+    void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(fs[0], newLayout, spaceType);
+      ConfirmSpace::apply(fs[1], newLayout, spaceType);
+      ConfirmSpace::apply(fs[2], newLayout, spaceType);
+      ConfirmSpace::apply(fs[3], newLayout, spaceType);
+    }
+
     auto getDx() const { return GetDx::getDx(fs[0]); }
     auto getKIR() const { return GetKIR::getKIR(fs[0]); }
 
-    inline void updateGhosts()
-    {
-      MemoryManager<T, NDim> *mgrs[] = {fs[0].getMemoryManager().get(), fs[1].getMemoryManager().get(),
-                                        fs[2].getMemoryManager().get(), fs[3].getMemoryManager().get()};
-      MemoryManager<T, NDim>::updateGhostsBatch(mgrs);
-    }
+    inline void updateGhosts() { MemoryManager<T, NDim>::updateGhostsBatch(componentManagers()); }
 
     using Getter = SU2DoubletGetter;
     static constexpr size_t size = 4;

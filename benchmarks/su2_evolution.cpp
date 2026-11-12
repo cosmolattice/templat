@@ -42,6 +42,12 @@
  *
  * -DKICK_SCATTER_QMUL evaluates Ad() with two explicit SU(2) quaternion products instead of the
  * Rodrigues rotation -- slower, but an independent check of the rotation's sign convention.
+ *
+ * Other variants of the kick (default: one assignment per direction):
+ *   -DKICK_DEFUSED   one assignment per direction and transverse direction j
+ *   -DSU2_PLAQGRAD   all directions in one collection assignment with plaqGrad
+ *   -DSU2_FUSED      all directions in one collection assignment, also for the drift
+ * -DSU2_NGRID and -DSU2_NSTEPS set the lattice size and step count.
  */
 
 #include "TempLat/session/sessionguard.h"
@@ -56,11 +62,14 @@
 #include "TempLat/lattice/algebra/su2algebra/scalarsu2multiplication.h"
 #include "TempLat/lattice/algebra/gaugealgebra/plaquette.h"
 #include "TempLat/lattice/algebra/gaugealgebra/plaquetteback.h"
+#include "TempLat/lattice/algebra/gaugealgebra/plaquettegradient.h"
 #include "TempLat/lattice/algebra/operators/operators.h"
 #include "TempLat/lattice/algebra/coordinates/spatialcoordinate.h"
+#include "TempLat/lattice/algebra/listoperators/listoperators.h"
 #include "TempLat/lattice/field/collections/fieldcollection.h"
 #include "TempLat/lattice/measuringtools/averager.h"
 #include "TempLat/util/rangeiteration/for_in_range.h"
+#include "TempLat/util/rangeiteration/make_list_tag.h"
 #include "TempLat/util/rangeiteration/sum_in_range.h"
 #include "TempLat/util/staticif.h"
 
@@ -236,12 +245,8 @@ int main(int argc, char **argv)
                   idx);
             });
 #elif defined(KICK_DEFUSED)
-        // Accumulate one transverse direction at a time. The fused expression below keeps all 12
-        // four-link products live at once, which does not fit in the register file, so it spills
-        // (3276 stack-touching vector moves against 1500 here) -- and de-fusing duly wins 11-20% ON A
-        // SINGLE RANK. It LOSES 33-37% at full machine occupancy, because the extra Pi read+write per
-        // j is memory traffic, and at scale the kick is bandwidth-bound, not compute-bound. Kept only
-        // to reproduce that: this is a trap, see benchmarks/PERFORMANCE.md section 2.
+        // One transverse direction at a time: fewer registers live, faster on one rank, slower at full
+        // occupancy (more memory traffic). See benchmarks/PERFORMANCE.md, section 2.
         for_in_range<1, NDim + 1>([&](auto i) {
           for_in_range<1, NDim + 1>([&](auto j) {
             if constexpr (decltype(i)::value != decltype(j)::value) {
@@ -249,10 +254,16 @@ int main(int argc, char **argv)
             }
           });
         });
+#elif defined(SU2_PLAQGRAD)
+        // All directions in one kernel, each forward plaquette computed once (P_ji = P_ij^dagger).
+        Pi = Pi - dt * plaqGrad(U);
+#elif defined(SU2_FUSED)
+        // All directions in one kernel, as one collection assignment of the explicit expression.
+        Pi = Pi - dt * MakeVector(i, 1, NDim,
+                                  Total(j, 1, NDim, IfElse(i != j, plaq(U, i, j) - plaqBack(U, i, j), ZeroType())));
 #else
-        // The fused kick. It spills registers and is ~11-20% slower on one rank -- and it is still the
-        // right default, because it moves the least memory, and every core beyond the first is fighting
-        // for DRAM bandwidth. Optimise this kernel for BYTES, not for FLOPs or registers.
+        // The fused kick, per direction: spills registers, but moves the least memory, which is what counts
+        // at full occupancy (benchmarks/PERFORMANCE.md, section 2).
         for_in_range<1, NDim + 1>([&](auto i) {
           Pi(i) = Pi(i) - dt * Total(j, 1, NDim,
                                      IfElse(i != j, plaq(U, i, j) - plaqBack(U, i, j), ZeroType()));
@@ -261,7 +272,11 @@ int main(int argc, char **argv)
         device::iteration::fence();
       });
       measurer.measure("U drift", [&]() {
+#if defined(SU2_FUSED)
+        U = MakeVector(i, 1, NDim, exp(dt * Pi(i)) * U(i));
+#else
         for_in_range<1, NDim + 1>([&](auto i) { U(i) = exp(dt * Pi(i)) * U(i); });
+#endif
         device::iteration::fence();
       });
     }

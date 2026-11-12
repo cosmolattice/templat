@@ -15,6 +15,8 @@
 
 #include "TempLat/lattice/algebra/helpers/preget.h"
 #include "TempLat/lattice/algebra/helpers/postget.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
 {
@@ -60,7 +62,7 @@ namespace TempLat
 
     template <int N> auto operator()(Tag<N> t) const
     {
-      static_assert(N >= 0 && N <= 4, "Operator(): N must be 0 or 4 for SymTracelessWrapper");
+      static_assert(N >= 0 && N <= 4, "Operator(): N must be 0-4 for SymTracelessWrapper");
       return SymTracelessGet(t);
     }
 
@@ -88,6 +90,23 @@ namespace TempLat
       result[0] -= ET(1) / ET(3) * trace;
       result[3] -= ET(1) / ET(3) * trace;
       return result;
+    }
+
+    /** @brief Space/ghost confirmation forwarded to the wrapped expressions. */
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR0, reach) + ConfirmGhosts::apply(mR1, reach) + ConfirmGhosts::apply(mR2, reach) +
+             ConfirmGhosts::apply(mR3, reach) + ConfirmGhosts::apply(mR4, reach) + ConfirmGhosts::apply(mR5, reach);
+    }
+    template <size_t LayoutNDim>
+    void confirmSpace(const LayoutStruct<LayoutNDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(mR0, newLayout, spaceType);
+      ConfirmSpace::apply(mR1, newLayout, spaceType);
+      ConfirmSpace::apply(mR2, newLayout, spaceType);
+      ConfirmSpace::apply(mR3, newLayout, spaceType);
+      ConfirmSpace::apply(mR4, newLayout, spaceType);
+      ConfirmSpace::apply(mR5, newLayout, spaceType);
     }
 
     void preGet()

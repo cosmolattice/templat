@@ -12,12 +12,15 @@
 #include "TempLat/util/exception.h"
 #include "TempLat/util/constexpr_for.h"
 
+#include <string>
+
 #include "TempLat/parallel/device.h"
 
 namespace TempLat
 {
   MakeException(LayoutStructWrongSizeException);
   MakeException(LayoutStructOutOfBoundsExcetion);
+  MakeException(LayoutMismatch);
 
   /** @brief Holds the result of FFTLibraryInterface::computeLocalSizes.
    *  In itself, has practically no logic, only forwards all the getters and setters to their respective owners.
@@ -188,6 +191,16 @@ namespace TempLat
     const LayoutStructGlobal<NDim> &getGlobal() const { return getLocal().getGlobal(); }
   };
 
+  /** @brief Throws LayoutMismatch unless what, laid out in memory as own, can be read in an expression laid out as
+   *  layout: kernels index every leaf with the memory indices of the expression's layout. */
+  template <size_t NDim>
+  void confirmSameLayout(const LayoutStruct<NDim> &own, const LayoutStruct<NDim> &layout, const std::string &what)
+  {
+    if (!(own == layout))
+      throw LayoutMismatch(what +
+                           " is used in an expression with a different memory layout (grid, ghost depth or "
+                           "decomposition). Fields of different MemoryToolBoxes mix only if their layouts agree.");
+  }
 } // namespace TempLat
 
 #endif

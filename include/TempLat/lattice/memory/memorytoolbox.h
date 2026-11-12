@@ -17,6 +17,7 @@
 #include "TempLat/lattice/ghostcells/ghostbuster.h"
 #include "TempLat/lattice/ghostcells/ghostupdater.h"
 
+#include "TempLat/lattice/memory/sweepbuffer.h"
 #include "TempLat/lattice/memory/verbositylevels.h"
 #include "TempLat/util/makeuniformarray.h"
 
@@ -253,6 +254,7 @@ namespace TempLat
     GhostBuster<NDim> mGhostBuster_toFFTConfig;
     GhostBuster<NDim> mGhostBuster_toConfig;
     GhostUpdater<NDim> mGhostUpdater;
+    SweepBuffer mSweepBuffer;
 
     VerbosityLevels verbosity;
   };

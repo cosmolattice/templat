@@ -28,7 +28,7 @@ namespace TempLat
     U(1_c) = 0.23;
     U(2_c) = 0.11;
     U(3_c) = 0.4;
-    U.unitarize();
+    U(0_c) = std::sqrt(1 - 0.23 * 0.23 - 0.11 * 0.11 - 0.4 * 0.4);
 
     SU2Field<double, NDim> roundtrip("test_rt", toolBox, latPar);
     roundtrip = exp(expinv(U));

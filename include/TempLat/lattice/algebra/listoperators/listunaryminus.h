@@ -24,13 +24,13 @@ namespace TempLat
   template <typename R> class ListUnaryMinus : public ListUnaryOperator<R>
   {
   public:
+    using IsWholeListNegation = void; // see wholeOf
     using ListUnaryOperator<R>::mR;
     ListUnaryMinus(const R &pR) : ListUnaryOperator<R>(pR) {}
 
     template <int N> auto getComp(Tag<N> t) { return -GetComponent::get(mR, t); }
 
     virtual std::string operatorString() const { return "-"; }
-    template <int N> void doWeNeedGhosts(Tag<N> i) { GhostsHunter::apply(mR, i); }
     static const size_t size = tuple_size<R>::value;
   };
 

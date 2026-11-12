@@ -13,6 +13,10 @@
 #include "TempLat/lattice/algebra/helpers/getndim.h"
 #include "TempLat/lattice/algebra/helpers/doeval.h"
 #include "TempLat/lattice/algebra/helpers/isvariadicindex.h"
+#include "TempLat/lattice/algebra/helpers/preget.h"
+#include "TempLat/lattice/algebra/helpers/postget.h"
+#include "TempLat/lattice/algebra/helpers/confirmspace.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
 {
@@ -64,6 +68,37 @@ namespace TempLat
     }
 
     template <int N> auto operator()(Tag<N> t) const { return SU2DoubletGet(t); }
+
+    /** @brief Space/ghost confirmation forwarded to the wrapped expressions. */
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(device::get<0>(mData), reach) + ConfirmGhosts::apply(device::get<1>(mData), reach) +
+             ConfirmGhosts::apply(device::get<2>(mData), reach) + ConfirmGhosts::apply(device::get<3>(mData), reach);
+    }
+    template <size_t LayoutNDim>
+    void confirmSpace(const LayoutStruct<LayoutNDim> &newLayout, const SpaceStateType &spaceType) const
+    {
+      ConfirmSpace::apply(device::get<0>(mData), newLayout, spaceType);
+      ConfirmSpace::apply(device::get<1>(mData), newLayout, spaceType);
+      ConfirmSpace::apply(device::get<2>(mData), newLayout, spaceType);
+      ConfirmSpace::apply(device::get<3>(mData), newLayout, spaceType);
+    }
+
+    void preGet()
+    {
+      PreGet::apply(device::get<0>(mData));
+      PreGet::apply(device::get<1>(mData));
+      PreGet::apply(device::get<2>(mData));
+      PreGet::apply(device::get<3>(mData));
+    }
+
+    void postGet()
+    {
+      PostGet::apply(device::get<0>(mData));
+      PostGet::apply(device::get<1>(mData));
+      PostGet::apply(device::get<2>(mData));
+      PostGet::apply(device::get<3>(mData));
+    }
 
     std::string toString() const
     {

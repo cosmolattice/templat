@@ -16,17 +16,9 @@ namespace TempLat
   namespace export_device_namespace = device_kokkos;
 } // namespace TempLat
 
-#elif defined(DEVICE_STD)
-
-#include "TempLat/parallel/devices/std/std.h"
-namespace TempLat
-{
-  namespace export_device_namespace = std_device;
-} // namespace TempLat
-
 #else
 
-static_assert(false, "Unknown device type. Please define DEVICE_KOKKOS or DEVICE_STD.");
+static_assert(false, "Unknown device type. Please define DEVICE_KOKKOS.");
 
 #endif
 

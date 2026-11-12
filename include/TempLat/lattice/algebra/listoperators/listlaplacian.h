@@ -19,10 +19,9 @@
 namespace TempLat
 {
 
-  /** @brief A class which applies a minus sign. Holds the expression, only evaluates for a single element when you call
-   *Multiply::get(pIterCoords).
+  /** @brief The lattice Laplacian of each element of a list.
    *
-   * Unit test: ctest -R test-multiply
+   * Unit test: ctest -R test-listlaplacian
    **/
   template <typename R> class ListLaplacian : public ListUnaryOperator<R>
   {
@@ -35,7 +34,11 @@ namespace TempLat
     template <int N> auto getComp(Tag<N> t) { return LatLapl(GetComponent::get(mR, t)); }
 
     virtual std::string operatorString() const { return "lapl"; }
-    template <int N> void doWeNeedGhosts(Tag<N> i) { GetComponent::get(mR, i).confirmGhostsUpToDate(); }
+
+    template <int N> device::Idx confirmGhostsUpToDate(Tag<N> i, const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, i, reach.widenedAll(NDim, -1, 1));
+    }
 
     static const size_t size = tuple_size<R>::value;
   };

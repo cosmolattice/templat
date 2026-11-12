@@ -27,81 +27,39 @@ namespace TempLat::device_kokkos::iteration
   // into dispatching over the outer dimensions only and walking the contiguous one inside the
   // functor, which is what lets the vectorizer see the innermost loop (KokkosNDLambdaWrapperInnerLoop).
   //
-  // ===========================================================================================
-  // WHY THE VECTORIZED DISPATCH IS *NOT* THE DEFAULT -- REVISIT THIS, IT IS NOT SETTLED
-  // ===========================================================================================
-  // It used to be. It was flipped back after an A/B of the two dispatches (one binary per macro,
-  // same source, interleaved reps) reproduced on PC2 Noctua 2 (2x EPYC 7763, Slurm job 33674207)
-  // the "+10% kick at scale" that benchmarks/PERFORMANCE.md had recorded as unexplained. Pure-gauge
-  // SU(2) leapfrog. Measured kick, ns/site/step, all min-max envelopes disjoint over 3 reps:
-  //
-  //     N     ranks   vectorized   legacy     winner
-  //     384    16        9.82      11.89      vectorized +21%
-  //     384    32        9.23       8.67      legacy      +6.4%
-  //     384    64        4.22       4.03      legacy      +4.7%
-  //     384   128        2.25       2.13      legacy      +5.5%
-  //     768   128        2.36       2.26      legacy      +4.6%
-  //     768   256        1.20       1.14      legacy      +5.3%
-  //
-  // The controlling variable is NODE OCCUPANCY, not lattice size and not per-rank volume. The
-  // pencil decomposition happens to give two exactly-matched local boxes, and they disagree:
-  //   384^3 @ 16 ranks and 768^3 @ 128 ranks are both 96x96x384 = 3.54M sites/rank -- vectorized
-  //   wins the first by 21% and loses the second by 4.6%. Ditto 384^3 @ 32 vs 768^3 @ 256 (both
-  //   1.77M sites/rank), where legacy wins both. What differs is how many cores are competing for
-  // memory bandwidth. Below ~25% occupancy the kernel is compute-bound and removing instructions
-  // pays; at full occupancy it is DRAM-bound and only the dispatch's residual cost is visible.
-  // Since production runs fill nodes, legacy is the right default and the win above is unreachable.
-  //
-  // Two facts worth keeping when this is picked up again:
-  //   - The penalty is confined to STENCIL kernels. Drift (U = exp(dt*Pi)*U, site-local) is a dead
-  //     heat at every occupancy; the kick (the only neighbour-reading kernel) carries all of it.
-  //   - It is not "the inner sweep is too long for cache". At fixed 128 ranks, doubling the
-  //     contiguous sweep 384 -> 768 does not worsen it (5.5% -> 4.6%). Consistent with the
-  //     strip-mining experiment already refuted in PERFORMANCE.md.
-  //
-  // THE INTENDED FIX is to choose per launch instead of per build, since neither path dominates.
-  // The signal is already computed and needs no new dependency:
-  //     occupancy = ThreadSettings::getMPILocalSize() * ThreadSettings::getMaxThreadCount()
-  //               / <cores on node>            // parallel/threadsettings.h, filled at MPI_Init
-  //                                            // from MPI_Comm_split_type(MPI_COMM_TYPE_SHARED)
-  // It was not done now because three things need resolving first, and none is a detail:
-  //   1. COMPILE TIME. A runtime branch instantiates BOTH wrappers for every kernel in every TU.
-  //      An SU2Axion TU is already ~162 s, 64% of it backend inlining -- exactly what this lands
-  //      on. Measure before committing. Mitigation: the drift result above says only
-  //      neighbour-reading expressions need both paths, so a GhostsHunter-style trait could keep
-  //      site-local kernels single-instantiation.
-  //   2. THE THRESHOLD IS UNCALIBRATED. The data brackets the crossover only between 12.5% and 25%
-  //      occupancy, on ONE machine. The mechanism is bandwidth saturation, so it moves with
-  //      bytes-per-core; Otus (2x EPYC 9655, AVX-512) will sit elsewhere and has not been measured.
-  //      A hardcoded constant that silently picks wrong is worse than today's explicit flag.
-  //   3. hardware_concurrency() IS SMT- AND AFFINITY-BLIND. It reports online logical CPUs, so a
-  //      full node reads 0.5 rather than 1.0 when SMT is on, and it ignores cgroup limits.
-  // Whatever lands should keep an explicit override, so a wrong heuristic is never silent.
-  //
-  // GPU is unaffected by the default either way: the opt-in branch is guarded on
-  // !reverse_access_pattern, and the full-rank MDRange is what gives coalesced access there.
-  // ===========================================================================================
+  // The vectorized dispatch wins at low node occupancy (stencil kernels compute-bound) and loses ~5 % at full
+  // occupancy (bandwidth-bound), so it is opt-in; data and open questions in benchmarks/PERFORMANCE.md, section 5.
 #if defined(TEMPLAT_VECTORIZED_MDRANGE) && defined(TEMPLAT_LEGACY_MDRANGE)
-#error "TEMPLAT_VECTORIZED_MDRANGE and TEMPLAT_LEGACY_MDRANGE are mutually exclusive. Legacy is now \
-the default, so -DTEMPLAT_LEGACY_MDRANGE is redundant; drop it, or drop the vectorized one."
+#error "TEMPLAT_VECTORIZED_MDRANGE and TEMPLAT_LEGACY_MDRANGE are mutually exclusive; legacy is the default."
 #endif
+  // 2b. foreach: LayoutStruct, restricted to the planes [firstPlane, firstPlane + nPlanes) of axis 0. Dispatches
+  // like 2., with policies of the same type, so a functor used by both is instantiated once. rowTiles: see
+  // getLocalKokkosPolicy.
   template <size_t NDim, typename Functor>
     requires requires(Functor functor) { functor(device_kokkos::IdxArray<NDim>{}); }
-  void foreach (const std::string &name, const LayoutStruct<NDim> &mLayout, const Functor &functor)
+  void foreach (const std::string &name, const LayoutStruct<NDim> &mLayout, device_kokkos::Idx firstPlane,
+                device_kokkos::Idx nPlanes, const Functor &functor, bool rowTiles = false)
   {
 #ifdef TEMPLAT_VECTORIZED_MDRANGE
     if constexpr (!device_kokkos::reverse_access_pattern && NDim >= 2) {
       const auto localSizes = mLayout.getSizesInMemory();
       const device_kokkos::Idx nGhosts = mLayout.getNGhosts();
-      Kokkos::parallel_for(name, device_kokkos::getLocalKokkosOuterPolicy(mLayout),
+      Kokkos::parallel_for(name, device_kokkos::getLocalKokkosOuterPolicy(mLayout, firstPlane, nPlanes),
                            device_kokkos::KokkosNDLambdaWrapperInnerLoop<NDim, Functor>(
                                functor, nGhosts, nGhosts + (device_kokkos::Idx)localSizes[NDim - 1]));
     } else
 #endif
     {
-      Kokkos::parallel_for(name, device_kokkos::getLocalKokkosPolicy(mLayout),
+      Kokkos::parallel_for(name, device_kokkos::getLocalKokkosPolicy(mLayout, firstPlane, nPlanes, rowTiles),
                            device_kokkos::KokkosNDLambdaWrapper<NDim, Functor>(functor));
     }
+  }
+  template <size_t NDim, typename Functor>
+    requires requires(Functor functor) { functor(device_kokkos::IdxArray<NDim>{}); }
+  void foreach (const std::string &name, const LayoutStruct<NDim> &mLayout, const Functor &functor)
+  {
+    foreach (name, mLayout, 0, mLayout.getSizesInMemory()[0], functor)
+      ;
   }
   // 3. foreach: CheckerboardLayout
   template <size_t NDim, typename Functor>
@@ -184,6 +142,9 @@ the default, so -DTEMPLAT_LEGACY_MDRANGE is redundant; drop it, or drop the vect
 
   // ===== FENCE =====
   inline void fence() { Kokkos::fence(); }
+
+  /** @brief Number of threads the default execution space can keep resident at once. */
+  inline device_kokkos::Idx concurrency() { return Kokkos::DefaultExecutionSpace().concurrency(); }
 } // namespace TempLat::device_kokkos::iteration
 
 #endif

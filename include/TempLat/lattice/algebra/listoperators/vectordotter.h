@@ -45,17 +45,10 @@ namespace TempLat
       }
     DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
-      /* sorry, an if-statement inside a getter function: if T and S are the same thing, let's not call its getter twice
-       * (it might be an expensive algebraic operation. */
-      if ((void *)&mR == (void *)&mT) {
-        auto cache = DoEval::eval(mR, idx...);
-        return device::apply([&](const auto &...args) { return (powr<2>(args) + ...); }, cache);
-      } else {
-        auto cache1 = DoEval::eval(mR, idx...);
-        auto cache2 = DoEval::eval(mT, idx...);
-        return device::apply([&](const auto &...args) { return ((cache1[args] * cache2[args]) + ...); },
-                             make_tuple_sequence<mVectorSize>());
-      }
+      auto cache1 = DoEval::eval(mR, idx...);
+      auto cache2 = DoEval::eval(mT, idx...);
+      return device::apply([&](const auto &...args) { return ((cache1[args] * cache2[args]) + ...); },
+                           make_tuple_sequence<mVectorSize>());
     }
 
     template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const

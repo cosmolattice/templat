@@ -13,10 +13,6 @@
 
 #include "TempLat/parallel/devices/kokkos/kokkos_iteration.h"
 
-#elif defined(DEVICE_STD)
-
-#include "TempLat/parallel/devices/std/std_iteration.h"
-
 #else
 
 static_assert(false, "No device iteration backend selected.");
@@ -25,6 +21,7 @@ static_assert(false, "No device iteration backend selected.");
 
 namespace TempLat::device::iteration
 {
+  using export_device_namespace::iteration::concurrency;
   using export_device_namespace::iteration::fence;
   using export_device_namespace::iteration::foreach;
   using export_device_namespace::iteration::reduce;

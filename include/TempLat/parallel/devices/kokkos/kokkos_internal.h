@@ -41,7 +41,12 @@ namespace TempLat
     // Getting the policies for iteration
     // ------------------------------------------------
 
-    template <size_t NDim> auto getLocalKokkosPolicy(const LayoutStruct<NDim> &layout)
+    /** @brief Policy over the planes [firstPlane, firstPlane + nPlanes) of axis 0 of the layout's local block. With
+     *  rowTiles, a CPU walks the rows in order instead of in Kokkos' tiles of 2 x 2 rows, which alternate between
+     *  two planes and so double the number of memory streams. The policy type does not depend on it. */
+    template <size_t NDim>
+    auto getLocalKokkosPolicy(const LayoutStruct<NDim> &layout, device_kokkos::Idx firstPlane,
+                              device_kokkos::Idx nPlanes, bool rowTiles = false)
     {
       Kokkos::Array<uint64_t, NDim> start_iteration;
       Kokkos::Array<uint64_t, NDim> stop_iteration;
@@ -55,15 +60,26 @@ namespace TempLat
       // on CPU, we do not reverse the access pattern.
       for (int d = 0; d < (int)NDim; ++d) {
         const int _d = device_kokkos::reverse_access_pattern ? (int)NDim - 1 - d : d;
-        start_iteration[_d] = nGhosts;
-        stop_iteration[_d] = start_iteration[_d] + localSizes[d];
+        start_iteration[_d] = nGhosts + (d == 0 ? firstPlane : 0);
+        stop_iteration[_d] = start_iteration[_d] + (d == 0 ? nPlanes : localSizes[d]);
       }
 
       if constexpr (NDim == 1) {
         return Kokkos::RangePolicy<DefaultExecutionSpace>(start_iteration[0], stop_iteration[0]);
       } else {
-        return Kokkos::MDRangePolicy<DefaultExecutionSpace, Kokkos::Rank<NDim>>(start_iteration, stop_iteration);
+        // Tile sizes 0 leave the choice to Kokkos: on a CPU, tiles of 2 x 2 rows.
+        Kokkos::Array<uint64_t, NDim> tile{};
+        if (rowTiles && !device_kokkos::reverse_access_pattern)
+          for (size_t d = 0; d + 1 < NDim; ++d)
+            tile[d] = 1;
+        return Kokkos::MDRangePolicy<DefaultExecutionSpace, Kokkos::Rank<NDim>>(start_iteration, stop_iteration, tile);
       }
+    }
+
+    /** @brief Policy over the layout's local block. */
+    template <size_t NDim> auto getLocalKokkosPolicy(const LayoutStruct<NDim> &layout)
+    {
+      return getLocalKokkosPolicy(layout, 0, layout.getSizesInMemory()[0]);
     }
 
     /**
@@ -72,20 +88,22 @@ namespace TempLat
      * in a plain loop that the vectorizer can see. Never used on GPU, where the full-rank MDRange
      * with the reversed access pattern is what gives coalesced access.
      */
-    template <size_t NDim> auto getLocalKokkosOuterPolicy(const LayoutStruct<NDim> &layout)
+    template <size_t NDim>
+    auto getLocalKokkosOuterPolicy(const LayoutStruct<NDim> &layout, device_kokkos::Idx firstPlane,
+                                   device_kokkos::Idx nPlanes)
     {
       static_assert(NDim >= 2, "The outer policy needs a dimension left over for the inner loop.");
       const auto localSizes = layout.getSizesInMemory();
       const size_t nGhosts = layout.getNGhosts();
 
       if constexpr (NDim == 2) {
-        return Kokkos::RangePolicy<DefaultExecutionSpace>(nGhosts, nGhosts + localSizes[0]);
+        return Kokkos::RangePolicy<DefaultExecutionSpace>(nGhosts + firstPlane, nGhosts + firstPlane + nPlanes);
       } else {
         Kokkos::Array<uint64_t, NDim - 1> start_iteration;
         Kokkos::Array<uint64_t, NDim - 1> stop_iteration;
         for (int d = 0; d < (int)NDim - 1; ++d) {
-          start_iteration[d] = nGhosts;
-          stop_iteration[d] = nGhosts + localSizes[d];
+          start_iteration[d] = nGhosts + (d == 0 ? firstPlane : 0);
+          stop_iteration[d] = start_iteration[d] + (d == 0 ? nPlanes : localSizes[d]);
         }
         return Kokkos::MDRangePolicy<DefaultExecutionSpace, Kokkos::Rank<NDim - 1>>(start_iteration, stop_iteration);
       }
@@ -193,6 +211,11 @@ namespace TempLat
     // Wrapping multidimensional device lambdas for use with Kokkos
     // ------------------------------------------------
 
+    /** @brief A functor asking to be inlined into the iteration loop (FUN::inlineIntoLoop). GCC otherwise calls a
+     *  large functor once per site, redoing all its index arithmetic. */
+    template <typename FUN>
+    concept InlinedIntoLoop = requires { requires FUN::inlineIntoLoop; };
+
     /**
      * @brief This is a functor which wraps a lambda.
      * Basically, this is necessary when one wants to call a variadic lambda on an NVIDIA GPU.
@@ -209,8 +232,19 @@ namespace TempLat
       KokkosNDLambdaWrapper(const FUN &_fun) : fun(_fun) {};
 
       template <typename... Args>
-        requires(sizeof...(Args) == NDim)
+        requires(sizeof...(Args) == NDim && !InlinedIntoLoop<FUN>)
       DEVICE_INLINE_FUNCTION void operator()(const Args &...args) const
+      {
+        call(args...);
+      }
+      template <typename... Args>
+        requires(sizeof...(Args) == NDim && InlinedIntoLoop<FUN>)
+      DEVICE_FORCEINLINE_FUNCTION void operator()(const Args &...args) const
+      {
+        call(args...);
+      }
+
+      template <typename... Args> DEVICE_FORCEINLINE_FUNCTION void call(const Args &...args) const
       {
         // What's going on here: on GPU, it is beneficial to reverse the memory access pattern, for coalesced access.
         // However, we do not want to impose this on the level of the memory layouts. In particular, this would
@@ -233,8 +267,7 @@ namespace TempLat
      * Kokkos' MDRange tiles all NDim dimensions, and its innermost tile loop is one the vectorizer
      * gives up on -- it has runtime bounds and no independence guarantee, so GCC emits scalar code
      * for every lattice kernel. Handing the last (unit-stride) dimension back to a plain loop that
-     * carries TEMPLAT_ASSUME_INDEPENDENT is what lets it vectorize: measured on the SU(2) kick, 125
-     * -> 46 ns/site, and 8 -> 8064 packed FP instructions. See benchmarks/PERFORMANCE.md.
+     * carries TEMPLAT_ASSUME_INDEPENDENT is what lets it vectorize, see benchmarks/PERFORMANCE.md.
      *
      * The functor is copied once, here at construction; the inner loop must not copy it again. The
      * expression trees it holds are NOT cheap to copy (their leaves carry a shared_ptr to the memory

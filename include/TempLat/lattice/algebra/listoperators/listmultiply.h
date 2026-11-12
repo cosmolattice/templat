@@ -20,6 +20,7 @@ namespace TempLat
   template <typename R, typename T> class ListMultiplication : public ListBinaryOperator<R, T>
   {
   public:
+    using IsWholeListProduct = void; // see wholeOf
     using ListBinaryOperator<R, T>::mR;
     using ListBinaryOperator<R, T>::mT;
 
@@ -28,11 +29,6 @@ namespace TempLat
     template <int N> auto getComp(Tag<N> t) { return GetComponent::get(mR, t) * GetComponent::get(mT, t); }
 
     virtual std::string operatorString() const { return "*"; }
-    template <int N> void doWeNeedGhosts(Tag<N> i)
-    {
-      GhostsHunter::apply(mR, i);
-      GhostsHunter::apply(mT, i);
-    }
     static const size_t size = static_max<tuple_size<R>::value, tuple_size<T>::value>::value;
   };
 

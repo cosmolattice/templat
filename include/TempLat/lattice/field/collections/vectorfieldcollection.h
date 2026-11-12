@@ -10,7 +10,11 @@
 #include "TempLat/lattice/algebra/helpers/getgetreturntype.h"
 #include "TempLat/lattice/algebra/helpers/getfloattype.h"
 #include "TempLat/lattice/algebra/helpers/getndim.h"
+#include "TempLat/lattice/field/assignment/collectionassignmentorder.h"
 #include "TempLat/lattice/field/collections/vectorfield.h"
+
+#include <array>
+#include <optional>
 
 namespace TempLat
 {
@@ -43,17 +47,22 @@ namespace TempLat
     template <int M> auto operator()(Tag<M> t) const { return fs[t - Tag<SHIFTIND>()]; }
     template <int M> auto getComp(Tag<M> t) const { return fs[t]; }
 
+    /** @brief Assigns the list r group by group, in an order in which no group reads another group's target after
+     *  it was overwritten, see assignMembersInOrder. */
     template <typename R> void operator=(R &&r)
     {
-      for_in_range<0, std::decay_t<R>::size>([&](auto i) { (*this).getComp(i) = std::decay_t<R>::Getter::get(r, i); });
+      using nakedR = std::decay_t<R>;
+      if constexpr (nakedR::size == N)
+        assignMembersInOrder<N>([&](auto j) { return getComp(j); }, [&](auto j) { return nakedR::Getter::get(r, j); },
+                                [&](auto j) { return scratch(j); });
+      else
+        for_in_range<0, nakedR::size>([&](auto i) {
+          auto member = nakedR::Getter::get(r, i);
+          getComp(i) = member;
+        });
     }
 
-    template <typename R> void operator+=(R &&r)
-    {
-      //  (*this) = (*this) + r;
-      for_in_range<0, std::decay_t<R>::size>(
-          [&](auto i) { (*this).getComp(i) = (*this).getComp(i) + std::decay_t<R>::Getter::get(r, i); });
-    }
+    template <typename R> void operator+=(R &&r) { (*this) = (*this) + r; }
 
     std::string toString(device::Idx i) const { return fs[i - SHIFTIND].toString(); }
 
@@ -61,7 +70,15 @@ namespace TempLat
     static constexpr size_t size = N;
 
   private:
+    /** @brief A group of the same type as group j, for assignMembersInOrder; allocated on first use. */
+    template <int J> VectorField<Arg, flatAssign> scratch(Tag<J>)
+    {
+      if (!mScratch[J]) mScratch[J].emplace(CollectionAssignmentDetail::makeScratchLike(fs[J]));
+      return *mScratch[J];
+    }
+
     std::vector<VectorField<Arg, flatAssign>> fs;
+    std::array<std::optional<VectorField<Arg, flatAssign>>, N> mScratch;
   };
 } // namespace TempLat
 

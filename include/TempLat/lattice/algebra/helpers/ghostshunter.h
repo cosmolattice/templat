@@ -7,60 +7,21 @@
 
 // File info: Main contributor(s): Adrien Florio, Year: 2019
 
-#include "TempLat/lattice/algebra/helpers/hasdoweneedghosts.h"
+#include "TempLat/lattice/algebra/helpers/confirmghosts.h"
 
 namespace TempLat
 {
-  /** @brief A class which helps implementing the automatic management of updating the ghost cells.
+  /** @brief Entry point of the ghost walk for a whole expression: checks the ghost depth of every field it reads
+   *  at neighbouring sites and updates their ghosts if needed. See ConfirmGhosts.
    *
-   * Unit test: ctest -R test-ghostshunter
+   * Unit test: ctest -R test-ghostreach
    **/
   class GhostsHunter
   {
   public:
-    template <typename U>
-      requires HasDoWeNeedGhostsMethod<U>
-    static void apply(U &obj)
-    {
-      obj.doWeNeedGhosts();
-    }
-
-    template <typename U>
-      requires(!HasDoWeNeedGhostsMethod<U>)
-    static void apply(U &obj)
-    {
-    }
-
-    // Put public methods here. These should change very little over time.
-    template <int N, typename U>
-      requires HasDoWeNeedGhostsMethodIndexed<N, U>
-    static void apply(U &obj, Tag<N> i)
-    {
-      obj.doWeNeedGhosts(i);
-    }
-
-    template <int N, typename U>
-      requires(!HasDoWeNeedGhostsMethodIndexed<N, U>)
-    static void apply(U &obj, Tag<N> i)
-    {
-    }
-
-    // Put public methods here. These should change very little over time.
-    template <typename U>
-      requires HasDoWeNeedGhostsMethodIndexedDyn<U>
-    static void apply(U &obj, device::Idx i)
-    {
-      obj.doWeNeedGhosts(i);
-    }
-
-    template <typename U>
-      requires(!HasDoWeNeedGhostsMethodIndexedDyn<U>)
-    static void apply(U &obj, device::Idx i)
-    {
-    }
+    template <typename U> static void apply(U &obj) { ConfirmGhosts::apply(obj, GhostReach{}); }
 
   private:
-    /* Put all member variables and private methods here. These may change arbitrarily. */
     GhostsHunter() = default;
   };
 } // namespace TempLat

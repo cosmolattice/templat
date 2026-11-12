@@ -17,6 +17,7 @@
 #include "TempLat/util/tuple_tools.h"
 #include "TempLat/lattice/algebra/helpers/haseval.h"
 #include "TempLat/lattice/algebra/helpers/getndim.h"
+#include "TempLat/util/tuple_size.h"
 
 #include "TempLat/parallel/device.h"
 
@@ -39,8 +40,6 @@ namespace TempLat
 
     LatticeLaplacian(R pR) : UnaryOperator<R>(pR), dx2(pow(GetDx::getDx(pR), 2)) {}
 
-    void doWeNeedGhosts() const { mR.confirmGhostsUpToDate(); }
-
     template <typename... IDX>
       requires requires(std::decay_t<R> r, IDX... idx) {
         requires IsVariadicIndex<IDX...>;
@@ -61,6 +60,11 @@ namespace TempLat
         });
         return result / dx2;
       }
+    }
+
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, reach.widenedAll(NDim, -1, 1));
     }
 
     virtual std::string operatorString() const override { return "Laplacian"; }
@@ -89,7 +93,7 @@ namespace TempLat
   }
 
   template <size_t NDim_ = 0, typename R>
-    requires(!HasEvalMethod<R> || GetNDim::get<std::decay_t<R>>() == 0)
+    requires((!HasEvalMethod<R> || GetNDim::get<std::decay_t<R>>() == 0) && tuple_size<R>::value == 1)
   constexpr auto LatLapl(R)
   {
     return ZeroType{};

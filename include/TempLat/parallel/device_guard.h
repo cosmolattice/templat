@@ -13,10 +13,6 @@
 
 #include "TempLat/parallel/devices/kokkos/session/kokkos_guard.h"
 
-#elif defined(DEVICE_STD)
-
-#include "TempLat/parallel/devices/std/std_guard.h"
-
 #else
 
 static_assert(false, "Unknown device type.");

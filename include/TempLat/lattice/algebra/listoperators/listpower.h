@@ -31,11 +31,6 @@ namespace TempLat
     template <int N> auto getComp(Tag<N> t) { return pow(GetComponent::get(mR, t), GetComponent::get(mT, t)); }
 
     virtual std::string operatorString() const { return "^"; }
-    template <int N> void doWeNeedGhosts(Tag<N> i)
-    {
-      GhostsHunter::apply(mR, i);
-      GhostsHunter::apply(mT, i);
-    }
     static constexpr size_t size = std::max(tuple_size<R>::value, tuple_size<T>::value);
   };
 
@@ -54,7 +49,6 @@ namespace TempLat
     template <int M> auto getComp(Tag<M> t) { return pow<N>(GetComponent::get(mR, t)); }
     template <int M> std::string toString(Tag<M> i) const { return GetString::get(mR, i) + "^" + std::to_string(N); }
 
-    template <int M> void doWeNeedGhosts(Tag<M> i) { GhostsHunter::apply(mR, i); }
     static const size_t size = tuple_size<R>::value;
   };
 

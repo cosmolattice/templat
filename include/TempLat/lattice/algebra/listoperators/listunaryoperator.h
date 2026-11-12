@@ -9,7 +9,6 @@
 
 #include "TempLat/util/containsspace.h"
 #include "TempLat/lattice/algebra/spacestateinterface.h"
-#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
 #include "TempLat/lattice/algebra/helpers/getstring.h"
 #include "TempLat/lattice/algebra/helpers/getvectorsize.h"
 #include "TempLat/lattice/algebra/helpers/confirmspace.h"
@@ -20,8 +19,7 @@
 namespace TempLat
 {
 
-  /** @brief A class which
-   *
+  /** @brief Base class of the unary list operators: forwards the per-component walks to the operand.
    *
    * Unit test: ctest -R test-listunaryoperator
    **/
@@ -32,7 +30,10 @@ namespace TempLat
 
     ListUnaryOperator(const R &pR) : mR(pR) {}
 
-    template <int N> device::Idx confirmGhostsUpToDate(Tag<N> i) const { return ConfirmGhosts::apply(mR, i); }
+    template <int N> device::Idx confirmGhostsUpToDate(Tag<N> i, const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, i, reach);
+    }
 
     template <int N, size_t NDim>
     void confirmSpace(Tag<N> i, const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const

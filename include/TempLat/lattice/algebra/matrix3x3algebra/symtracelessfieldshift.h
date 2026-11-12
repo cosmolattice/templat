@@ -18,21 +18,16 @@ namespace TempLat
   /** @brief A class which implements spatial shifts for symmetric traceless algebra.
    *
    *
-   * Unit test: ctest -R test-complexfieldshift
+   * Unit test: ctest -R test-symtracelessshift
    **/
   template <typename R, int... N> class SymTracelessFieldShifter : public SymTracelessUnaryOperator<R>
   {
   public:
     // Put public methods here. These should change very little over time.
-    static constexpr size_t dim = sizeof...(N);
-    static constexpr auto shifts = device::make_tuple(N...);
 
     using SymTracelessUnaryOperator<R>::mR;
 
-    SymTracelessFieldShifter(const R &pR) : SymTracelessUnaryOperator<R>(pR)
-    {
-      shiftString = shift<N...>(mR.SymTracelessFieldShifter(0_c)).getString({N...});
-    }
+    SymTracelessFieldShifter(const R &pR) : SymTracelessUnaryOperator<R>(pR) {}
 
     template <int M> auto SymTracelessGet(Tag<M> t) const
     {
@@ -43,7 +38,7 @@ namespace TempLat
     template <int M1, int M2> auto SymTracelessGet(Tag<M1> t1, Tag<M2> t2) const
     {
       static_assert(M1 >= 1 && M1 <= 3 && M2 >= 1 && M2 <= 3,
-                    "SymTracelessFieldShifter: M1 and M2 must be 0-2 for SymTracelessFieldShifter");
+                    "SymTracelessFieldShifter: M1 and M2 must be 1-3 for SymTracelessFieldShifter");
       return shift<N...>(mR.SymTracelessGet(t1, t2));
     }
 
@@ -54,19 +49,15 @@ namespace TempLat
       }
     DEVICE_INLINE_FUNCTION auto eval(const IDX &...idx) const
     {
-      auto tup = device::tie(idx...);
-      constexpr_for<0, dim>([&](const auto _d) {
-        constexpr size_t d = decltype(_d)::value;
-        tup = tuple_add_to_nth<d, device::get<d>(shifts)>(tup);
-      });
-      return device::apply([&](const auto &...shifted_idx) { return DoEval::eval(mR, shifted_idx...); }, tup);
+      return evalShifted<N...>(mR, idx...);
     }
 
-    std::string operatorString() const { return shiftString; }
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, shiftedReach<N...>(reach));
+    }
 
-  private:
-    /* Put all member variables and private methods here. These may change arbitrarily. */
-    std::string shiftString;
+    std::string toString() const { return GetString::get(mR) + shiftSuffix<N...>(); }
   };
   template <typename R, int _N> class SymTracelessFieldShifterByOne : public SymTracelessUnaryOperator<R>
   {
@@ -91,7 +82,7 @@ namespace TempLat
     template <int M1, int M2> auto SymTracelessGet(Tag<M1> t1, Tag<M2> t2) const
     {
       static_assert(M1 >= 1 && M1 <= 3 && M2 >= 1 && M2 <= 3,
-                    "SymTracelessFieldShifterByOne: M1 and M2 must be 0-2 for SymTracelessGet");
+                    "SymTracelessFieldShifterByOne: M1 and M2 must be 1-3 for SymTracelessGet");
       return shift<_N>(mR.SymTracelessGet(t1, t2));
     }
 
@@ -106,7 +97,12 @@ namespace TempLat
                            tuple_add_to_nth<N - 1, dir>(device::tie(idx...)));
     }
 
-    std::string toString() const { return GetString::get(mR) + "(->" + std::to_string(N) + ")"; }
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const
+    {
+      return ConfirmGhosts::apply(mR, reach.shifted(N - 1, dir));
+    }
+
+    std::string toString() const { return GetString::get(mR) + "_(->" + std::to_string(_N) + ")"; }
   };
 
   template <int... shifts, class R>

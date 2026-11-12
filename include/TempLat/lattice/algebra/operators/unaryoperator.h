@@ -22,13 +22,10 @@
 #include "TempLat/lattice/algebra/helpers/getfloattype.h"
 #include "TempLat/lattice/algebra/helpers/getgetreturntype.h"
 #include "TempLat/lattice/algebra/helpers/getkir.h"
-#include "TempLat/lattice/algebra/helpers/ghostshunter.h"
 #include "TempLat/lattice/algebra/spacestateinterface.h"
 #include "TempLat/lattice/memory/memorylayouts/layoutstruct.h"
 
 #include "TempLat/parallel/device.h"
-
-// #include "TempLat/lattice/algebra/conditional/conditionalunarygetter.h"
 
 namespace TempLat
 {
@@ -43,13 +40,11 @@ namespace TempLat
 
     static consteval size_t getNDim() { return GetNDim::get<R>(); }
 
-    void doWeNeedGhosts() const { GhostsHunter::apply(mR); }
-
     void preGet() { PreGet::apply(mR); }
 
     void postGet() { PostGet::apply(mR); }
 
-    device::Idx confirmGhostsUpToDate() const { return ConfirmGhosts::apply(mR); }
+    device::Idx confirmGhostsUpToDate(const GhostReach &reach) const { return ConfirmGhosts::apply(mR, reach); }
 
     template <size_t NDim> void confirmSpace(const LayoutStruct<NDim> &newLayout, const SpaceStateType &spaceType) const
     {
